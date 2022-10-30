@@ -24,24 +24,28 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 #catalogo CFHTLens, separado en las cuatro areas del cielo
-
-#HAY QUE CAMBIAR EL PATH, Y PENSAR COMO SEPARAR EL ARCHIVO EN LAS 4 AREAS (usar una mascara de ascension recta o declinacion)
-w4 = fits.open('/mnt/projects/lensing/CFHTLens/CFHTLens_W4.fits')[1].data
-w3 = fits.open('/mnt/projects/lensing/CFHTLens/CFHTLens_W3.fits')[1].data
-w2 = fits.open('/mnt/projects/lensing/CFHTLens/CFHTLens_W2.fits')[1].data
-w1 = fits.open('/mnt/projects/lensing/CFHTLens/CFHTLens_W1.fits')[1].data
+w = fits.open('C:\Users\CHICOS\Documents\Franco\FAMAF\Lensing\CFHTLens\CFHTLens.fits')[1].data
 
 #mascaras para los datos, tiramos los que no cumplan los requisitos
-m1 = (w1.ODDS >= 0.5)*(w1.Z_B > 0.2)*(w1.Z_B < 1.2)*(w1.weight > 0)*(w1.fitclass == 0)*(w1.MASK <= 1)
-m2 = (w2.ODDS >= 0.5)*(w2.Z_B > 0.2)*(w2.Z_B < 1.2)*(w2.weight > 0)*(w2.fitclass == 0)*(w2.MASK <= 1)
-m3 = (w3.ODDS >= 0.5)*(w3.Z_B > 0.2)*(w3.Z_B < 1.2)*(w3.weight > 0)*(w3.fitclass == 0)*(w3.MASK <= 1)
-m4 = (w4.ODDS >= 0.5)*(w4.Z_B > 0.2)*(w4.Z_B < 1.2)*(w4.weight > 0)*(w4.fitclass == 0)*(w4.MASK <= 1)
+m = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
+
+#mascara para las distintas aeras
+a1 = (w.alpha_j2000 < 39)*(w.alpha_j2000 > 30.)*(w.delta_j2000 < -3.5)*(w.delta_j2000 > -11.5) #RA 30 to 39 deg, DEC -3 to -12 de
+a3 = (w.alpha_j2000 < 221)*(w.alpha_j2000 > 208)*(w.delta_j2000 < 58)*(w.delta_j2000 > 51) #RA 221 to 208 deg, DEC 51 to 58 deg
+a2 = (w.alpha_j2000 < 137)*(w.alpha_j2000 > 132)*(w.delta_j2000 < -0.9)*(w.delta_j2000 > -5.7) #RA 137 to 131 deg, DEC -0.5 to -7 deg
+a4 = (w.alpha_j2000 < 336)*(w.alpha_j2000 > 329)*(w.delta_j2000 < 4.7)*(w.delta_j2000 > -1.1) #RA 336 to 329.5 deg, DEC -1.5 to 5 deg
+
+#mask total
+m1 = m * a1
+m2 = m * a2
+m3 = m * a3
+m4 = m * a4
 
 #datos enmascarados (xd)
-w1_sources = w1[m1]
-w2_sources = w2[m2]
-w3_sources = w3[m3]
-w4_sources = w4[m4]
+w1_sources = w[m1]
+w2_sources = w[m2]
+w3_sources = w[m3]
+w4_sources = w[m4]
 
 
 def partial_profile(RA0,DEC0,Z,field,
