@@ -1,20 +1,14 @@
 import sys
 import time
-#calcula tiempo que demora un proceso
 import numpy as np
 from astropy.io import fits
-#lee los catalogos
 from astropy.cosmology import LambdaCDM
 from maria_func import *
-#calcula separaciones angulares
 from astropy.stats import bootstrap
-#calculo de errores a traves de bootstraping
 from astropy.utils import NumpyRNGContext
 from multiprocessing import Pool
 from multiprocessing import Process
-#para calcular en paralelo
 import argparse
-#? averiguar!
 from astropy.constants import G,c,M_sun,pc
 
 #parameters
@@ -24,22 +18,22 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 #catalogo CFHTLens, separado en las cuatro areas del cielo
-w = fits.open('C:\Users\CHICOS\Documents\Franco\FAMAF\Lensing\CFHTLens\CFHTLens.fits')[1].data
+w = fits.open('/Users/CHICOS/Documents/Franco/FAMAF/Lensing/cats/CFHTLens.fits')[1].data
 
 #mascaras para los datos, tiramos los que no cumplan los requisitos
 m = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
 
 #mascara para las distintas aeras
-a1 = (w.alpha_j2000 < 39)*(w.alpha_j2000 > 30.)*(w.delta_j2000 < -3.5)*(w.delta_j2000 > -11.5) #RA 30 to 39 deg, DEC -3 to -12 de
-a3 = (w.alpha_j2000 < 221)*(w.alpha_j2000 > 208)*(w.delta_j2000 < 58)*(w.delta_j2000 > 51) #RA 221 to 208 deg, DEC 51 to 58 deg
-a2 = (w.alpha_j2000 < 137)*(w.alpha_j2000 > 132)*(w.delta_j2000 < -0.9)*(w.delta_j2000 > -5.7) #RA 137 to 131 deg, DEC -0.5 to -7 deg
-a4 = (w.alpha_j2000 < 336)*(w.alpha_j2000 > 329)*(w.delta_j2000 < 4.7)*(w.delta_j2000 > -1.1) #RA 336 to 329.5 deg, DEC -1.5 to 5 deg
+ma1 = (w.alpha_j2000 < 39)*(w.alpha_j2000 > 30.)*(w.delta_j2000 < -3.5)*(w.delta_j2000 > -11.5) #RA 30 to 39 deg, DEC -3 to -12 de
+ma3 = (w.alpha_j2000 < 221)*(w.alpha_j2000 > 208)*(w.delta_j2000 < 58)*(w.delta_j2000 > 51) #RA 221 to 208 deg, DEC 51 to 58 deg
+ma2 = (w.alpha_j2000 < 137)*(w.alpha_j2000 > 132)*(w.delta_j2000 < -0.9)*(w.delta_j2000 > -5.7) #RA 137 to 131 deg, DEC -0.5 to -7 deg
+ma4 = (w.alpha_j2000 < 336)*(w.alpha_j2000 > 329)*(w.delta_j2000 < 4.7)*(w.delta_j2000 > -1.1) #RA 336 to 329.5 deg, DEC -1.5 to 5 deg
 
 #mask total
-m1 = m * a1
-m2 = m * a2
-m3 = m * a3
-m4 = m * a4
+m1 = m * ma1
+m2 = m * ma2
+m3 = m * ma3
+m4 = m * ma4
 
 #datos enmascarados (xd)
 w1_sources = w[m1]
@@ -69,14 +63,14 @@ def partial_profile(RA0,DEC0,Z,field,
         delta = ROUT/(3600*KPCSCALE)
 
         
-        mask_region = (S.RAJ2000 < (RA0+delta))&(S.RAJ2000 > (RA0-delta))&(S.DECJ2000 > (DEC0-delta))&(S.DECJ2000 < (DEC0+delta))
+        mask_region = (S.alpha_j2000 < (RA0+delta))&(S.alpha_j2000 > (RA0-delta))&(S.delta_j2000 > (DEC0-delta))&(S.delta_j2000 < (DEC0+delta))
                
-        mask = mask_region*(S.Z_B > (Z + 0.1))*(S.ODDS >= 0.5)*(S.Z_B > 0.2)
+        mask = mask_region*(S.z_b > (Z + 0.1))*(S.odds >= 0.5)*(S.z_b > 0.2)
         
         catdata = S[mask]
 
-        ds  = cosmo.angular_diameter_distance(catdata.Z_B).value
-        dls = cosmo.angular_diameter_distance_z1z2(Z, catdata.Z_B).value
+        ds  = cosmo.angular_diameter_distance(catdata.z_b).value
+        dls = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_b).value
                 
         BETA_array = dls/ds
         
@@ -86,8 +80,8 @@ def partial_profile(RA0,DEC0,Z,field,
 
 
 
-        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.RAJ2000),
-                                        np.deg2rad(catdata.DECJ2000),
+        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.alpha_j2000),
+                                        np.deg2rad(catdata.delta_j2000),
                                         np.deg2rad(RA0),
                                         np.deg2rad(DEC0))
                
@@ -105,7 +99,7 @@ def partial_profile(RA0,DEC0,Z,field,
         del(e1)
         del(e2)
         
-        r=np.rad2deg(rads)*3600*KPCSCALE
+        r = np.rad2deg(rads)*3600*KPCSCALE
         del(rads)
         
         peso = catdata.weight
@@ -186,7 +180,6 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         print(lmin,' <= lambda < ',lmax)
         print('pcc > ',pcc_min)
         print('Background galaxies with:')
-        #print('ODDS > ',odds_min)
         print('Profile has ',ndots,'bins')
         print('from ',RIN,'kpc to ',ROUT,'kpc')
         print('h = ',hcosmo)
@@ -197,20 +190,20 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         
         #reading cats
         
-        cat = fits.open('/mnt/projects/lensing/redMaPPer/redmapper_dr8_public_v6.3_catalog.fits')[1].data
+        cat = fits.open('/Users/CHICOS/Documents/Franco/FAMAF/Lensing/cats/redmapper_dr8_public_v6.3_catalog.fits')[1].data
         pcc = cat.P_CEN[:,0]
         
-        mw1 = (cat.RA < 39)*(cat.RA > 30.)*(cat.DEC < -3.5)*(cat.DEC > -11.5)
-        mw3 = (cat.RA < 221)*(cat.RA > 208)*(cat.DEC < 58)*(cat.DEC > 51)
-        mw2 = (cat.RA < 137)*(cat.RA > 132)*(cat.DEC < -0.9)*(cat.DEC > -5.7)
-        mw4 = (cat.RA < 336)*(cat.RA > 329)*(cat.DEC < 4.7)*(cat.DEC > -1.1)
+        #mw1 = (cat.RA < 39)*(cat.RA > 30.)*(cat.DEC < -3.5)*(cat.DEC > -11.5)
+        #mw3 = (cat.RA < 221)*(cat.RA > 208)*(cat.DEC < 58)*(cat.DEC > 51)
+        #mw2 = (cat.RA < 137)*(cat.RA > 132)*(cat.DEC < -0.9)*(cat.DEC > -5.7)
+        #mw4 = (cat.RA < 336)*(cat.RA > 329)*(cat.DEC < 4.7)*(cat.DEC > -1.1)
         
-        RA  = np.concatenate((cat.RA[mw1],cat.RA[mw2],cat.RA[mw3],cat.RA[mw4]))
-        DEC = np.concatenate((cat.DEC[mw1],cat.DEC[mw2],cat.DEC[mw3],cat.DEC[mw4]))
-        z   = np.concatenate((cat.Z_LAMBDA[mw1],cat.Z_LAMBDA[mw2],cat.Z_LAMBDA[mw3],cat.Z_LAMBDA[mw4]))
-        LAMBDA = np.concatenate((cat.LAMBDA[mw1],cat.LAMBDA[mw2],cat.LAMBDA[mw3],cat.LAMBDA[mw4]))
-        field = np.concatenate((np.ones(mw1.sum())*1.,np.ones(mw2.sum())*2.,np.ones(mw3.sum())*3.,np.ones(mw4.sum())*4.))
-        pcc  = np.concatenate((pcc[mw1],pcc[mw2],pcc[mw3],pcc[mw4]))
+        RA  = np.concatenate((cat.RA[ma1],cat.RA[ma2],cat.RA[ma3],cat.RA[ma4]))
+        DEC = np.concatenate((cat.DEC[ma1],cat.DEC[ma2],cat.DEC[ma3],cat.DEC[ma4]))
+        z   = np.concatenate((cat.Z_LAMBDA[ma1],cat.Z_LAMBDA[ma2],cat.Z_LAMBDA[ma3],cat.Z_LAMBDA[ma4]))
+        LAMBDA = np.concatenate((cat.LAMBDA[ma1],cat.LAMBDA[ma2],cat.LAMBDA[ma3],cat.LAMBDA[ma4]))
+        field = np.concatenate((np.ones(ma1.sum())*1.,np.ones(ma2.sum())*2.,np.ones(ma3.sum())*3.,np.ones(ma4.sum())*4.))
+        pcc  = np.concatenate((pcc[ma1],pcc[ma2],pcc[ma3],pcc[ma4]))
          
         mz  = (z >= z_min)*(z < z_max)
         ml  = (LAMBDA >= lmin)*(LAMBDA < lmax)
@@ -331,7 +324,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('z_mean',np.round(zmean,4)))
 
                 
-        outfile = '../profiles/profile_'+sample+'.fits'
+        outfile = '/Users/Documents/Franco/FAMAF/Lensing/profiles/profile_'+sample+'.fits'
         tbhdu.writeto(outfile,overwrite=True)
                 
         tfin = time.time()
