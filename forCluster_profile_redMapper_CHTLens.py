@@ -128,7 +128,7 @@ def partial_profile(RA0,DEC0,Z,field,
                 DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())
                 DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum())
                 WEIGHTsum    = np.append(WEIGHTsum,(peso[mbin]).sum())
-                Mwsum        = np.append(Mwsum,(m[mbin]*peso[mbin]).sum())
+                Mwsum        = np.append(Mwsum,((1+m[mbin])*peso[mbin]).sum())
                 NGAL         = np.append(NGAL,mbin.sum())
                 
                 index = np.arange(mbin.sum())
@@ -292,10 +292,10 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         # COMPUTING PROFILE        
                 
         Mcorr     = Mwsum/WEIGHTsum
-        DSigma_T  = (DSIGMAwsum_T/WEIGHTsum)/(1+Mcorr)
-        DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/(1+Mcorr)
-        eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/(1+Mcorr)
-        eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/(1+Mcorr)
+        DSigma_T  = (DSIGMAwsum_T/WEIGHTsum)/Mcorr
+        DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr
+        eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/Mcorr
+        eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/Mcorr
         
         # AVERAGE LENS PARAMETERS
         
@@ -324,7 +324,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('z_mean',np.round(zmean,4)))
 
                 
-        outfile = '/Users/Documents/Franco/FAMAF/Lensing/profiles/profile_'+sample+'.fits'
+        outfile = '../profiles/profile_'+sample+'.fits'
         tbhdu.writeto(outfile,overwrite=True)
                 
         tfin = time.time()
