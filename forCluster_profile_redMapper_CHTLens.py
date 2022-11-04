@@ -18,7 +18,7 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 #catalogo CFHTLens, separado en las cuatro areas del cielo
-w = fits.open('../CFHTLens.fits')[1].data
+w = fits.open('../cats/CFHTLens.fits')[1].data
 
 #mascaras para los datos, tiramos los que no cumplan los requisitos
 m = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
@@ -190,7 +190,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         
         #reading cats
         
-        cat = fits.open('../redmapper_dr8_public_v6.3_catalog.fits')[1].data
+        cat = fits.open('../cats/redmapper_dr8_public_v6.3_catalog.fits')[1].data
         pcc = cat.P_CEN[:,0]
         
         mw1 = (cat.RA < 39)*(cat.RA > 30.)*(cat.DEC < -3.5)*(cat.DEC > -11.5)
