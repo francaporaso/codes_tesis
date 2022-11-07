@@ -315,7 +315,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 fits.Column(name='NGAL_w', format='D', array=WEIGHTsum)])
         
         h = tbhdu.header
-        h.append(('N_LENSES',np.int(Nlenses)))
+        h.append(('N_LENSES',int(Nlenses)))
         h.append(('z_min',np.round(z_min,4)))
         h.append(('z_max',np.round(z_max,4)))
         h.append(('lmin',np.round(lmin,4)))
