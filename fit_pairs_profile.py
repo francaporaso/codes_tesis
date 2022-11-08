@@ -87,13 +87,13 @@ def log_likelihood(data, R, DS, eDS):
     
     ds1h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='1h')    
     
-    ds_miss   = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off)
+    #ds_miss   = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off)
 
     #ds2h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h')    
 
     sigma2 = eDS**2
     
-    ds = pcc * ds1h + (1 - pcc) * ds_miss #+ ds2h
+    ds = pcc * ds1h # + (1 - pcc) * ds_miss #+ ds2h
     
     return -0.5 * np.sum((DS - ds)**2 / sigma2 + np.log(2.*np.pi*sigma2))
 
