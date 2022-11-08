@@ -301,6 +301,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         
         zmean        = np.average(z,weights=Ntot)
         
+        lmean        = np.average(LAMBDA[mlenses],weights=Ntot)
  
         # WRITING OUTPUT FITS FILE
         
@@ -322,7 +323,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('lmax',np.round(lmax,4)))
         h.append(('pcc_min',np.round(pcc_min,4)))
         h.append(('z_mean',np.round(zmean,4)))
-
+        h.append(('l_mean',np.round(lmean,4)))
                 
         outfile = '../profiles/profile_'+sample+'.fits'
         tbhdu.writeto(outfile,overwrite=True)
