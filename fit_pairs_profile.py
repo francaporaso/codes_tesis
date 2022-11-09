@@ -87,7 +87,7 @@ def log_likelihood(data, R, DS, eDS):
     
     ds1h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='1h')    
     
-    #ds_miss   = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off)
+    #ds_miss   = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=GAMMA)
 
     #ds2h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h')    
 
@@ -140,7 +140,7 @@ print((time.time()-t1)/60.)
 #-------------------
 # saving mcmc out
 
-mcmc_out = sampler.get_chain(flat=True)
+mcmc_out = sampler.get_chain(flat=True).T
 
 table = [fits.Column(name='logM', format='E', array=mcmc_out[0]),
          fits.Column(name='pcc', format='E', array=mcmc_out[1])]
