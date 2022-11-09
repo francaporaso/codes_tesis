@@ -4,18 +4,18 @@ import time
 import numpy as np
 from astropy.io import fits
 from multiprocessing import Pool
-from multiprocessing import Process #no lo esta usando
+from multiprocessing import Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
 from models_profiles import *
 # import corner
-import os #no lo esta usando
+import os
 from colossus.cosmology import cosmology  
 from colossus.halo import concentration
-from colossus.lss import bias #no lo esta usando 
-from colossus.halo import profile_nfw #no lo esta usando
-from colossus.halo import profile_outer #no lo esta usando
+from colossus.lss import bias
+from colossus.halo import profile_nfw
+from colossus.halo import profile_outer
 from colossus.cosmology import cosmology
 
 params = {'flat': True, 'H0': 70.0, 'Om0': 0.3, 'Ob0': 0.044, 'sigma8': 0.8, 'ns': 0.95}
@@ -24,16 +24,14 @@ cosmo = cosmology.setCosmology('MyCosmo')
 
 cmodel = 'diemer19'
 
-
 '''
-# folder = '/home/eli/Documentos/Astronomia/proyectos/PARES-PAU/profiles/'
 folder = '/home/elizabeth/PARES-PAU/profiles/'
 file_name = 'profile_w1w2w3.fits'
 ncores = 32
 nit = 250
 RIN = 0.
 ROUT =5000.
-# '''
+'''
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-folder', action='store', dest='folder', default='../profiles/')
@@ -44,10 +42,8 @@ parser.add_argument('-ROUT', action='store', dest='ROUT', default=5000)
 parser.add_argument('-nit', action='store', dest='nit', default=400)
 args = parser.parse_args()
 
-
 folder    = args.folder
 file_name = args.file_name
-
 	
 nit       = int(args.nit)
 ncores    = args.ncores
@@ -55,12 +51,9 @@ ncores    = int(ncores)
 RIN       = float(args.RIN)
 ROUT      = float(args.ROUT)
 
-
 outfile     = 'fitresults_boost_'+str(int(RIN))+'_'+str(int(ROUT))+'_'+file_name
 
-
-
-print('fitting profiles')
+print('Fitting profiles')
 print(folder)
 print(file_name)
 print('ncores = ',ncores)
@@ -83,17 +76,17 @@ def log_likelihood(data, R, DS, eDS):
     
     logM , pcc = data 
 
-    c200      = concentration.concentration(10**logM, '200c', zmean, model = cmodel)
+    c200       = concentration.concentration(10**logM, '200c', zmean, model = cmodel)
     
-    ds1h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='1h')    
+    ds1h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params) #termino primer halo, por defecto toma '1h'   
     
-    #ds_miss   = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=GAMMA)
+    #ds_miss    = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=Gamma) #termino descentrado
 
-    #ds2h        = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h')    
+    #ds2h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h') #termino segundo halo
 
-    sigma2 = eDS**2
+    sigma2     = eDS**2
     
-    ds = pcc * ds1h # + (1 - pcc) * ds_miss #+ ds2h
+    ds         = pcc * ds1h # + (1 - pcc) * ds_miss #+ ds2h #modelo
     
     return -0.5 * np.sum((DS - ds)**2 / sigma2 + np.log(2.*np.pi*sigma2))
 
@@ -101,7 +94,6 @@ def log_likelihood(data, R, DS, eDS):
 def log_probability(data, R, DS, eDS):
     
     logM , pcc = data 
-
 
     if 11. < logM < 15. and 0. < pcc < 1. :
         return log_likelihood(data, R, DS, eDS)
@@ -111,7 +103,7 @@ def log_probability(data, R, DS, eDS):
 # initializing
 
 pos = np.array([np.random.uniform(13.,15.,20),
-                np.random.uniform(.65,1.,20)]).T
+                np.random.uniform(.65,1.,20)]).T #valores iniciales de las cadenas
 
 nwalkers, ndim = pos.shape
 
@@ -169,4 +161,3 @@ hdul = fits.HDUList([primary_hdu, tbhdu])
 hdul.writeto(folder+outfile,overwrite=True)
 
 print('SAVED FILE')
-
