@@ -72,6 +72,8 @@ Rl = (lmean/100.)**(0.2)
 
 s_off = 0.2 * Rl
 
+
+
 def log_likelihood(data, R, DS, eDS):
     
     logM , pcc = data 
@@ -80,7 +82,7 @@ def log_likelihood(data, R, DS, eDS):
     
     ds1h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params) #termino primer halo, por defecto toma '1h'   
     
-    #ds_miss    = Delta_Sigma_NFW_miss(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=Gamma) #termino descentrado
+    ds_miss    = Delta_Sigma_NFW_miss_parallel(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=Gamma, ncores=ncores) #termino descentrado
 
     #ds2h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h') #termino segundo halo
 
@@ -117,7 +119,7 @@ p  = p[maskr]
 t1 = time.time()
 
 
-pool = Pool(processes=(ncores))    
+pool = Pool(processes=(1))    
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, 
                                 args=(p.Rp,p.DSigma_T,p.error_DSigma_T),
                                 pool = pool)
