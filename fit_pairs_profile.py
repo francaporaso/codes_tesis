@@ -80,15 +80,15 @@ def log_likelihood(data, R, DS, eDS):
 
     c200       = concentration.concentration(10**logM, '200c', zmean, model = cmodel)
     
-    ds1h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params) #termino primer halo, por defecto toma '1h'   
+    ds1h       = Delta_Sigma_NFW_2h_parallel(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,ncores=ncores) #termino primer halo, por defecto toma '1h'   
     
     ds_miss    = Delta_Sigma_NFW_miss_parallel(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,s_off=s_off, P_Roff=Gamma, ncores=ncores) #termino descentrado
 
-    #ds2h       = Delta_Sigma_NFW_2h(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h') #termino segundo halo
+    ds2h       = Delta_Sigma_NFW_2h_parallel(R,zmean,M200 = 10**logM,c200=c200,cosmo_params=params,terms='2h',ncores=ncores) #termino segundo halo
 
     sigma2     = eDS**2
     
-    ds         = pcc * ds1h # + (1 - pcc) * ds_miss #+ ds2h #modelo
+    ds         = pcc * ds1h + (1 - pcc) * ds_miss + ds2h #modelo
     
     return -0.5 * np.sum((DS - ds)**2 / sigma2 + np.log(2.*np.pi*sigma2))
 
