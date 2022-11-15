@@ -18,6 +18,7 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
+source ~/miniconda3/etc/profile.d/conda.sh
 conda activate env_py39
 
 ##srun ./run_fit_zphot.sh
