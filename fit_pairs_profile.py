@@ -117,8 +117,8 @@ t1 = time.time()
 
 #pool = Pool(processes=(ncores))    
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, 
-                                args=(p.Rp,p.DSigma_T,p.error_DSigma_T),
-                                pool = pool)
+                                args=(p.Rp,p.DSigma_T,p.error_DSigma_T))#,
+                                #pool = pool)
 				
 sampler.run_mcmc(pos, nit, progress=True)
 #pool.terminate()
