@@ -24,9 +24,9 @@ cmodel = 'diemer19'
 
 
 '''
-# folder = '/home/eli/Documentos/Astronomia/proyectos/PARES-PAU/profiles/'
-folder = '/home/elizabeth/PARES-PAU/profiles/'
-file_name = 'profile_w1w2w3.fits'
+# folder = '/home/fcaporaso/profiles/'
+folder = '/home/fcaporaso/profiles/'
+file_name = 'profile_1.fits'
 ncores = 32
 nit = 250
 RIN = 0.
@@ -124,7 +124,7 @@ sampler.run_mcmc(pos, nit, progress=True)
     
     
 print('TOTAL TIME FIT')    
-print((time.time()-t1)/60.)
+print((time.time()-t1)/60. , 'min')
 
 #-------------------
 # saving mcmc out
