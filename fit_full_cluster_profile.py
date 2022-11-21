@@ -1,4 +1,5 @@
 import sys
+sys.path.append('/home/fcaporaso/lens_codes_v3.7')
 import time
 import numpy as np
 from astropy.io import fits
@@ -21,7 +22,6 @@ cosmology.addCosmology('MyCosmo', params)
 cosmo = cosmology.setCosmology('MyCosmo')
 
 cmodel = 'diemer19'
-
 
 '''
 # folder = '/home/fcaporaso/profiles/'
@@ -67,6 +67,7 @@ print('ROUT ',ROUT)
 print('nit', nit)
 print('outfile',outfile)
 
+
 profile = fits.open(folder+file_name)
 h       = profile[1].header
 p       = profile[1].data
@@ -75,25 +76,27 @@ lmean   = h['L_MEAN']
 
 Rl = (lmean/100.)**(0.2)
 s_off = 0.2 * Rl
+        
 
-def log_likelihood(data_model, R, DS, eDS):
+def log_likelihood(data, R, DS, eDS):
     
-    logM,pcc = data_model
+    logM,pcc = data
     
     c200 = concentration.concentration(10**logM, '200c', zmean, model = cmodel)
     
-    ds   = DELTA_SIGMA_full_parallel(R,zmean,10**logM,c200,s_off = s_off, pcc = pcc, P_Roff = Gamma, cosmo_params=params,ncores=ncores)
+    ds   = DELTA_SIGMA_full_parallel(R, zmean, 10**logM, c200, s_off=s_off, pcc=pcc, 
+                                     P_Roff = Gamma, cosmo_params=params, ncores=ncores)
     
     sigma2 = eDS**2
     return -0.5 * np.sum((DS - ds)**2 / sigma2 + np.log(2.*np.pi*sigma2))
 
 
-def log_probability(data_model, R, DS, eDS):
+def log_probability(data, R, DS, eDS):
     
-    logM,pcc = data_model
+    logM,pcc = data
     
     if 13. < logM < 15. and 0.5 < pcc < 1.:
-        return log_likelihood(data_model, R, DS, eDS)
+        return log_likelihood(data, R, DS, eDS)
         
     return -np.inf
 
@@ -113,7 +116,7 @@ p  = p[maskr]
 
 t1 = time.time()
 
-
+### como reconoce los datos la funcion log_probability?
 # pool = Pool(processes=(ncores))    
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, 
                                 args=(p.Rp,p.DSigma_T,p.error_DSigma_T))
