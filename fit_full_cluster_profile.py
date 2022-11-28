@@ -46,7 +46,7 @@ args = parser.parse_args()
 
 folder       = args.folder
 file_name    = args.file_name
-outfile_name = args.out
+out = args.out
 
 	
 nit       = int(args.nit)
