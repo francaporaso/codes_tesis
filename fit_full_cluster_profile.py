@@ -36,6 +36,7 @@ ROUT =5000.
 parser = argparse.ArgumentParser()
 parser.add_argument('-folder', action='store', dest='folder', default='../profiles/')
 parser.add_argument('-file', action='store', dest='file_name', default='profile.fits')
+parser.add_argument('-outfile', action='store', dest='out', default='out.fits')
 parser.add_argument('-ncores', action='store', dest='ncores', default=2)
 parser.add_argument('-RIN', action='store', dest='RIN', default=0)
 parser.add_argument('-ROUT', action='store', dest='ROUT', default=5000)
@@ -43,8 +44,9 @@ parser.add_argument('-nit', action='store', dest='nit', default=400)
 args = parser.parse_args()
 
 
-folder    = args.folder
-file_name = args.file_name
+folder       = args.folder
+file_name    = args.file_name
+outfile_name = args.out
 
 	
 nit       = int(args.nit)
@@ -54,7 +56,7 @@ RIN       = float(args.RIN)
 ROUT      = float(args.ROUT)
 
 
-outfile     = 'fitresults_boost_'+str(int(RIN))+'_'+str(int(ROUT))+'_'+file_name
+outfile     = 'fitresults_boost_'+str(int(RIN))+'_'+str(int(ROUT))+'_'+file_name+out
 
 
 
