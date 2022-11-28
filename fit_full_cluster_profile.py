@@ -102,8 +102,13 @@ def log_probability(data, R, DS, eDS):
 
 # initializing
 
+#distribucion uniforme en masa y pcc
+#pos = np.array([np.random.uniform(13.5,14.5,15),
+#                np.random.uniform(0.7,0.9,15)]).T
+
+#distribucion unifomre en masa y gaussiana en pcc
 pos = np.array([np.random.uniform(13.5,14.5,15),
-                np.random.uniform(0.7,0.9,15)]).T
+                np.random.normal(0.8,0.1,15)]).T
 
 nwalkers, ndim = pos.shape
 
