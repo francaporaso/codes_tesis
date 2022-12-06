@@ -1,0 +1,398 @@
+import sys
+import time
+import numpy as np
+from astropy.io import fits
+from astropy.cosmology import LambdaCDM
+from maria_func import *
+from astropy.stats import bootstrap
+from astropy.utils import NumpyRNGContext
+from multiprocessing import Pool
+from multiprocessing import Process
+import argparse
+from astropy.constants import G,c,M_sun,pc
+
+#parameters
+cvel = c.value;   # Speed of light (m.s-1)
+G    = G.value;   # Gravitational constant (m3.kg-1.s-2)
+pc   = pc.value # 1 pc (m)
+Msun = M_sun.value # Solar mass (kg)
+
+#catalogo DES Y1 metacalibration
+w = fits.open('../cats/DES/mcal-y1a1-combined-riz-unblind-v4-matched.fits')[1].data
+
+#mascaras para los datos, tiramos los que no cumplan los requisitos
+m = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
+
+#mascara para las distintas aeras
+ma1 = (w.alpha_j2000 < 39)*(w.alpha_j2000 > 30.)*(w.delta_j2000 < -3.5)*(w.delta_j2000 > -11.5) #RA 30 to 39 deg, DEC -3 to -12 de
+ma3 = (w.alpha_j2000 < 221)*(w.alpha_j2000 > 208)*(w.delta_j2000 < 58)*(w.delta_j2000 > 51) #RA 221 to 208 deg, DEC 51 to 58 deg
+ma2 = (w.alpha_j2000 < 137)*(w.alpha_j2000 > 132)*(w.delta_j2000 < -0.9)*(w.delta_j2000 > -5.7) #RA 137 to 131 deg, DEC -0.5 to -7 deg
+ma4 = (w.alpha_j2000 < 336)*(w.alpha_j2000 > 329)*(w.delta_j2000 < 4.7)*(w.delta_j2000 > -1.1) #RA 336 to 329.5 deg, DEC -1.5 to 5 deg
+
+#mask total
+m1 = m * ma1
+m2 = m * ma2
+m3 = m * ma3
+m4 = m * ma4
+
+#datos enmascarados (xd)
+w1_sources = w[m1]
+w2_sources = w[m2]
+w3_sources = w[m3]
+w4_sources = w[m4]
+
+
+def partial_profile(RA0,DEC0,Z,field,
+                    RIN,ROUT,ndots,h,nboot=100):
+
+        if field == 1:
+            S = w1_sources
+        if field == 2:
+            S = w2_sources
+        if field == 3:
+            S = w3_sources
+        if field == 4:
+            S = w4_sources
+
+        cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
+        ndots = int(ndots)
+        
+        dl  = cosmo.angular_diameter_distance(Z).value        #dist angular diametral de la lente -> depende de zl
+        KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0   #kpc que subtiende un dist ang diam
+        
+        delta = ROUT/(3600*KPCSCALE)
+
+        Dl = dl*1.e6*pc
+
+        mask_region = (S.alpha_j2000 < (RA0+delta))&(S.alpha_j2000 > (RA0-delta))&(S.delta_j2000 > (DEC0-delta))&(S.delta_j2000 < (DEC0+delta))
+               
+        mask = mask_region*(S.z_b > (Z + 0.1))*(S.odds >= 0.5)*(S.z_b > 0.2) #z_b es redshift de metacal, Z es el de la lente redmapper
+
+        catdata = S[mask]
+        
+        #Metacalibration (ec 11 paper maria)
+        ds_metacal  = cosmo.angular_diameter_distance(catdata.z_b).value              #dist ang diam de la fuente
+        dls_metacal = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_b).value      #dist ang diam entre fuente y lente
+                
+        BETA_array_metacal = dls_metacal / ds_metacal
+        
+        sigma_c_metacal = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_metacal))*(pc**2/Msun)
+
+        
+        #MOF_BPZ (ec 10 paper maria)
+        ds_mof  = cosmo.angular_diameter_distance(catdata.z_b).value              #dist ang diam de la fuente
+        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_b).value      #dist ang diam entre fuente y lente
+                
+        BETA_array_mof = dls_mof / ds_mof
+        
+        sigma_c_mof = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_mof))*(pc**2/Msun)
+
+
+
+        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.alpha_j2000),
+                                        np.deg2rad(catdata.delta_j2000),
+                                        np.deg2rad(RA0),
+                                        np.deg2rad(DEC0))    #sale de maria_func
+               
+        #Correct polar angle for e1, e2
+        theta = theta+np.pi/2.
+        
+        e1     = catdata.e1
+        e2     = catdata.e2
+        
+        e1_1p     = catdata.e1_1p   #elipticidad mas un cacho en la dir e_1
+        e1_1m     = catdata.e1_1m   #elipticidad menos un cacho en la dir e_1
+        e1_2p     = catdata.e1_2p   #elipticidad mas un cacho en la dir e_2
+        e1_2m     = catdata.e1_2m   #elipticidad menos un cacho en la dir e_2
+
+        e2_1p     = catdata.e2_1p   #elipticidad mas un cacho en la dir e_1
+        e2_1m     = catdata.e2_1m   #elipticidad menos un cacho en la dir e_1
+        e2_2p     = catdata.e2_2p   #elipticidad mas un cacho en la dir e_2
+        e2_2m     = catdata.e2_2m   #elipticidad menos un cacho en la dir e_2
+
+        Dg_j = 2 * 0.01
+    
+        #matriz ec (4) de mcdonalds
+        Rg_11 = (e1_1p - e1_1m) / Dg_j
+        Rg_12 = (e1_1p - e1_2m) / Dg_j
+        Rg_21 = (e1_2p - e1_1m) / Dg_j
+        Rg_22 = (e1_2p - e1_2m) / Dg_j
+
+        Rg_T = Rg_11 * (np.cos(2*theta))**2 + Rg_22 * (np.sin(2*theta))**2 +(Rg_12+Rg_21)*np.sin(2*theta)*np.cos(2*theta)
+
+        #get tangential ellipticities 
+        et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))
+        #get cross ellipticities
+        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
+        
+        del(e1)
+        del(e2)
+        
+        r = np.rad2deg(rads)*3600*KPCSCALE
+        del(rads)
+
+        peso = 1./(sigma_c_metacal**2) 
+        m    = catdata.m
+        
+        Ntot = len(catdata)
+        # del(catdata)    
+        
+        bines = np.logspace(np.log10(RIN),np.log10(ROUT),num=ndots+1)
+        dig = np.digitize(r,bines)
+        
+        DSIGMAwsum_T = []
+        DSIGMAwsum_X = []
+        WEIGHTsum1   = []
+        WEIGHTsum2   = []
+        Mwsum        = []
+        BOOTwsum_T   = np.zeros((nboot,ndots))
+        BOOTwsum_X   = np.zeros((nboot,ndots))
+        BOOTwsum     = np.zeros((nboot,ndots))
+        NGAL         = []
+        
+        
+        
+        for nbin in range(ndots):
+                mbin = dig == nbin+1              
+                
+                weightsum1 = et[mbin]*peso[mbin] * Rg_T
+
+
+                DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())
+                DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum())
+                WEIGHTsum    = np.append(WEIGHTsum,(weightsum1))
+                Mwsum        = np.append(Mwsum,((1+m[mbin])*peso[mbin]).sum())
+                NGAL         = np.append(NGAL,mbin.sum())
+                
+                index = np.arange(mbin.sum())
+                if mbin.sum() == 0:
+                        continue
+                else:
+                        with NumpyRNGContext(1):
+                                bootresult = bootstrap(index, nboot)
+                        INDEX=bootresult.astype(int)
+                        BOOTwsum_T[:,nbin] = np.sum(np.array(et[mbin]*peso[mbin])[INDEX],axis=1)
+                        BOOTwsum_X[:,nbin] = np.sum(np.array(ex[mbin]*peso[mbin])[INDEX],axis=1)
+                        BOOTwsum[:,nbin]   = np.sum(np.array(peso[mbin])[INDEX],axis=1)
+        
+        output = {'DSIGMAwsum_T':DSIGMAwsum_T,'DSIGMAwsum_X':DSIGMAwsum_X,
+                   'WEIGHTsum':WEIGHTsum, 'Mwsum':Mwsum, 
+                   'BOOTwsum_T':BOOTwsum_T, 'BOOTwsum_X':BOOTwsum_X, 'BOOTwsum':BOOTwsum, 
+                   'Ntot':Ntot,'NGAL':NGAL}
+        
+        return output
+
+def partial_profile_unpack(minput):
+	return partial_profile(*minput)
+        
+
+def main(sample='pru',z_min = 0.1, z_max = 0.4,
+                lmin = 20., lmax = 150., pcc_min = 0.,
+                RIN = 300., ROUT =10000.,
+                ndots= 20,ncores=10,hcosmo=1.):
+
+        '''
+        
+        INPUT
+        ---------------------------------------------------------
+        sample         (str) sample name
+        z_min          (float) lower limit for z - >=
+        z_max          (float) higher limit for z - <
+        RIN            (float) Inner bin radius of profile
+        ROUT           (float) Outer bin radius of profile
+        ndots          (int) Number of bins of the profile
+        ncores         (int) to run in parallel, number of cores
+        hcosmo         (float) H0 = 100.*h
+        '''
+
+        cosmo = LambdaCDM(H0=100*hcosmo, Om0=0.3, Ode0=0.7)
+        tini = time.time()
+        
+        print('Selecting clusters with:')
+        print(z_min,' <= z < ',z_max)
+        print(lmin,' <= lambda < ',lmax)
+        print('pcc > ',pcc_min)
+        print('Background galaxies with:')
+        print('Profile has ',ndots,'bins')
+        print('from ',RIN,'kpc to ',ROUT,'kpc')
+        print('h = ',hcosmo)
+              
+        # Defining radial bins
+        bines = np.logspace(np.log10(RIN),np.log10(ROUT),num=ndots+1)
+        R = (bines[:-1] + np.diff(bines)*0.5)*1.e-3
+        
+        #reading cats
+        
+        cat = fits.open('../cats/redmapper_dr8_public_v6.3_catalog.fits')[1].data
+        pcc = cat.P_CEN[:,0]
+        
+        mw1 = (cat.RA < 39)*(cat.RA > 30.)*(cat.DEC < -3.5)*(cat.DEC > -11.5)
+        mw3 = (cat.RA < 221)*(cat.RA > 208)*(cat.DEC < 58)*(cat.DEC > 51)
+        mw2 = (cat.RA < 137)*(cat.RA > 132)*(cat.DEC < -0.9)*(cat.DEC > -5.7)
+        mw4 = (cat.RA < 336)*(cat.RA > 329)*(cat.DEC < 4.7)*(cat.DEC > -1.1)
+        
+        RA  = np.concatenate((cat.RA[mw1],cat.RA[mw2],cat.RA[mw3],cat.RA[mw4]))
+        DEC = np.concatenate((cat.DEC[mw1],cat.DEC[mw2],cat.DEC[mw3],cat.DEC[mw4]))
+        z   = np.concatenate((cat.Z_LAMBDA[mw1],cat.Z_LAMBDA[mw2],cat.Z_LAMBDA[mw3],cat.Z_LAMBDA[mw4]))
+        LAMBDA = np.concatenate((cat.LAMBDA[mw1],cat.LAMBDA[mw2],cat.LAMBDA[mw3],cat.LAMBDA[mw4]))
+        field = np.concatenate((np.ones(mw1.sum())*1.,np.ones(mw2.sum())*2.,np.ones(mw3.sum())*3.,np.ones(mw4.sum())*4.))
+        pcc  = np.concatenate((pcc[mw1],pcc[mw2],pcc[mw3],pcc[mw4]))
+         
+        mz  = (z >= z_min)*(z < z_max)
+        ml  = (LAMBDA >= lmin)*(LAMBDA < lmax)
+        mpcc = (pcc > pcc_min)
+
+        mlenses = mz*ml*mpcc
+        
+        L = np.array([RA[mlenses],DEC[mlenses],z[mlenses],field[mlenses]])
+        z = z[mlenses]
+        Nlenses = mlenses.sum()
+
+        if Nlenses < ncores:
+                ncores = Nlenses
+        
+        print('Nlenses',Nlenses)
+        print('CORRIENDO EN ',ncores,' CORES')
+
+        
+        # SPLIT LENSING CAT
+        
+        lbins = int(round(Nlenses/float(ncores), 0))
+        slices = ((np.arange(lbins)+1)*ncores).astype(int)
+        slices = slices[(slices < Nlenses)]
+        Lsplit = np.split(L.T,slices)
+                
+        # WHERE THE SUMS ARE GOING TO BE SAVED
+        
+        DSIGMAwsum_T = np.zeros(ndots) 
+        DSIGMAwsum_X = np.zeros(ndots)
+        WEIGHTsum    = np.zeros(ndots)
+        NGALsum      = np.zeros(ndots)
+        Mwsum        = np.zeros(ndots)
+        BOOTwsum_T   = np.zeros((100,ndots))
+        BOOTwsum_X   = np.zeros((100,ndots))
+        BOOTwsum     = np.zeros((100,ndots))
+        Ntot         = []
+        tslice       = np.array([])
+        
+        for l in range(len(Lsplit)):
+                
+                print('RUN ',l+1,' OF ',len(Lsplit))
+                
+                t1 = time.time()
+                
+                num = len(Lsplit[l])
+                
+                rin  = RIN*np.ones(num)
+                rout = ROUT*np.ones(num)
+                nd   = ndots*np.ones(num)
+                h_a  = hcosmo*np.ones(num)
+                
+                if num == 1:
+                        entrada = [Lsplit[l].T[0][0], Lsplit[l].T[1][0],
+                                   Lsplit[l].T[2][0],Lsplit[l].T[-1][0],
+                                   RIN,ROUT,ndots,hcosmo]
+                        
+                        salida = [partial_profile_unpack(entrada)]
+                else:          
+                        entrada = np.array([Lsplit[l].T[0], Lsplit[l].T[1],
+                                   Lsplit[l].T[2],Lsplit[l].T[-1],
+                                        rin,rout,nd,h_a]).T
+                        
+                        pool = Pool(processes=(num))
+                        salida = np.array(pool.map(partial_profile_unpack, entrada))
+                        pool.terminate()
+                                
+                for profilesums in salida:
+                        DSIGMAwsum_T += profilesums['DSIGMAwsum_T']
+                        DSIGMAwsum_X += profilesums['DSIGMAwsum_X']
+                        WEIGHTsum    += profilesums['WEIGHTsum']
+                        NGALsum      += profilesums['NGAL']
+                        Mwsum        += profilesums['Mwsum']
+                        BOOTwsum_T   += profilesums['BOOTwsum_T']
+                        BOOTwsum_X   += profilesums['BOOTwsum_X']
+                        BOOTwsum     += profilesums['BOOTwsum']
+                        Ntot         = np.append(Ntot,profilesums['Ntot'])
+                
+                t2 = time.time()
+                ts = (t2-t1)/60.
+                tslice = np.append(tslice,ts)
+                print('TIME SLICE')
+                print(ts)
+                print('Estimated ramaining time')
+                print((np.mean(tslice)*(len(Lsplit)-(l+1))))
+        
+        # COMPUTING PROFILE        
+                
+        Mcorr     = Mwsum/WEIGHTsum
+        DSigma_T  = (DSIGMAwsum_T/WEIGHTsum)/Mcorr
+        DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr
+        eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/Mcorr
+        eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/Mcorr
+        
+        # AVERAGE LENS PARAMETERS
+        
+        zmean        = np.average(z,weights=Ntot)
+        
+        lmean        = np.average(LAMBDA[mlenses],weights=Ntot)
+ 
+        # WRITING OUTPUT FITS FILE
+        
+        
+        tbhdu = fits.BinTableHDU.from_columns(
+                [fits.Column(name='Rp', format='D', array=R),
+                fits.Column(name='DSigma_T', format='D', array=DSigma_T),
+                fits.Column(name='error_DSigma_T', format='D', array=eDSigma_T),
+                fits.Column(name='DSigma_X', format='D', array=DSigma_X),
+                fits.Column(name='error_DSigma_X', format='D', array=eDSigma_X),
+                fits.Column(name='NGAL', format='D', array=NGALsum),
+                fits.Column(name='NGAL_w', format='D', array=WEIGHTsum)])
+        
+        h = tbhdu.header
+        h.append(('N_LENSES',int(Nlenses)))
+        h.append(('z_min',np.round(z_min,4)))
+        h.append(('z_max',np.round(z_max,4)))
+        h.append(('lmin',np.round(lmin,4)))
+        h.append(('lmax',np.round(lmax,4)))
+        h.append(('pcc_min',np.round(pcc_min,4)))
+        h.append(('z_mean',np.round(zmean,4)))
+        h.append(('l_mean',np.round(lmean,4)))
+                
+        outfile = '../profiles/profile_'+sample+'.fits'
+        tbhdu.writeto(outfile,overwrite=True)
+                
+        tfin = time.time()
+        print('File saved... ',outfile)
+        print('TOTAL TIME ',(tfin-tini)/60.)
+        
+
+
+if __name__ == '__main__':
+        
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-sample', action='store', dest='sample',default='pru')
+        parser.add_argument('-z_min', action='store', dest='z_min', default=0.1)
+        parser.add_argument('-z_max', action='store', dest='z_max', default=0.4)
+        parser.add_argument('-lmin', action='store', dest='lmin', default=20.)
+        parser.add_argument('-lmax', action='store', dest='lmax', default=150.)
+        parser.add_argument('-pcc_min', action='store', dest='pcc_min', default=0.)
+        parser.add_argument('-RIN', action='store', dest='RIN', default=300.)
+        parser.add_argument('-ROUT', action='store', dest='ROUT', default=10000.)
+        parser.add_argument('-nbins', action='store', dest='nbins', default=20)
+        parser.add_argument('-ncores', action='store', dest='ncores', default=10)
+        parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
+        args = parser.parse_args()
+        
+        sample     = args.sample
+        z_min      = float(args.z_min) 
+        z_max      = float(args.z_max) 
+        lmin       = float(args.lmin) 
+        lmax       = float(args.lmax) 
+        pcc_min    = float(args.pcc_min) 
+        RIN        = float(args.RIN)
+        ROUT       = float(args.ROUT)
+        nbins      = int(args.nbins)
+        ncores     = int(args.ncores)
+        h          = float(args.h_cosmo)
+        
+        main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,h)
