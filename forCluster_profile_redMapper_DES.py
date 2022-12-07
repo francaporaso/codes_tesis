@@ -1,4 +1,5 @@
 import sys
+#sys.path.append('../lens_codes')
 import time
 import numpy as np
 from astropy.io import fits
@@ -17,82 +18,99 @@ G    = G.value;   # Gravitational constant (m3.kg-1.s-2)
 pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
-#catalogo DES Y1 metacalibration
+'''
+uso los catalogos : redmapper_y1a1_public_v6.4_catalog.fits para clusters
+                  : mcal-y1a1-combined-riz-unblind-v4-matched para formas/fuentes
+                  : mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits para redshifts de pesos (ec 15 McClintock 2017 et al.)
+                  : y1a1-gold-mof-badregion_BPZ.fits para redshifts de la normalizacion (ec 14 McClintock 2017 et al.)
+'''
+
+#catalogo DES Y1 metacalibration de fuentes
 w = fits.open('../cats/DES/mcal-y1a1-combined-riz-unblind-v4-matched.fits')[1].data
-
 #mascaras para los datos, tiramos los que no cumplan los requisitos
-m = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
-
-#mascara para las distintas aeras
-ma1 = (w.alpha_j2000 < 39)*(w.alpha_j2000 > 30.)*(w.delta_j2000 < -3.5)*(w.delta_j2000 > -11.5) #RA 30 to 39 deg, DEC -3 to -12 de
-ma3 = (w.alpha_j2000 < 221)*(w.alpha_j2000 > 208)*(w.delta_j2000 < 58)*(w.delta_j2000 > 51) #RA 221 to 208 deg, DEC 51 to 58 deg
-ma2 = (w.alpha_j2000 < 137)*(w.alpha_j2000 > 132)*(w.delta_j2000 < -0.9)*(w.delta_j2000 > -5.7) #RA 137 to 131 deg, DEC -0.5 to -7 deg
-ma4 = (w.alpha_j2000 < 336)*(w.alpha_j2000 > 329)*(w.delta_j2000 < 4.7)*(w.delta_j2000 > -1.1) #RA 336 to 329.5 deg, DEC -1.5 to 5 deg
-
+m_sources = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
+#mascara para las distintas aeras: Stripe82 y South Pole Telescope
+mas82 = (w.dec < 2.)*(w.dec > -2.)*(w.ra < 360.)*(w.ra > 315.)
+maspt = (w.dec < -35.)*(w.dec > -61.)*((w.ra > 0.)*(w.ra < 100.)+(w.ra > 301.)*(w.ra < 360.))
 #mask total
-m1 = m * ma1
-m2 = m * ma2
-m3 = m * ma3
-m4 = m * ma4
-
-#datos enmascarados (xd)
+m1 = m_sources * mas82
+m1 = m_sources * maspt
+#datos
 w1_sources = w[m1]
-w2_sources = w[m2]
-w3_sources = w[m3]
-w4_sources = w[m4]
+w2_sources = w[m1]
 
+#catalogo DES Y1 metacal de redshifts
+x = fits.open('../cats/DES/mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits')[1].data
+#mascaras para los datos, tiramos los que no cumplan los requisitos
+m_mcal = (x.odds >= 0.5)*(x.z_b > 0.2)*(x.z_b < 1.2)*(x.weight > 0)*(x.fitclass == 0)*(x.mask <= 1)
+#mask total
+m1_mcal = m_mcal * mas82
+m2_mcal = m_mcal * maspt
+#datos
+x1_redshift = x[m1_mcal]
+x2_redshift = x[m2_mcal]
+
+#catalogo MOF redshifts
+y = fits.open('../cats/DES/y1a1-gold-mof-badregion_BPZ.fits')[1].data
+#mascaras para los bad data
+m_mof = (y.odds >= 0.5)*(y.z_b > 0.2)*(y.z_b < 1.2)*(y.weight > 0)*(y.fitclass == 0)*(y.mask <= 1)
+#mask total
+m1_mof = m_mof*mas82
+m2_mof = m_mof*maspt
+#datos
+y1_redshift = y[m1_mof]
+y2_redshift = y[m2_mof]
 
 def partial_profile(RA0,DEC0,Z,field,
                     RIN,ROUT,ndots,h,nboot=100):
 
         if field == 1:
-            S = w1_sources
+            S = w1_sources   #fuentes
+            T = x1_redshift  #metacalibration redshift
+            U = y1_redshift  #MOF redshift
         if field == 2:
             S = w2_sources
-        if field == 3:
-            S = w3_sources
-        if field == 4:
-            S = w4_sources
+            T = x2_redshift
+            U = y2_redshift
 
         cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
         ndots = int(ndots)
         
-        dl  = cosmo.angular_diameter_distance(Z).value        #dist angular diametral de la lente -> depende de zl
+        dl  = cosmo.angular_diameter_distance(Z).value        #dist angular diametral de la lente-> depende de Z
         KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0   #kpc que subtiende un dist ang diam
         
         delta = ROUT/(3600*KPCSCALE)
 
         Dl = dl*1.e6*pc
 
-        mask_region = (S.alpha_j2000 < (RA0+delta))&(S.alpha_j2000 > (RA0-delta))&(S.delta_j2000 > (DEC0-delta))&(S.delta_j2000 < (DEC0+delta))
+        mask_region = (S.ra < (RA0+delta))&(S.ra > (RA0-delta))&(S.dec > (DEC0-delta))&(S.dec < (DEC0+delta))
                
-        mask = mask_region*(S.z_b > (Z + 0.1))*(S.odds >= 0.5)*(S.z_b > 0.2) #z_b es redshift de metacal, Z es el de la lente redmapper
+        mask = mask_region*(T.mean_z > (Z + 0.1))*(S.odds >= 0.5)*(T.mean_z > 0.2) #z_b es redshift de metacal, Z es el de la lente redmapper
 
         catdata = S[mask]
         
         #Metacalibration (ec 11 paper maria)
-        ds_metacal  = cosmo.angular_diameter_distance(catdata.z_b).value              #dist ang diam de la fuente
-        dls_metacal = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_b).value      #dist ang diam entre fuente y lente
+        ds_mcal  = cosmo.angular_diameter_distance(T.mean_z).value              #dist ang diam de la fuente
+        dls_mcal = cosmo.angular_diameter_distance_z1z2(Z, T.mean_z).value      #dist ang diam entre fuente y lente
                 
-        BETA_array_metacal = dls_metacal / ds_metacal
+        BETA_array_mcal = dls_mcal / ds_mcal
         
-        sigma_c_metacal = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_metacal))*(pc**2/Msun)
+        sigma_c_mcal = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_mcal))*(pc**2/Msun)
 
         
         #MOF_BPZ (ec 10 paper maria)
-        ds_mof  = cosmo.angular_diameter_distance(catdata.z_b).value              #dist ang diam de la fuente
-        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_b).value      #dist ang diam entre fuente y lente
+        ds_mof  = cosmo.angular_diameter_distance(U.mean_z).value              #dist ang diam de la fuente
+        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, U.mean_z).value      #dist ang diam entre fuente y lente
                 
         BETA_array_mof = dls_mof / ds_mof
         
         sigma_c_mof = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_mof))*(pc**2/Msun)
 
 
-
-        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.alpha_j2000),
-                                        np.deg2rad(catdata.delta_j2000),
-                                        np.deg2rad(RA0),
-                                        np.deg2rad(DEC0))    #sale de maria_func
+        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra),
+                                         np.deg2rad(catdata.dec),
+                                         np.deg2rad(RA0),
+                                         np.deg2rad(DEC0))    #sale de maria_func
                
         #Correct polar angle for e1, e2
         theta = theta+np.pi/2.
@@ -100,23 +118,23 @@ def partial_profile(RA0,DEC0,Z,field,
         e1     = catdata.e1
         e2     = catdata.e2
         
-        e1_1p     = catdata.e1_1p   #elipticidad mas un cacho en la dir e_1
-        e1_1m     = catdata.e1_1m   #elipticidad menos un cacho en la dir e_1
-        e1_2p     = catdata.e1_2p   #elipticidad mas un cacho en la dir e_2
-        e1_2m     = catdata.e1_2m   #elipticidad menos un cacho en la dir e_2
+        e1_1p  = catdata.e1_1p   #elipticidad mas un cacho en la dir e_1
+        e1_1m  = catdata.e1_1m   #elipticidad menos un cacho en la dir e_1
+        e1_2p  = catdata.e1_2p   #elipticidad mas un cacho en la dir e_2
+        e1_2m  = catdata.e1_2m   #elipticidad menos un cacho en la dir e_2
 
-        e2_1p     = catdata.e2_1p   #elipticidad mas un cacho en la dir e_1
-        e2_1m     = catdata.e2_1m   #elipticidad menos un cacho en la dir e_1
-        e2_2p     = catdata.e2_2p   #elipticidad mas un cacho en la dir e_2
-        e2_2m     = catdata.e2_2m   #elipticidad menos un cacho en la dir e_2
+        e2_1p  = catdata.e2_1p   #elipticidad mas un cacho en la dir e_1
+        e2_1m  = catdata.e2_1m   #elipticidad menos un cacho en la dir e_1
+        e2_2p  = catdata.e2_2p   #elipticidad mas un cacho en la dir e_2
+        e2_2m  = catdata.e2_2m   #elipticidad menos un cacho en la dir e_2
 
         Dg_j = 2 * 0.01
     
-        #matriz ec (4) de mcdonalds
+        #matriz ec (4) de McClintock 2017 et al. 2017
         Rg_11 = (e1_1p - e1_1m) / Dg_j
-        Rg_12 = (e1_1p - e1_2m) / Dg_j
-        Rg_21 = (e1_2p - e1_1m) / Dg_j
-        Rg_22 = (e1_2p - e1_2m) / Dg_j
+        Rg_12 = (e1_2p - e1_2m) / Dg_j
+        Rg_21 = (e2_1p - e2_1m) / Dg_j
+        Rg_22 = (e2_2p - e2_2m) / Dg_j
 
         Rg_T = Rg_11 * (np.cos(2*theta))**2 + Rg_22 * (np.sin(2*theta))**2 +(Rg_12+Rg_21)*np.sin(2*theta)*np.cos(2*theta)
 
@@ -125,13 +143,13 @@ def partial_profile(RA0,DEC0,Z,field,
         #get cross ellipticities
         ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
         
-        del(e1)
-        del(e2)
-        
+        #del(e1)
+        #del(e2)
+
         r = np.rad2deg(rads)*3600*KPCSCALE
         del(rads)
 
-        peso = 1./(sigma_c_metacal**2) 
+        peso = 1./(sigma_c_mcal) #ec 15 McClintock 2017 
         m    = catdata.m
         
         Ntot = len(catdata)
@@ -144,24 +162,28 @@ def partial_profile(RA0,DEC0,Z,field,
         DSIGMAwsum_X = []
         WEIGHTsum1   = []
         WEIGHTsum2   = []
+        SUMe1_1p     = []
+        SUMe1_1m     = []
+        SUMe2_2p     = []
+        SUMe2_2m     = []
         Mwsum        = []
         BOOTwsum_T   = np.zeros((nboot,ndots))
         BOOTwsum_X   = np.zeros((nboot,ndots))
         BOOTwsum     = np.zeros((nboot,ndots))
         NGAL         = []
-        
-        
+                
         
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
                 
-                weightsum1 = et[mbin]*peso[mbin] * Rg_T
-
-
-                DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())
-                DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum())
-                WEIGHTsum    = np.append(WEIGHTsum,(weightsum1))
-                Mwsum        = np.append(Mwsum,((1+m[mbin])*peso[mbin]).sum())
+                DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())     #numerador ec 12 McClintock
+                DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
+                WEIGHTsum    = np.append(WEIGHTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
+                SUMe1_1p     = np.append(SUMe1_1p,e1_1p[mbin].sum())
+                SUMe1_1m     = np.append(SUMe1_1m,e1_1m[mbin].sum())
+                SUMe2_2p     = np.append(SUMe2_2p,e2_2p[mbin].sum())
+                SUMe2_2m     = np.append(SUMe2_2m,e2_2m[mbin].sum())
+                Mwsum        = np.append(Mwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
                 NGAL         = np.append(NGAL,mbin.sum())
                 
                 index = np.arange(mbin.sum())
@@ -175,10 +197,10 @@ def partial_profile(RA0,DEC0,Z,field,
                         BOOTwsum_X[:,nbin] = np.sum(np.array(ex[mbin]*peso[mbin])[INDEX],axis=1)
                         BOOTwsum[:,nbin]   = np.sum(np.array(peso[mbin])[INDEX],axis=1)
         
-        output = {'DSIGMAwsum_T':DSIGMAwsum_T,'DSIGMAwsum_X':DSIGMAwsum_X,
-                   'WEIGHTsum':WEIGHTsum, 'Mwsum':Mwsum, 
-                   'BOOTwsum_T':BOOTwsum_T, 'BOOTwsum_X':BOOTwsum_X, 'BOOTwsum':BOOTwsum, 
-                   'Ntot':Ntot,'NGAL':NGAL}
+        output = {'DSIGMAwsum_T':DSIGMAwsum_T,'DSIGMAwsum_X':DSIGMAwsum_X, 'WEIGHTsum':WEIGHTsum, 
+                  'SUMe1_1p':SUMe1_1p, 'SUMe1_1m':SUMe1_1m, 'SUMe2_2p':SUMe2_2p, 'SUMe2_2m':SUMe2_2m, 
+                  'Mwsum':Mwsum, 'BOOTwsum_T':BOOTwsum_T, 'BOOTwsum_X':BOOTwsum_X, 'BOOTwsum':BOOTwsum, 
+                  'Ntot':Ntot,'NGAL':NGAL}
         
         return output
 
@@ -222,21 +244,19 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         R = (bines[:-1] + np.diff(bines)*0.5)*1.e-3
         
         #reading cats
-        
-        cat = fits.open('../cats/redmapper_dr8_public_v6.3_catalog.fits')[1].data
+        #redmapper
+        cat = fits.open('../cats/DES/redmapper_y1a1_public_v6.4_catalog.fits')[1].data
         pcc = cat.P_CEN[:,0]
         
-        mw1 = (cat.RA < 39)*(cat.RA > 30.)*(cat.DEC < -3.5)*(cat.DEC > -11.5)
-        mw3 = (cat.RA < 221)*(cat.RA > 208)*(cat.DEC < 58)*(cat.DEC > 51)
-        mw2 = (cat.RA < 137)*(cat.RA > 132)*(cat.DEC < -0.9)*(cat.DEC > -5.7)
-        mw4 = (cat.RA < 336)*(cat.RA > 329)*(cat.DEC < 4.7)*(cat.DEC > -1.1)
+        mws82 = (cat.DEC < 2.)*(cat.DEC > -2.)*(cat.RA < 360.)*(cat.RA > 315.)
+        mwspt = (cat.DEC < -35.)*(cat.DEC > -61.)*((cat.RA > 0.)*(cat.RA < 100.)+(cat.RA > 301.)*(cat.RA < 360.))
         
-        RA  = np.concatenate((cat.RA[mw1],cat.RA[mw2],cat.RA[mw3],cat.RA[mw4]))
-        DEC = np.concatenate((cat.DEC[mw1],cat.DEC[mw2],cat.DEC[mw3],cat.DEC[mw4]))
-        z   = np.concatenate((cat.Z_LAMBDA[mw1],cat.Z_LAMBDA[mw2],cat.Z_LAMBDA[mw3],cat.Z_LAMBDA[mw4]))
-        LAMBDA = np.concatenate((cat.LAMBDA[mw1],cat.LAMBDA[mw2],cat.LAMBDA[mw3],cat.LAMBDA[mw4]))
-        field = np.concatenate((np.ones(mw1.sum())*1.,np.ones(mw2.sum())*2.,np.ones(mw3.sum())*3.,np.ones(mw4.sum())*4.))
-        pcc  = np.concatenate((pcc[mw1],pcc[mw2],pcc[mw3],pcc[mw4]))
+        RA  = np.concatenate((cat.RA[mws82],cat.RA[mwspt]))
+        DEC = np.concatenate((cat.DEC[mws82],cat.DEC[mwspt]))
+        z   = np.concatenate((cat.Z_LAMBDA[mws82],cat.Z_LAMBDA[mwspt]))
+        LAMBDA = np.concatenate((cat.LAMBDA[mws82],cat.LAMBDA[mwspt]))
+        field = np.concatenate((np.ones(mws82.sum())*1.,np.ones(mwspt.sum())*2.))
+        pcc  = np.concatenate((pcc[mws82],pcc[mwspt]))
          
         mz  = (z >= z_min)*(z < z_max)
         ml  = (LAMBDA >= lmin)*(LAMBDA < lmax)
