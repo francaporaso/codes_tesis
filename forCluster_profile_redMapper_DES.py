@@ -21,14 +21,14 @@ Msun = M_sun.value # Solar mass (kg)
 '''
 uso los catalogos : redmapper_y1a1_public_v6.4_catalog.fits para clusters
                   : mcal-y1a1-combined-riz-unblind-v4-matched para formas/fuentes
-                  : mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits para redshifts de pesos (ec 15 McClintock 2017 et al.)
-                  : y1a1-gold-mof-badregion_BPZ.fits para redshifts de la normalizacion (ec 14 McClintock 2017 et al.)
+                  : mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits para redshifts de pesos (ec 15 McClintock 2017)
+                  : y1a1-gold-mof-badregion_BPZ.fits para redshifts de la normalizacion (ec 14 McClintock 2017)
 '''
 
-#catalogo DES Y1 metacalibration de fuentes
-w = fits.open('../cats/DES/mcal-y1a1-combined-riz-unblind-v4-matched.fits')[1].data
+#catalogo DES Y1
+w = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
 #mascaras para los datos, tiramos los que no cumplan los requisitos
-m_sources = (w.odds >= 0.5)*(w.z_b > 0.2)*(w.z_b < 1.2)*(w.weight > 0)*(w.fitclass == 0)*(w.mask <= 1)
+m_sources = (w.flags_select == 0)*(w.flags_select_1m == 0)*(w.flags_select_1p == 0)*(w.flags_select_2m == 0)*(w.flags_select_2p == 0)
 #mascara para las distintas aeras: Stripe82 y South Pole Telescope
 mas82 = (w.dec < 2.)*(w.dec > -2.)*(w.ra < 360.)*(w.ra > 315.)
 maspt = (w.dec < -35.)*(w.dec > -61.)*((w.ra > 0.)*(w.ra < 100.)+(w.ra > 301.)*(w.ra < 360.))
@@ -39,39 +39,16 @@ m1 = m_sources * maspt
 w1_sources = w[m1]
 w2_sources = w[m1]
 
-#catalogo DES Y1 metacal de redshifts
-x = fits.open('../cats/DES/mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits')[1].data
-#mascaras para los datos, tiramos los que no cumplan los requisitos
-m_mcal = (x.odds >= 0.5)*(x.z_b > 0.2)*(x.z_b < 1.2)*(x.weight > 0)*(x.fitclass == 0)*(x.mask <= 1)
-#mask total
-m1_mcal = m_mcal * mas82
-m2_mcal = m_mcal * maspt
-#datos
-x1_redshift = x[m1_mcal]
-x2_redshift = x[m2_mcal]
 
-#catalogo MOF redshifts
-y = fits.open('../cats/DES/y1a1-gold-mof-badregion_BPZ.fits')[1].data
-#mascaras para los bad data
-m_mof = (y.odds >= 0.5)*(y.z_b > 0.2)*(y.z_b < 1.2)*(y.weight > 0)*(y.fitclass == 0)*(y.mask <= 1)
-#mask total
-m1_mof = m_mof*mas82
-m2_mof = m_mof*maspt
-#datos
-y1_redshift = y[m1_mof]
-y2_redshift = y[m2_mof]
+# mean_z de 0.3 a 1.6 y z_sigma68 <1.2
 
 def partial_profile(RA0,DEC0,Z,field,
                     RIN,ROUT,ndots,h,nboot=100):
 
         if field == 1:
-            S = w1_sources   #fuentes
-            T = x1_redshift  #metacalibration redshift
-            U = y1_redshift  #MOF redshift
+            S = w1_sources
         if field == 2:
             S = w2_sources
-            T = x2_redshift
-            U = y2_redshift
 
         cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
         ndots = int(ndots)
@@ -85,13 +62,13 @@ def partial_profile(RA0,DEC0,Z,field,
 
         mask_region = (S.ra < (RA0+delta))&(S.ra > (RA0-delta))&(S.dec > (DEC0-delta))&(S.dec < (DEC0+delta))
                
-        mask = mask_region*(T.mean_z > (Z + 0.1))*(S.odds >= 0.5)*(T.mean_z > 0.2) #z_b es redshift de metacal, Z es el de la lente redmapper
+        mask = mask_region*(S.mcal_mean_z > (Z + 0.1))*(S.mcal_mean_z > 0.2)#*(S.odds >= 0.5)
 
         catdata = S[mask]
         
         #Metacalibration (ec 11 paper maria)
-        ds_mcal  = cosmo.angular_diameter_distance(T.mean_z).value              #dist ang diam de la fuente
-        dls_mcal = cosmo.angular_diameter_distance_z1z2(Z, T.mean_z).value      #dist ang diam entre fuente y lente
+        ds_mcal  = cosmo.angular_diameter_distance(catdata.mcal_mean_z).value              #dist ang diam de la fuente
+        dls_mcal = cosmo.angular_diameter_distance_z1z2(Z, catdata.mcal_mean_z).value      #dist ang diam entre fuente y lente
                 
         BETA_array_mcal = dls_mcal / ds_mcal
         
@@ -99,8 +76,8 @@ def partial_profile(RA0,DEC0,Z,field,
 
         
         #MOF_BPZ (ec 10 paper maria)
-        ds_mof  = cosmo.angular_diameter_distance(U.mean_z).value              #dist ang diam de la fuente
-        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, U.mean_z).value      #dist ang diam entre fuente y lente
+        ds_mof  = cosmo.angular_diameter_distance(catdata.mof_z_mc).value              #dist ang diam de la fuente
+        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, catdata.mof_z_mc).value      #dist ang diam entre fuente y lente
                 
         BETA_array_mof = dls_mof / ds_mof
         
@@ -150,7 +127,7 @@ def partial_profile(RA0,DEC0,Z,field,
         del(rads)
 
         peso = 1./(sigma_c_mcal) #ec 15 McClintock 2017 
-        m    = catdata.m
+        #m    = catdata.m
         
         Ntot = len(catdata)
         # del(catdata)    
