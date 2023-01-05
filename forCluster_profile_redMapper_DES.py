@@ -68,10 +68,10 @@ def partial_profile(RA0,DEC0,Z,field,
         mS2m = mask & (S.flags_select_2m == 0)
 
         catdata = S[mS0]
-        S1p = S[mS1p]
-        S1m = S[mS1m]
-        S2p = S[mS2p]
-        S2m = S[mS2m]
+        #S1p = S[mS1p]
+        #S1m = S[mS1m]
+        #S2p = S[mS2p]
+        #S2m = S[mS2m]
         
         #Metacalibration (ec 11 paper maria)
         ds_mcal  = cosmo.angular_diameter_distance(catdata.mcal_mean_z).value              #dist ang diam de la fuente
@@ -148,10 +148,10 @@ def partial_profile(RA0,DEC0,Z,field,
                 #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
                 WEIGHT_RTsum = np.append(WEIGHT_RTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
                 WEIGHTwsum   = np.append(WEIGHTwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
-                E1_P         = np.append(E1_P,S1p.e1[mbin].mean())
-                E1_M         = np.append(E1_M,S1m.e1[mbin].mean())
-                E2_P         = np.append(E1_P,S2p.e2[mbin].mean())
-                E2_M         = np.append(E2_M,S2m.e2[mbin].mean())
+                E1_P         = np.append(E1_P,S[mS1p].e1[mbin].mean())
+                E1_M         = np.append(E1_M,S[mS1m].e1[mbin].mean())
+                E2_P         = np.append(E1_P,S[mS2p].e2[mbin].mean())
+                E2_M         = np.append(E2_M,S[mS2m].e2[mbin].mean())
                 NGAL         = np.append(NGAL,mbin.sum())
                 
                 '''
