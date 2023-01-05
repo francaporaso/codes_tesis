@@ -28,7 +28,7 @@ uso los catalogos : redmapper_y1a1_public_v6.4_catalog.fits para clusters
 #catalogo DES Y1
 w = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
 # mean_z de 0.3 a 1.4 y z_sigma68 <1.2
-m_sources = (0.3 < w.mof_z_mc < 1.4)&(w.mof_z_sigma68 < 1.2)&(0.3 < w.mcal_z_mean < 1.4)&(w.mcal_z_sigma68 < 1.2)
+m_sources = (w.mcal_mean_z > 0.3)&(w.mcal_mean_z < 1.4)&(w.mcal_z_sigma68 < 1.2)
 #mascara para las distintas aeras: Stripe82 y South Pole Telescope
 mas82 = (w.dec < 2.)&(w.dec > -2.)&(w.ra < 360.)&(w.ra > 315.)
 maspt = (w.dec < -35.)&(w.dec > -61.)&((w.ra > 0.)&(w.ra < 100.)+(w.ra > 301.)&(w.ra < 360.))
