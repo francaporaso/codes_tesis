@@ -547,8 +547,8 @@ def main(lcat, sample='pru',
                 addnoise_array   = np.array([addnoise]*np.ones(num))
                 
                 if num == 1:
-                        entrada = [Lsplit[l][2][0], Lsplit[l][3][0],
-                                   Lsplit[l][4][0],Lsplit[l][1][0],
+                        entrada = [Lsplit[l][2], Lsplit[l][3],
+                                   Lsplit[l][4],Lsplit[l][1],
                                    RIN,ROUT,ndots,hcosmo,
                                    addnoise]
                         
