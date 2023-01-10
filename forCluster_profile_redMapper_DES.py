@@ -19,19 +19,27 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 '''
-uso los catalogos : redmapper_y1a1_public_v6.4_catalog.fits para clusters
-                  : mcal-y1a1-combined-riz-unblind-v4-matched para formas/fuentes
-                  : mcal-y1a1-combined-griz-blind-v3-matched_BPZbase.fits para redshifts de pesos (ec 15 McClintock 2017)
-                  : y1a1-gold-mof-badregion_BPZ.fits para redshifts de la normalizacion (ec 14 McClintock 2017)
+sample='pru'
+z_min = 0.1
+z_max = 0.4
+lmin = 20.
+lmax = 150.
+pcc_min = 0.
+RIN = 300.
+ROUT =10000.
+ndots= 20
+ncores=10
+hcosmo=1.
+main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
 '''
 
 #catalogo DES Y1
 w = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
 # mean_z de 0.3 a 1.4 y z_sigma68 <1.2
-m_sources = (w.mcal_mean_z > 0.3)&(w.mcal_mean_z < 1.4)&(w.mcal_z_sigma68 < 1.2)
+m_sources = (w.flags_select == 0)&(w.mcal_mean_z > 0.3)&(w.mcal_mean_z < 1.4)&(w.mcal_z_sigma68 < 1.2)&(w.mcal_mean_z > 0.3)&(w.mof_z_mc < 1.4)&(w.mof_z_sigma68 < 1.2)
 #mascara para las distintas aeras: Stripe82 y South Pole Telescope
 mas82 = (w.dec < 2.)&(w.dec > -2.)&(w.ra < 360.)&(w.ra > 315.)
-maspt = (w.dec < -35.)&(w.dec > -61.)&((w.ra > 0.)&(w.ra < 100.)+(w.ra > 301.)&(w.ra < 360.))
+maspt = (w.dec < -35.)&(w.dec > -65.)&((w.ra > 0.)&(w.ra < 100.)+(w.ra > 301.)&(w.ra < 360.))
 #mask total
 m1 = m_sources & mas82
 m2 = m_sources & maspt
@@ -39,8 +47,31 @@ m2 = m_sources & maspt
 w1_sources = w[m1]
 w2_sources = w[m2]
 
+def SigmaCrit(zl, zs, h=1.):
+    '''Calcula el Sigma_critico dados los redshifts. 
+    Debe ser usada con astropy.cosmology y con astropy.constants
+    
+    zl:   (float) redshift de la lente (lens)
+    zs:   (float) redshift de la fuente (source)
+    h :   (float) H0 = 100.*h
+    '''
+    #if zl > zs:
+    #    raise ValueError('Redshift de la fuente es menor al de la lente')
+
+    cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
+
+    dl  = cosmo.angular_diameter_distance(zl).value
+    Dl = dl*1.e6*pc #en Mpc
+    ds  = cosmo.angular_diameter_distance(zs).value              #dist ang diam de la fuente
+    dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value      #dist ang diam entre fuente y lente
+                
+    BETA_array = dls / ds
+        
+    sigma_crit = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
+    return sigma_crit
+
 def partial_profile(RA0,DEC0,Z,field,
-                    RIN,ROUT,ndots,h,nboot=100):
+                    RIN,ROUT,ndots,h):
 
         if field == 1:
             S = w1_sources
@@ -55,40 +86,24 @@ def partial_profile(RA0,DEC0,Z,field,
         
         delta = ROUT/(3600*KPCSCALE)
 
-        Dl = dl*1.e6*pc
+        #Dl = dl*1.e6*pc
 
         mask_region = (S.ra < (RA0+delta))&(S.ra > (RA0-delta))&(S.dec > (DEC0-delta))&(S.dec < (DEC0+delta))
         
-        mask = mask_region*(S.mcal_mean_z > (Z + 0.1))&(S.mcal_mean_z > 0.3)
+        mask = mask_region&(S.mcal_mean_z > (Z + 0.1))&(S.mof_z_mc > (Z + 0.1))
         
-        mS0  = mask & (S.flags_select == 0)
         mS1p = mask & (S.flags_select_1p == 0)
         mS1m = mask & (S.flags_select_1m == 0)
         mS2p = mask & (S.flags_select_2p == 0)
         mS2m = mask & (S.flags_select_2m == 0)
 
-        catdata = S[mS0]
-        #S1p = S[mS1p]
-        #S1m = S[mS1m]
-        #S2p = S[mS2p]
-        #S2m = S[mS2m]
+        catdata = S[mask]
         
         #Metacalibration (ec 11 paper maria)
-        ds_mcal  = cosmo.angular_diameter_distance(catdata.mcal_mean_z).value              #dist ang diam de la fuente
-        dls_mcal = cosmo.angular_diameter_distance_z1z2(Z, catdata.mcal_mean_z).value      #dist ang diam entre fuente y lente
-                
-        BETA_array_mcal = dls_mcal / ds_mcal
-        
-        sigma_c_mcal = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_mcal))*(pc**2/Msun)
+        sigma_c_mcal = SigmaCrit(Z, catdata.mcal_mean_z) 
 
-        
         #MOF_BPZ (ec 10 paper maria)
-        ds_mof  = cosmo.angular_diameter_distance(catdata.mof_z_mc).value              #dist ang diam de la fuente
-        dls_mof = cosmo.angular_diameter_distance_z1z2(Z, catdata.mof_z_mc).value      #dist ang diam entre fuente y lente
-                
-        BETA_array_mof = dls_mof / ds_mof
-        
-        sigma_c_mof = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array_mof))*(pc**2/Msun)
+        sigma_c_mof = SigmaCrit(Z, catdata.mof_z_mc)
 
         rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra),
                                          np.deg2rad(catdata.dec),
@@ -111,10 +126,17 @@ def partial_profile(RA0,DEC0,Z,field,
 
         Rg_T = Rg_11 * (np.cos(2*theta))**2 + Rg_22 * (np.sin(2*theta))**2 +(Rg_12+Rg_21)*np.sin(2*theta)*np.cos(2*theta)
 
+        #elip para Rsel
+        e1_p = S[mS1p].e1
+        e1_m = S[mS1m].e1
+        e2_p = S[mS2p].e2
+        e2_m = S[mS2m].e2
+       
+        
         #get tangential ellipticities 
         et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))
         #get cross ellipticities
-        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
+        #ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
 
         r = np.rad2deg(rads)*3600*KPCSCALE
         del(rads)
@@ -129,7 +151,7 @@ def partial_profile(RA0,DEC0,Z,field,
         DSIGMAwsum_T = []
         #DSIGMAwsum_X = []
         WEIGHT_RTsum = []
-        WEIGHTwsum    = []
+        WEIGHTwsum   = []
         E1_P         = [] #elipticidad promedio de ec 5 McClintock para Rsel
         E1_M         = []
         E2_P         = []
@@ -148,10 +170,10 @@ def partial_profile(RA0,DEC0,Z,field,
                 #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
                 WEIGHT_RTsum = np.append(WEIGHT_RTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
                 WEIGHTwsum   = np.append(WEIGHTwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
-                E1_P         = np.append(E1_P,S[mS1p].e1[mbin].mean())
-                E1_M         = np.append(E1_M,S[mS1m].e1[mbin].mean())
-                E2_P         = np.append(E1_P,S[mS2p].e2[mbin].mean())
-                E2_M         = np.append(E2_M,S[mS2m].e2[mbin].mean())
+                E1_P         = np.append(E1_P,e1_p[mbin].sum())
+                E1_M         = np.append(E1_M,e1_m[mbin].sum())
+                E2_P         = np.append(E1_P,e2_p[mbin].sum())
+                E2_M         = np.append(E2_M,e2_m[mbin].sum())
                 NGAL         = np.append(NGAL,mbin.sum())
                 
                 '''
@@ -220,8 +242,8 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         cat = fits.open('../cats/DES/redmapper_y1a1_public_v6.4_catalog.fits')[1].data
         pcc = cat.P_CEN[:,0]
         
-        mws82 = (cat.DEC < 2.)*(cat.DEC > -2.)*(cat.RA < 360.)*(cat.RA > 315.)
-        mwspt = (cat.DEC < -35.)*(cat.DEC > -61.)*((cat.RA > 0.)*(cat.RA < 100.)+(cat.RA > 301.)*(cat.RA < 360.))
+        mws82 = (cat.DEC < 2.)&(cat.DEC > -2.)&(cat.RA < 360.)&(cat.RA > 315.)
+        mwspt = (cat.DEC < -35.)&(cat.DEC > -61.)&((cat.RA > 0.)&(cat.RA < 100.)+(cat.RA > 301.)&(cat.RA < 360.))
         
         RA  = np.concatenate((cat.RA[mws82],cat.RA[mwspt]))
         DEC = np.concatenate((cat.DEC[mws82],cat.DEC[mwspt]))
@@ -230,11 +252,11 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         field = np.concatenate((np.ones(mws82.sum())*1.,np.ones(mwspt.sum())*2.))
         pcc  = np.concatenate((pcc[mws82],pcc[mwspt]))
          
-        mz  = (z >= z_min)*(z < z_max)
-        ml  = (LAMBDA >= lmin)*(LAMBDA < lmax)
+        mz  = (z >= z_min)&(z < z_max)
+        ml  = (LAMBDA >= lmin)&(LAMBDA < lmax)
         mpcc = (pcc > pcc_min)
 
-        mlenses = mz*ml*mpcc
+        mlenses = mz&ml&mpcc
         
         L = np.array([RA[mlenses],DEC[mlenses],z[mlenses],field[mlenses]])
         z = z[mlenses]
@@ -327,8 +349,12 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
         Dg = 0.02
 
-        Rsel_T      = 0.5 * ((E1_P - E1_M) + (E2_P - E2_M)) / Dg
-        DSigma_T  = (DSIGMAwsum_T/(WEIGHT_RTsum+WEIGHTwsum*Rsel_T))
+        E1_P_mean = E1_P / NGALsum
+        E1_M_mean = E1_M / NGALsum
+        E2_P_mean = E2_P / NGALsum
+        E2_M_mean = E2_M / NGALsum
+        Rsel_T    = 0.5 * ((E1_P_mean - E1_M_mean) + (E2_P_mean - E2_M_mean)) / Dg
+        DSigma_T  = (DSIGMAwsum_T / (WEIGHT_RTsum + WEIGHTwsum*Rsel_T))
         #DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr
         #eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/Mcorr
         #eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/Mcorr
