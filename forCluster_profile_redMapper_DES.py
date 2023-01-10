@@ -161,38 +161,38 @@ def partial_profile(RA0,DEC0,Z,field,
         #BOOTwsum_X   = np.zeros((nboot,ndots))
         #BOOTwsum     = np.zeros((nboot,ndots))
         NGAL         = []
-                
-        
+        NS1P         = []
+        NS1M         = []
+        NS2P         = []
+        NS2M         = []
+
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
+                
+                e1_sum = e1[mbin] #suma del e1 con mascara [mbin]
+                e2_sum = e2[mbin] #suma del e2 con mascara [mbin]
                 
                 DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())     #numerador ec 12 McClintock
                 #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
                 WEIGHT_RTsum = np.append(WEIGHT_RTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
                 WEIGHTwsum   = np.append(WEIGHTwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
-                E1_P         = np.append(E1_P,e1_p[mbin].sum())
-                E1_M         = np.append(E1_M,e1_m[mbin].sum())
-                E2_P         = np.append(E1_P,e2_p[mbin].sum())
-                E2_M         = np.append(E2_M,e2_m[mbin].sum())
+                E1_P         = np.append(E1_P,e1[mS1p].sum())
+                E1_M         = np.append(E1_M,e1[mS1m].sum())
+                E2_P         = np.append(E1_P,e2[mS2p].sum())
+                E2_M         = np.append(E2_M,e2[mS2m].sum())
                 NGAL         = np.append(NGAL,mbin.sum())
                 
-                '''
-                index = np.arange(mbin.sum())
-                if mbin.sum() == 0:
-                        continue
-                else:
-                        with NumpyRNGContext(1):
-                                bootresult = bootstrap(index, nboot)
-                        INDEX=bootresult.astype(int)
-                        BOOTwsum_T[:,nbin] = np.sum(np.array(et[mbin]*peso[mbin])[INDEX],axis=1)
-                        BOOTwsum_X[:,nbin] = np.sum(np.array(ex[mbin]*peso[mbin])[INDEX],axis=1)
-                        BOOTwsum[:,nbin]   = np.sum(np.array(peso[mbin])[INDEX],axis=1)'''
+                NS1P         = np.append(NS1P,mS1p.sum()) #cantidad de galaxias en el bin para poder hacer el promedio
+                NS1M         = np.append(NS1M,mS1m.sum())
+                NS2P         = np.append(NS2P,mS2p.sum())
+                NS2M         = np.append(NS2M,mS2m.sum())
+                
         
         output = {'DSIGMAwsum_T':DSIGMAwsum_T,
                   #'DSIGMAwsum_X':DSIGMAwsum_X, 
-                  'WEIGHT_RTsum':WEIGHT_RTsum, 
+                  'WEIGHT_RTsum':WEIGHT_RTsum,'WEIGHTwsum':WEIGHTwsum, 
                   'E1_P':E1_P, 'E1_M':E1_M, 'E2_P':E2_P, 'E2_M':E2_M, 
-                  'WEIGHTwsum':WEIGHTwsum, 
+                  'NS1P':NS1P, 'NS1M':NS1M, 'NS2P':NS2P, 'NS2M':NS2M,
                   #'BOOTwsum_T':BOOTwsum_T, 'BOOTwsum_X':BOOTwsum_X, 'BOOTwsum':BOOTwsum, 
                   'Ntot':Ntot,'NGAL':NGAL}
         
@@ -287,6 +287,11 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         E1_M         = np.zeros(ndots)
         E2_P         = np.zeros(ndots)
         E2_M         = np.zeros(ndots)
+        NS1P         = np.zeros(ndots) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
+        NS1M         = np.zeros(ndots)
+        NS2P         = np.zeros(ndots)
+        NS2M         = np.zeros(ndots)
+
         #BOOTwsum_T   = np.zeros((100,ndots))
         #BOOTwsum_X   = np.zeros((100,ndots))
         #BOOTwsum     = np.zeros((100,ndots))
@@ -332,6 +337,10 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                         E1_M         += profilesums['E1_M']
                         E2_P         += profilesums['E2_P']
                         E2_M         += profilesums['E2_M']
+                        NS1P         += profilesums['NS1P']
+                        NS1M         += profilesums['NS1M']
+                        NS2P         += profilesums['NS2P']
+                        NS2M         += profilesums['NS2M']
                         #BOOTwsum_T   += profilesums['BOOTwsum_T']
                         #BOOTwsum_X   += profilesums['BOOTwsum_X']
                         #BOOTwsum     += profilesums['BOOTwsum']
@@ -349,10 +358,10 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
         Dg = 0.02
 
-        E1_P_mean = E1_P / NGALsum
-        E1_M_mean = E1_M / NGALsum
-        E2_P_mean = E2_P / NGALsum
-        E2_M_mean = E2_M / NGALsum
+        E1_P_mean = E1_P / NS1P
+        E1_M_mean = E1_M / NS1M
+        E2_P_mean = E2_P / NS2P
+        E2_M_mean = E2_M / NS2M
         Rsel_T    = 0.5 * ((E1_P_mean - E1_M_mean) + (E2_P_mean - E2_M_mean)) / Dg
         DSigma_T  = (DSIGMAwsum_T / (WEIGHT_RTsum + WEIGHTwsum*Rsel_T))
         #DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr

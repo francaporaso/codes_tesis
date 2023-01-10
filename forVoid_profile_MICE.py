@@ -89,15 +89,15 @@ elif args.addnoise == 'False':
 sample     = 'pru'
 idlist     = None
 lcat       = 'voids_MICE.dat'
-Rv_min     = 17.
-Rv_max     = 20.
+Rv_min     = 15.
+Rv_max     = 25.
 rho1_min   = -1.
 rho1_max   = 2.
 rho2_min   = -1.
 rho2_max   = 100.
 FLAG       = 2.
 z_min      = 0.1
-z_max      = 0.2
+z_max      = 0.3
 RIN        = 0.05
 ROUT       = 5.0
 ndots      = 40
@@ -466,7 +466,7 @@ def main(lcat, sample='pru',
         lbins = int(round(Nlenses/float(ncores), 0))
         slices = ((np.arange(lbins)+1)*ncores).astype(int)
         slices = slices[(slices < Nlenses)]
-        Lsplit = np.split(L,slices)
+        Lsplit = np.split(L.T,slices)
         Ksplit = np.split(kmask.T,slices)
         
         if domap:
