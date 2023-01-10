@@ -250,7 +250,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         dl  = cosmo.angular_diameter_distance(Z).value
         KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
         
-        delta = ROUT*(Rv*1000.)*5./(3600*KPCSCALE)
+        delta = ROUT*(Rv*1000.)*3./(3600*KPCSCALE)
         
         mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
