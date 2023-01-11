@@ -428,7 +428,7 @@ def main(lcat, sample='pru',
                 mradio  = (Rv >= Rv_min)&(Rv < Rv_max)
                 mz      = (z >= z_min)&(z < z_max)
                 mrho1   = (rho_1 >= rho1_min)&(rho_1 < rho2_max)
-                mrho2   = (rho_2 >= rho1_min)&(rho_2 < rho2_max)
+                mrho2   = (rho_2 >= rho2_min)&(rho_2 < rho2_max)
                 mflag   = flag >= FLAG
                 mlenses = mradio & mz & mrho1 & mrho2 & mflag
         
