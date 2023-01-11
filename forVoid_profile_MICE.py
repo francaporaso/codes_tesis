@@ -255,21 +255,29 @@ def partial_profile(RA0,DEC0,Z,Rv,
         mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
+        del mask
+        del delta
+
         ds  = cosmo.angular_diameter_distance(catdata.z_cgal_v).value
         dls = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_cgal_v).value
                 
-        
         BETA_array = dls/ds
         
         Dl = dl*1.e6*pc
         sigma_c = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
 
+        del ds
+        del dls
+        del BETA_array
 
         rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra_gal),
                                         np.deg2rad(catdata.dec_gal),
                                         np.deg2rad(RA0),
                                         np.deg2rad(DEC0))
                                
+        del test1
+        del test2
+        
         e1     = catdata.gamma1
         e2     = -1.*catdata.gamma2
 
@@ -287,15 +295,16 @@ def partial_profile(RA0,DEC0,Z,Rv,
         # '''
         k  = catdata.kappa*sigma_c
           
-        del(e1)
-        del(e2)
-        
+        del e1
+        del e2
+        del theta
+
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
-        del(rads)
+        del rads
         
         
         Ntot = len(catdata)
-        # del(catdata)    
+        del catdata    
         
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
@@ -304,7 +313,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         SIGMAwsum    = []
         DSIGMAwsum_T = []
         DSIGMAwsum_X = []
-        N_inbin     = []
+        N_inbin      = []
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
@@ -377,10 +386,13 @@ def main(lcat, sample='pru',
         cosmo = LambdaCDM(H0=100*hcosmo, Om0=0.25, Ode0=0.75)
         tini = time.time()
         
-        print('Voids catalog ',lcat)
-        print('Sample ',sample)
-        print('Selecting halos with:')
-        
+        print(f'Voids catalog {lcat}')
+        print(f'Sample {sample}')
+        print('Selecting voids with:')
+        print(f'{Rv_min} <= Rv < {Rv_max}')
+        print(f'{z_min}  <= Z < {z_max}')
+        print(f'{rho1_min} <= rho1 < {rho1_max}')
+        print(f'{rho2_min} <= rho2 < {rho2_max}')
         
         if idlist:
                 print('From id list '+idlist)
@@ -389,7 +401,7 @@ def main(lcat, sample='pru',
                 # print(z_min,' <= z < ',z_max)
                 # print(q_min,' <= q < ',q_max)
                 # print(rs_min,' <= rs < ',rs_max)
-                print(R5s_min,' <= R5s < ',R5s_max)
+                #print(R5s_min,' <= R5s < ',R5s_max)
                 # print('resNFW_S < ',resNFW_max)
                 # print('h ',hcosmo)
                 # print('misalign '+str(misalign))
@@ -405,16 +417,14 @@ def main(lcat, sample='pru',
         ra    = L[2]
         dec   = L[3]
         z     = L[4]
-        rho_1 = L[8]
-        rho_2 = L[9]
+        rho_1 = L[8] #Sobredensidad integrada a un radio de void 
+        rho_2 = L[9] #Sobredensidad integrada máxima entre 2 y 3 radios de void 
         flag  = L[11]
         
         if idlist:
                 ides = np.loadtxt(idlist).astype(int)
                 mlenses = np.in1d(L[0],ides)
-        else:
-                
-                
+        else:                
                 mradio  = (Rv >= Rv_min)&(Rv < Rv_max)
                 mz      = (z >= z_min)&(z < z_max)
                 mrho1   = (rho_1 >= rho1_min)&(rho_1 < rho2_max)
@@ -505,10 +515,10 @@ def main(lcat, sample='pru',
 
         else:
 
-            print('Profile has ',ndots,'bins')
-            print('from ',RIN,'kpc to ',ROUT,'kpc')
+            print(f'Profile has {ndots} bins')
+            print(f'from {RIN} Mpc to {ROUT} Mpc')
             os.system('mkdir ../profiles')
-            output_file = 'profiles/profile_'+sample+'.fits'
+            output_file = f'profiles/profile_{sample}.fits'
 
             # Defining radial bins
             bines = np.linspace(RIN,ROUT,num=ndots+1)
@@ -526,7 +536,7 @@ def main(lcat, sample='pru',
             partial = partial_profile_unpack
             
 
-        print('Saved in ../'+output_file)
+        print(f'Saved in ../{output_file}')
                                    
                 
         Ntot         = np.array([])
@@ -534,7 +544,7 @@ def main(lcat, sample='pru',
         
         for l in range(len(Lsplit)):
                 
-                print('RUN ',l+1,' OF ',len(Lsplit))
+                print('RUN {l+1} OF {len(Lsplit)}')
                 
                 t1 = time.time()
                 
@@ -705,7 +715,7 @@ def main(lcat, sample='pru',
         
         hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
         
-        hdul.writeto('../'+output_file,overwrite=True)
+        hdul.writeto(f'../{output_file}',overwrite=True)
                 
         tfin = time.time()
         
