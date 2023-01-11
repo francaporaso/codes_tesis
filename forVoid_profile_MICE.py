@@ -544,7 +544,7 @@ def main(lcat, sample='pru',
         
         for l in range(len(Lsplit)):
                 
-                print('RUN {l+1} OF {len(Lsplit)}')
+                print(f'RUN {l+1} OF {len(Lsplit)}')
                 
                 t1 = time.time()
                 
