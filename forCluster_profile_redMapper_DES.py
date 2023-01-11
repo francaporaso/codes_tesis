@@ -19,17 +19,18 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 '''
-sample='pru'
+sample='pruDES'
 z_min = 0.1
-z_max = 0.4
-lmin = 20.
-lmax = 150.
+z_max = 0.3
+lmin = 30.
+lmax = 32.
 pcc_min = 0.
 RIN = 300.
-ROUT =10000.
+ROUT =1000.
 ndots= 20
 ncores=10
 hcosmo=1.
+h = hcosmo
 main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
 '''
 
@@ -37,15 +38,10 @@ main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
 w = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
 # mean_z de 0.3 a 1.4 y z_sigma68 <1.2
 m_sources = (w.flags_select == 0)&(w.mcal_mean_z > 0.3)&(w.mcal_mean_z < 1.4)&(w.mcal_z_sigma68 < 1.2)&(w.mcal_mean_z > 0.3)&(w.mof_z_mc < 1.4)&(w.mof_z_sigma68 < 1.2)
-#mascara para las distintas aeras: Stripe82 y South Pole Telescope
-mas82 = (w.dec < 2.)&(w.dec > -2.)&(w.ra < 360.)&(w.ra > 315.)
-maspt = (w.dec < -35.)&(w.dec > -65.)&((w.ra > 0.)&(w.ra < 100.)+(w.ra > 301.)&(w.ra < 360.))
-#mask total
-m1 = m_sources & mas82
-m2 = m_sources & maspt
 #datos
-w1_sources = w[m1]
-w2_sources = w[m2]
+S = w[m_sources]
+del w
+del m_sources
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
@@ -70,14 +66,10 @@ def SigmaCrit(zl, zs, h=1.):
     sigma_crit = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
     return sigma_crit
 
-def partial_profile(RA0,DEC0,Z,field,
+def partial_profile(RA0,DEC0,Z,
                     RIN,ROUT,ndots,h):
 
-        if field == 1:
-            S = w1_sources
-        if field == 2:
-            S = w2_sources
-
+        
         cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
         ndots = int(ndots)
         
@@ -92,12 +84,15 @@ def partial_profile(RA0,DEC0,Z,field,
         
         mask = mask_region&(S.mcal_mean_z > (Z + 0.1))&(S.mof_z_mc > (Z + 0.1))
         
-        mS1p = mask & (S.flags_select_1p == 0)
-        mS1m = mask & (S.flags_select_1m == 0)
-        mS2p = mask & (S.flags_select_2p == 0)
-        mS2m = mask & (S.flags_select_2m == 0)
-
         catdata = S[mask]
+
+        mS1p = (catdata.flags_select_1p == 0)
+        mS1m = (catdata.flags_select_1m == 0)
+        mS2p = (catdata.flags_select_2p == 0)
+        mS2m = (catdata.flags_select_2m == 0)
+
+        del mask
+        del mask_region
         
         #Metacalibration (ec 11 paper maria)
         sigma_c_mcal = SigmaCrit(Z, catdata.mcal_mean_z) 
@@ -125,13 +120,11 @@ def partial_profile(RA0,DEC0,Z,field,
         Rg_22 = catdata.R22
 
         Rg_T = Rg_11 * (np.cos(2*theta))**2 + Rg_22 * (np.sin(2*theta))**2 +(Rg_12+Rg_21)*np.sin(2*theta)*np.cos(2*theta)
-
-        #elip para Rsel
-        e1_p = S[mS1p].e1
-        e1_m = S[mS1m].e1
-        e2_p = S[mS2p].e2
-        e2_m = S[mS2m].e2
-       
+        
+        del Rg_11
+        del Rg_22
+        del Rg_12
+        del Rg_21
         
         #get tangential ellipticities 
         et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))
@@ -139,7 +132,8 @@ def partial_profile(RA0,DEC0,Z,field,
         #ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
 
         r = np.rad2deg(rads)*3600*KPCSCALE
-        del(rads)
+        del rads
+        del theta
 
         peso = 1./(sigma_c_mcal) #ec 15 McClintock 2019
         
@@ -169,23 +163,20 @@ def partial_profile(RA0,DEC0,Z,field,
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
                 
-                e1_sum = e1[mbin] #suma del e1 con mascara [mbin]
-                e2_sum = e2[mbin] #suma del e2 con mascara [mbin]
-                
                 DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())     #numerador ec 12 McClintock
                 #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
                 WEIGHT_RTsum = np.append(WEIGHT_RTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
                 WEIGHTwsum   = np.append(WEIGHTwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
-                E1_P         = np.append(E1_P,e1[mS1p].sum())
-                E1_M         = np.append(E1_M,e1[mS1m].sum())
-                E2_P         = np.append(E1_P,e2[mS2p].sum())
-                E2_M         = np.append(E2_M,e2[mS2m].sum())
+                E1_P         = np.append(E1_P,e1[mbin & mS1p].sum())
+                E1_M         = np.append(E1_M,e1[mbin & mS1m].sum())
+                E2_P         = np.append(E1_P,e2[mbin & mS2p].sum())
+                E2_M         = np.append(E2_M,e2[mbin & mS2m].sum())
                 NGAL         = np.append(NGAL,mbin.sum())
                 
-                NS1P         = np.append(NS1P,mS1p.sum()) #cantidad de galaxias en el bin para poder hacer el promedio
-                NS1M         = np.append(NS1M,mS1m.sum())
-                NS2P         = np.append(NS2P,mS2p.sum())
-                NS2M         = np.append(NS2M,mS2m.sum())
+                NS1P         = np.append(NS1P,(mbin & mS1p).sum()) #cantidad de galaxias en el bin para poder hacer el promedio
+                NS1M         = np.append(NS1M,(mbin & mS1p).sum())
+                NS2P         = np.append(NS2P,(mbin & mS1p).sum())
+                NS2M         = np.append(NS2M,(mbin & mS1p).sum())
                 
         
         output = {'DSIGMAwsum_T':DSIGMAwsum_T,
@@ -199,7 +190,7 @@ def partial_profile(RA0,DEC0,Z,field,
         return output
 
 def partial_profile_unpack(minput):
-	return partial_profile(*minput)
+        return partial_profile(*minput)
 
 
 def main(sample='pru',z_min = 0.1, z_max = 0.4,
@@ -249,7 +240,6 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         DEC = np.concatenate((cat.DEC[mws82],cat.DEC[mwspt]))
         z   = np.concatenate((cat.Z_LAMBDA[mws82],cat.Z_LAMBDA[mwspt]))
         LAMBDA = np.concatenate((cat.LAMBDA[mws82],cat.LAMBDA[mwspt]))
-        field = np.concatenate((np.ones(mws82.sum())*1.,np.ones(mwspt.sum())*2.))
         pcc  = np.concatenate((pcc[mws82],pcc[mwspt]))
          
         mz  = (z >= z_min)&(z < z_max)
@@ -258,7 +248,8 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
 
         mlenses = mz&ml&mpcc
         
-        L = np.array([RA[mlenses],DEC[mlenses],z[mlenses],field[mlenses]])
+        L = np.array([RA[mlenses],DEC[mlenses],z[mlenses]])
+        #L = L[]:2]
         z = z[mlenses]
         Nlenses = mlenses.sum()
 
@@ -313,14 +304,14 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
                 if num == 1:
                         entrada = [Lsplit[l].T[0][0], Lsplit[l].T[1][0],
-                                   Lsplit[l].T[2][0],Lsplit[l].T[-1][0],
+                                   Lsplit[l].T[2][0],
                                    RIN,ROUT,ndots,hcosmo]
                         
                         salida = [partial_profile_unpack(entrada)]
                 else:          
                         entrada = np.array([Lsplit[l].T[0], Lsplit[l].T[1],
-                                   Lsplit[l].T[2],Lsplit[l].T[-1],
-                                        rin,rout,nd,h_a]).T
+                                           Lsplit[l].T[2],
+                                           rin,rout,nd,h_a]).T
                         
                         pool = Pool(processes=(num))
                         salida = np.array(pool.map(partial_profile_unpack, entrada))
@@ -371,7 +362,6 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         # AVERAGE LENS PARAMETERS
         
         zmean        = np.average(z,weights=Ntot)
-        
         lmean        = np.average(LAMBDA[mlenses],weights=Ntot)
  
         # WRITING OUTPUT FITS FILE

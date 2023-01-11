@@ -25,9 +25,9 @@ wcs.wcs.cdelt = [1./3600., 1./3600.]
 wcs.wcs.ctype = ["RA---TAN", "DEC--TAN"]    
 
 #parameters
-cvel = c.value;   # Speed of light (m.s-1)
-G    = G.value;   # Gravitational constant (m3.kg-1.s-2)
-pc   = pc.value # 1 pc (m)
+cvel = c.value;    # Speed of light (m.s-1)
+G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
+pc   = pc.value    # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 
@@ -377,7 +377,7 @@ def main(lcat, sample='pru',
         cosmo = LambdaCDM(H0=100*hcosmo, Om0=0.25, Ode0=0.75)
         tini = time.time()
         
-        print('Lens catalog ',lcat)
+        print('Voids catalog ',lcat)
         print('Sample ',sample)
         print('Selecting halos with:')
         
@@ -401,9 +401,9 @@ def main(lcat, sample='pru',
                 
         L = np.loadtxt(folder+lcat).T
 
+        Rv    = L[1]
         ra    = L[2]
         dec   = L[3]
-        Rv    = L[1]
         z     = L[4]
         rho_1 = L[8]
         rho_2 = L[9]
@@ -415,10 +415,10 @@ def main(lcat, sample='pru',
         else:
                 
                 
-                mradio  = (Rv >= Rv_min)*(Rv < Rv_max)
-                mz      = (z >= z_min)*(z < z_max)
-                mrho1   = (rho_1 >= rho1_min)*(rho_1 < rho2_max)
-                mrho2   = (rho_2 >= rho1_min)*(rho_2 < rho2_max)
+                mradio  = (Rv >= Rv_min)&(Rv < Rv_max)
+                mz      = (z >= z_min)&(z < z_max)
+                mrho1   = (rho_1 >= rho1_min)&(rho_1 < rho2_max)
+                mrho2   = (rho_2 >= rho1_min)&(rho_2 < rho2_max)
                 mflag   = flag >= FLAG
                 mlenses = mradio & mz & mrho1 & mrho2 & mflag
         
@@ -429,8 +429,8 @@ def main(lcat, sample='pru',
         if Nlenses < ncores:
                 ncores = Nlenses
         
-        print('Nlenses',Nlenses)
-        print('CORRIENDO EN ',ncores,' CORES')
+        print(f'Nvoids {Nlenses}')
+        print(f'CORRIENDO EN {ncores} CORES')
         
         L = L[:,mlenses]
                         
@@ -594,7 +594,7 @@ def main(lcat, sample='pru',
                 tslice = np.append(tslice,ts)
                 print('TIME SLICE')
                 print(ts)
-                print('Estimated ramaining time')
+                print('Estimated remaining time')
                 print(np.mean(tslice)*(len(Lsplit)-(l+1)))
 
         # AVERAGE LENS PARAMETERS AND SAVE IT IN HEADER
@@ -606,7 +606,7 @@ def main(lcat, sample='pru',
         
 
         h = fits.Header()
-        h.append(('N_LENSES',np.int(Nlenses)))
+        h.append(('N_VOIDS',np.int(Nlenses)))
         h.append(('Lens cat',lcat))
         h.append(('MICE version sources 2.0'))
         # h.append(('lM_min',np.round(lM_min,2)))
@@ -693,6 +693,10 @@ def main(lcat, sample='pru',
                         fits.Column(name='COV_S', format='E', array=COV_S.flatten()),
                         fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())]
         
+            #table_cov = [fits.Column(name='Sigma', format='E', array=Sigma.flatten()),
+            #            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
+            #            fits.Column(name='DSIgma_X', format='E', array=DSIgma_X.flatten())]
+
         tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
         tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_cov))
         
@@ -705,7 +709,7 @@ def main(lcat, sample='pru',
                 
         tfin = time.time()
         
-        print('TOTAL TIME ',(tfin-tini)/60.)
+        print(f'TOTAL TIME {(tfin-tini)/60.}')
         
 
 
