@@ -518,7 +518,7 @@ def main(lcat, sample='pru',
             print(f'Profile has {ndots} bins')
             print(f'from {RIN} Mpc to {ROUT} Mpc')
             os.system('mkdir ../profiles')
-            output_file = f'profiles/profile_{sample}.fits'
+            output_file = f'profiles/voids/profile_{sample}.fits'
 
             # Defining radial bins
             bines = np.linspace(RIN,ROUT,num=ndots+1)
