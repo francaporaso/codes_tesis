@@ -36,7 +36,7 @@ main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
 
 #catalogo DES Y1
 # mean_z, z_mc de 0.3 a 1.4 y z_sigma68 < 1.2
-S = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
+S = fits.open('../cats/DES/DESy1_shape_mof_mcal.fits')[1].data
 
 
 def SigmaCrit(zl, zs, h=1.):
