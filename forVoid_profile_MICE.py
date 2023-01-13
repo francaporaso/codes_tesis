@@ -388,11 +388,14 @@ def main(lcat, sample='pru',
         
         print(f'Voids catalog {lcat}')
         print(f'Sample {sample}')
+        print(f'RIN : {RIN}')
+        print(f'ROUT: {ROUT}')
+        print(f'ndots: {ndots}')
         print('Selecting voids with:')
-        print(f'{Rv_min} <= Rv < {Rv_max}')
-        print(f'{z_min}  <= Z < {z_max}')
-        print(f'{rho1_min} <= rho1 < {rho1_max}')
-        print(f'{rho2_min} <= rho2 < {rho2_max}')
+        print(f'{Rv_min}    <=  Rv  < {Rv_max}')
+        print(f'{z_min}     <=  Z   < {z_max}')
+        print(f'{rho1_min}  <= rho1 < {rho1_max}')
+        print(f'{rho2_min}  <= rho2 < {rho2_max}')
         
         if idlist:
                 print('From id list '+idlist)
@@ -420,7 +423,7 @@ def main(lcat, sample='pru',
         rho_1 = L[8] #Sobredensidad integrada a un radio de void 
         rho_2 = L[9] #Sobredensidad integrada máxima entre 2 y 3 radios de void 
         flag  = L[11]
-        
+
         if idlist:
                 ides = np.loadtxt(idlist).astype(int)
                 mlenses = np.in1d(L[0],ides)
@@ -554,7 +557,8 @@ def main(lcat, sample='pru',
                 rout = ROUT*np.ones(num)
                 nd   = ndots*np.ones(num)
                 h_array   = hcosmo*np.ones(num)
-                addnoise_array   = np.array([addnoise]*np.ones(num))
+                if addnoise:
+                        addnoise_array   = np.array([addnoise]*np.ones(num))
                 
                 if num == 1:
                         entrada = [Lsplit[l][2], Lsplit[l][3],
@@ -573,6 +577,13 @@ def main(lcat, sample='pru',
                         salida = np.array(pool.map(partial, entrada))
                         pool.terminate()
                                 
+                del rin
+                del rout
+                del nd
+                del h_array
+                if addnoise:
+                        del addnoise_array
+
                 for j in range(len(salida)):
                         
                         profilesums = salida[j]
@@ -618,13 +629,13 @@ def main(lcat, sample='pru',
         h = fits.Header()
         h.append(('N_VOIDS',np.int(Nlenses)))
         h.append(('Lens cat',lcat))
-        h.append(('MICE version sources 2.0'))
+        #h.append(('MICE version sources 2.0'))
         h.append(('Rv_min',np.round(Rv_min,2)))
         h.append(('Rv_max',np.round(Rv_max,2)))
-        h.append(('rho1_max',np.round(rho1_max,2)))
         h.append(('rho1_min',np.round(rho1_min,2)))
-        h.append(('rho2_max',np.round(rho2_max,2)))
+        h.append(('rho1_max',np.round(rho1_max,2)))
         h.append(('rho2_min',np.round(rho2_min,2)))
+        h.append(('rho2_max',np.round(rho2_max,2)))
         h.append(('z_min',np.round(z_min,2)))
         h.append(('z_max',np.round(z_max,2)))
         h.append(('hcosmo',np.round(hcosmo,4)))
