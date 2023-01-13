@@ -444,6 +444,12 @@ def main(lcat, sample='pru',
                 mrho2   = (rho_2 >= rho2_min)&(rho_2 < rho2_max)
                 mflag   = flag >= FLAG
                 mlenses = mradio & mz & mrho1 & mrho2 & mflag
+
+                del mradio
+                del mz
+                del mrho1
+                del mrho2
+                del mflag
         
         # SELECT RELAXED HALOS
                 
@@ -492,6 +498,8 @@ def main(lcat, sample='pru',
         Lsplit = np.split(L.T,slices)
         Ksplit = np.split(kmask.T,slices)
         
+        del L
+
         if domap:
 
             print('Maps have ',ndots,'pixels')
@@ -529,7 +537,7 @@ def main(lcat, sample='pru',
         else:
 
             print(f'Profile has {ndots} bins')
-            print(f'from {RIN} Mpc to {ROUT} Mpc')
+            print(f'from {RIN} Rv to {ROUT} Rv')
             os.system('mkdir ../profiles')
             output_file = f'profiles/voids/profile_{sample}.fits'
 
@@ -555,13 +563,13 @@ def main(lcat, sample='pru',
         Ntot         = np.array([])
         tslice       = np.array([])
         
-        for l in range(len(Lsplit)):
+        for l, Lsplit_l in enumerate(Lsplit):
                 
                 print(f'RUN {l+1} OF {len(Lsplit)}')
                 
                 t1 = time.time()
                 
-                num = len(Lsplit[l])
+                num = len(Lsplit_l)
                 
                 rin  = RIN*np.ones(num)
                 rout = ROUT*np.ones(num)
@@ -570,15 +578,15 @@ def main(lcat, sample='pru',
                 addnoise_array   = np.array([addnoise]*np.ones(num))
                 
                 if num == 1:
-                        entrada = [Lsplit[l][2], Lsplit[l][3],
-                                   Lsplit[l][4],Lsplit[l][1],
+                        entrada = [Lsplit_l[2], Lsplit_l[3],
+                                   Lsplit_l[4],Lsplit_l[1],
                                    RIN,ROUT,ndots,hcosmo,
                                    addnoise]
                         
                         salida = [partial(entrada)]
                 else:          
-                        entrada = np.array([Lsplit[l].T[2],Lsplit[l].T[3],
-                                        Lsplit[l].T[4],Lsplit[l].T[1],
+                        entrada = np.array([Lsplit_l.T[2],Lsplit_l.T[3],
+                                        Lsplit_l.T[4],Lsplit_l.T[1],
                                         rin,rout,nd,h_array,
                                         addnoise_array]).T
                         
@@ -591,10 +599,10 @@ def main(lcat, sample='pru',
                 del nd
                 del h_array
                 del addnoise_array
-
-                for j in range(len(salida)):
+                
+                for j, profilesums in enumerate(salida):
                         
-                        profilesums = salida[j]
+                        #profilesums = salida[j]
                         Ntot         = np.append(Ntot,profilesums['Ntot'])
                         
                         if domap:
@@ -615,6 +623,7 @@ def main(lcat, sample='pru',
                             SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
                             DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
                             DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
+
                             
                         
                 
@@ -626,13 +635,7 @@ def main(lcat, sample='pru',
                 print('Estimated remaining time')
                 print(np.mean(tslice)*(len(Lsplit)-(l+1)))
 
-        # AVERAGE LENS PARAMETERS AND SAVE IT IN HEADER
-        
-        # zmean        = np.average(L,weights=Ntot)
-        # lM_mean      = np.log10(np.average(10**L.lgMEin_rho,weights=Ntot))
-        # c200_mean    = np.average(L.cNFW_S,weights=Ntot)
-        # lM200_mean   = np.log10(np.average(10**L.lgMNFW_S,weights=Ntot))
-        
+        # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
         h = fits.Header()
         h.append(('N_VOIDS',np.int(Nlenses)))
@@ -647,10 +650,6 @@ def main(lcat, sample='pru',
         h.append(('z_min',np.round(z_min,2)))
         h.append(('z_max',np.round(z_max,2)))
         h.append(('hcosmo',np.round(hcosmo,4)))
-        # h.append(('lM_mean',np.round(lM_mean,4)))
-        # h.append(('lM200_mean',np.round(lM200_mean,4)))
-        # h.append(('c200_mean',np.round(c200_mean,4)))
-        # h.append(('z_mean',np.round(zmean,4)))
 
         if domap:
             
