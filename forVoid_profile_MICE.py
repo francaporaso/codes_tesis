@@ -119,6 +119,30 @@ if nback < 30.:
 
 print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
+def SigmaCrit(zl, zs, h=1.):
+    '''Calcula el Sigma_critico dados los redshifts. 
+    Debe ser usada con astropy.cosmology y con astropy.constants
+    
+    zl:   (float) redshift de la lente (lens)
+    zs:   (float) redshift de la fuente (source)
+    h :   (float) H0 = 100.*h
+    '''
+    #if zl > zs:
+    #    raise ValueError('Redshift de la fuente es menor al de la lente')
+
+    cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
+
+    dl  = cosmo.angular_diameter_distance(zl).value
+    Dl = dl*1.e6*pc #en Mpc
+    ds  = cosmo.angular_diameter_distance(zs).value              #dist ang diam de la fuente
+    dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value      #dist ang diam entre fuente y lente
+                
+    BETA_array = dls / ds
+        
+    sigma_crit = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
+    return sigma_crit
+
+
 def partial_map(RA0,DEC0,Z,Rv,
                 RIN,ROUT,ndots,h,
                 addnoise):
@@ -140,14 +164,7 @@ def partial_map(RA0,DEC0,Z,Rv,
                        
         catdata = S[mask]
 
-        ds  = cosmo.angular_diameter_distance(catdata.z_cgal_v).value
-        dls = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_cgal_v).value
-                
-        
-        BETA_array = dls/ds
-        
-        Dl = dl*1.e6*pc
-        sigma_c = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
+        sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
 
         # Add miscentring
         c1 = SkyCoord(RA0*u.degree, DEC0*u.degree)
@@ -258,19 +275,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
         del mask
         del delta
 
-        ds  = cosmo.angular_diameter_distance(catdata.z_cgal_v).value
-        dls = cosmo.angular_diameter_distance_z1z2(Z, catdata.z_cgal_v).value
-                
-        BETA_array = dls/ds
+        sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
         
-        Dl = dl*1.e6*pc
-        sigma_c = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
-
-        del ds
-        del dls
-        del Dl
-        del BETA_array
-
         rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra_gal),
                                         np.deg2rad(catdata.dec_gal),
                                         np.deg2rad(RA0),
@@ -311,11 +317,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
                 
-        
-        #SIGMAwsum    = []
-        #DSIGMAwsum_T = []
-        #DSIGMAwsum_X = []
-        #N_inbin      = []
+
         SIGMAwsum    = np.empty(ndots)
         DSIGMAwsum_T = np.empty(ndots)
         DSIGMAwsum_X = np.empty(ndots)
@@ -323,11 +325,6 @@ def partial_profile(RA0,DEC0,Z,Rv,
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
-                
-                #SIGMAwsum    = np.append(SIGMAwsum,k[mbin].sum())
-                #DSIGMAwsum_T = np.append(DSIGMAwsum_T,et[mbin].sum())
-                #DSIGMAwsum_X = np.append(DSIGMAwsum_X,ex[mbin].sum())
-                #N_inbin = np.append(N_inbin,len(et[mbin]))
 
                 SIGMAwsum[nbin]    = k[mbin].sum()
                 DSIGMAwsum_T[nbin] = et[mbin].sum()
@@ -624,9 +621,6 @@ def main(lcat, sample='pru',
                             DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
                             DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
 
-                            
-                        
-                
                 t2 = time.time()
                 ts = (t2-t1)/60.
                 tslice = np.append(tslice,ts)
