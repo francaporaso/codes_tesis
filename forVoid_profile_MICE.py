@@ -557,8 +557,7 @@ def main(lcat, sample='pru',
                 rout = ROUT*np.ones(num)
                 nd   = ndots*np.ones(num)
                 h_array   = hcosmo*np.ones(num)
-                if addnoise:
-                        addnoise_array   = np.array([addnoise]*np.ones(num))
+                addnoise_array   = np.array([addnoise]*np.ones(num))
                 
                 if num == 1:
                         entrada = [Lsplit[l][2], Lsplit[l][3],
@@ -581,8 +580,7 @@ def main(lcat, sample='pru',
                 del rout
                 del nd
                 del h_array
-                if addnoise:
-                        del addnoise_array
+                del addnoise_array
 
                 for j in range(len(salida)):
                         
