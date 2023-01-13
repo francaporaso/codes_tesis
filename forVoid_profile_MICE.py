@@ -268,6 +268,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         del ds
         del dls
+        del Dl
         del BETA_array
 
         rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra_gal),
@@ -298,6 +299,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         del e1
         del e2
         del theta
+        del sigma_c
 
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         del rads
@@ -310,24 +312,32 @@ def partial_profile(RA0,DEC0,Z,Rv,
         dig = np.digitize(r,bines)
                 
         
-        SIGMAwsum    = []
-        DSIGMAwsum_T = []
-        DSIGMAwsum_X = []
-        N_inbin      = []
+        #SIGMAwsum    = []
+        #DSIGMAwsum_T = []
+        #DSIGMAwsum_X = []
+        #N_inbin      = []
+        SIGMAwsum    = np.empty(ndots)
+        DSIGMAwsum_T = np.empty(ndots)
+        DSIGMAwsum_X = np.empty(ndots)
+        N_inbin      = np.empty(ndots)
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
                 
-                SIGMAwsum    = np.append(SIGMAwsum,k[mbin].sum())
-                DSIGMAwsum_T = np.append(DSIGMAwsum_T,et[mbin].sum())
-                DSIGMAwsum_X = np.append(DSIGMAwsum_X,ex[mbin].sum())
-                               
-                N_inbin = np.append(N_inbin,len(et[mbin]))
+                #SIGMAwsum    = np.append(SIGMAwsum,k[mbin].sum())
+                #DSIGMAwsum_T = np.append(DSIGMAwsum_T,et[mbin].sum())
+                #DSIGMAwsum_X = np.append(DSIGMAwsum_X,ex[mbin].sum())
+                #N_inbin = np.append(N_inbin,len(et[mbin]))
+
+                SIGMAwsum[nbin]    = k[mbin].sum()
+                DSIGMAwsum_T[nbin] = et[mbin].sum()
+                DSIGMAwsum_X[nbin] = ex[mbin].sum()
+                N_inbin[nbin]      = len(et[mbin])
                 
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
-                   'DSIGMAwsum_X':DSIGMAwsum_X,
-                   'N_inbin':N_inbin,'Ntot':Ntot}
+                  'DSIGMAwsum_X':DSIGMAwsum_X,
+                  'N_inbin':N_inbin,'Ntot':Ntot}
         
         return output
 
