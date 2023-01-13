@@ -35,13 +35,9 @@ main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
 '''
 
 #catalogo DES Y1
-w = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
-# mean_z de 0.3 a 1.4 y z_sigma68 <1.2
-m_sources = (w.flags_select == 0)&(w.mcal_mean_z > 0.3)&(w.mcal_mean_z < 1.4)&(w.mcal_z_sigma68 < 1.2)&(w.mcal_mean_z > 0.3)&(w.mof_z_mc < 1.4)&(w.mof_z_sigma68 < 1.2)
-#datos
-S = w[m_sources]
-del w
-del m_sources
+# mean_z, z_mc de 0.3 a 1.4 y z_sigma68 < 1.2
+S = fits.open('../cats/DES/DES_y1_shape_mof_mcal.fits')[1].data
+
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
@@ -142,41 +138,41 @@ def partial_profile(RA0,DEC0,Z,
         bines = np.logspace(np.log10(RIN),np.log10(ROUT),num=ndots+1)
         dig = np.digitize(r,bines)
         
-        DSIGMAwsum_T = []
+        DSIGMAwsum_T = np.empty(ndots)
         #DSIGMAwsum_X = []
-        WEIGHT_RTsum = []
-        WEIGHTwsum   = []
-        E1_P         = [] #elipticidad promedio de ec 5 McClintock para Rsel
-        E1_M         = []
-        E2_P         = []
-        E2_M         = []
+        WEIGHT_RTsum = np.empty(ndots)
+        WEIGHTwsum   = np.empty(ndots)
+        E1_P         = np.empty(ndots) #elipticidad promedio de ec 5 McClintock para Rsel
+        E1_M         = np.empty(ndots)
+        E2_P         = np.empty(ndots)
+        E2_M         = np.empty(ndots)
         #Mwsum        = []
         #BOOTwsum_T   = np.zeros((nboot,ndots))
         #BOOTwsum_X   = np.zeros((nboot,ndots))
         #BOOTwsum     = np.zeros((nboot,ndots))
-        NGAL         = []
-        NS1P         = []
-        NS1M         = []
-        NS2P         = []
-        NS2M         = []
+        NGAL         = np.empty(ndots)
+        NS1P         = np.empty(ndots)
+        NS1M         = np.empty(ndots)
+        NS2P         = np.empty(ndots)
+        NS2M         = np.empty(ndots)
 
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
                 
-                DSIGMAwsum_T = np.append(DSIGMAwsum_T,(et[mbin]*peso[mbin]).sum())     #numerador ec 12 McClintock
+                DSIGMAwsum_T[nbin] = (et[mbin]*peso[mbin]).sum()     #numerador ec 12 McClintock
                 #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
-                WEIGHT_RTsum = np.append(WEIGHT_RTsum, (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum())  #1mer termino denominador ec 12 McClintock
-                WEIGHTwsum   = np.append(WEIGHTwsum,(sigma_c_mof[mbin]*peso[mbin]).sum())        #parentesis 2do termnino denominador 
-                E1_P         = np.append(E1_P,e1[mbin & mS1p].sum())
-                E1_M         = np.append(E1_M,e1[mbin & mS1m].sum())
-                E2_P         = np.append(E1_P,e2[mbin & mS2p].sum())
-                E2_M         = np.append(E2_M,e2[mbin & mS2m].sum())
-                NGAL         = np.append(NGAL,mbin.sum())
+                WEIGHT_RTsum[nbin] = (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum()  #1mer termino denominador ec 12 McClintock
+                WEIGHTwsum[nbin]   = (sigma_c_mof[mbin]*peso[mbin]).sum()        #parentesis 2do termnino denominador 
+                E1_P[nbin]         = e1[mbin & mS1p].sum()
+                E1_M[nbin]         = e1[mbin & mS1m].sum()
+                E2_P[nbin]         = e2[mbin & mS2p].sum()
+                E2_M[nbin]         = e2[mbin & mS2m].sum()
+                NGAL[nbin]         = mbin.sum()
                 
-                NS1P         = np.append(NS1P,(mbin & mS1p).sum()) #cantidad de galaxias en el bin para poder hacer el promedio
-                NS1M         = np.append(NS1M,(mbin & mS1p).sum())
-                NS2P         = np.append(NS2P,(mbin & mS1p).sum())
-                NS2M         = np.append(NS2M,(mbin & mS1p).sum())
+                NS1P[nbin]         = (mbin & mS1p).sum() #cantidad de galaxias en el bin para poder hacer el promedio
+                NS1M[nbin]         = (mbin & mS1p).sum()
+                NS2P[nbin]         = (mbin & mS1p).sum()
+                NS2M[nbin]         = (mbin & mS1p).sum()
                 
         
         output = {'DSIGMAwsum_T':DSIGMAwsum_T,
@@ -216,13 +212,13 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         tini = time.time()
         
         print('Selecting clusters with:')
-        print(z_min,' <= z < ',z_max)
-        print(lmin,' <= lambda < ',lmax)
-        print('pcc > ',pcc_min)
+        print(f'{z_min} <= z < {z_max}')
+        print(f'{lmin} <= lambda < {lmax}')
+        print(f'pcc > {pcc_min}')
         print('Background galaxies with:')
-        print('Profile has ',ndots,'bins')
-        print('from ',RIN,'kpc to ',ROUT,'kpc')
-        print('h = ',hcosmo)
+        print(f'Profile has {ndots} bins')
+        print(f'from {RIN} kpc to {ROUT} kpc')
+        print(f'h = {hcosmo}')
               
         # Defining radial bins
         bines = np.logspace(np.log10(RIN),np.log10(ROUT),num=ndots+1)
@@ -248,6 +244,10 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
 
         mlenses = mz&ml&mpcc
         
+        del mz
+        del ml
+        del mpcc
+
         L = np.array([RA[mlenses],DEC[mlenses],z[mlenses]])
         #L = L[]:2]
         z = z[mlenses]
@@ -256,8 +256,8 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         if Nlenses < ncores:
                 ncores = Nlenses
         
-        print('Nlenses',Nlenses)
-        print('CORRIENDO EN ',ncores,' CORES')
+        print(f'Nlenses {Nlenses}')
+        print(f'CORRIENDO EN {ncores} CORES')
 
         
         # SPLIT LENSING CAT
@@ -269,33 +269,33 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        DSIGMAwsum_T = np.zeros(ndots) 
+        DSIGMAwsum_T = np.empty(ndots) 
         #DSIGMAwsum_X = np.zeros(ndots)
-        WEIGHT_RTsum = np.zeros(ndots)
-        NGALsum      = np.zeros(ndots)
-        WEIGHTwsum   = np.zeros(ndots)
-        E1_P         = np.zeros(ndots)
-        E1_M         = np.zeros(ndots)
-        E2_P         = np.zeros(ndots)
-        E2_M         = np.zeros(ndots)
-        NS1P         = np.zeros(ndots) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
-        NS1M         = np.zeros(ndots)
-        NS2P         = np.zeros(ndots)
-        NS2M         = np.zeros(ndots)
+        WEIGHT_RTsum = np.empty(ndots)
+        NGALsum      = np.empty(ndots)
+        WEIGHTwsum   = np.empty(ndots)
+        E1_P         = np.empty(ndots)
+        E1_M         = np.empty(ndots)
+        E2_P         = np.empty(ndots)
+        E2_M         = np.empty(ndots)
+        NS1P         = np.empty(ndots) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
+        NS1M         = np.empty(ndots)
+        NS2P         = np.empty(ndots)
+        NS2M         = np.empty(ndots)
 
         #BOOTwsum_T   = np.zeros((100,ndots))
         #BOOTwsum_X   = np.zeros((100,ndots))
         #BOOTwsum     = np.zeros((100,ndots))
-        Ntot         = []
+        Ntot         = np.array([])
         tslice       = np.array([])
         
-        for l in range(len(Lsplit)):
+        for l, Lsplit_l in enumerate(Lsplit):
                 
-                print('RUN ',l+1,' OF ',len(Lsplit))
+                print(f'RUN {l+1} OF {len(Lsplit)}')
                 
                 t1 = time.time()
                 
-                num = len(Lsplit[l])
+                num = len(Lsplit_l)
                 
                 rin  = RIN*np.ones(num)
                 rout = ROUT*np.ones(num)
@@ -303,14 +303,14 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 h_a  = hcosmo*np.ones(num)
                 
                 if num == 1:
-                        entrada = [Lsplit[l].T[0][0], Lsplit[l].T[1][0],
-                                   Lsplit[l].T[2][0],
+                        entrada = [Lsplit_l.T[0], Lsplit_l.T[1],
+                                   Lsplit_l.T[2],
                                    RIN,ROUT,ndots,hcosmo]
                         
                         salida = [partial_profile_unpack(entrada)]
                 else:          
-                        entrada = np.array([Lsplit[l].T[0], Lsplit[l].T[1],
-                                           Lsplit[l].T[2],
+                        entrada = np.array([Lsplit_l.T[0], Lsplit_l.T[1],
+                                           Lsplit_l.T[2],
                                            rin,rout,nd,h_a]).T
                         
                         pool = Pool(processes=(num))
@@ -318,20 +318,20 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                         pool.terminate()
 
                 #esta parte separa el dict 'salida' de partial_profile en varios arrays                
-                for profilesums in salida:
-                        DSIGMAwsum_T += profilesums['DSIGMAwsum_T']
-                        #DSIGMAwsum_X += profilesums['DSIGMAwsum_X']
-                        WEIGHT_RTsum += profilesums['WEIGHT_RTsum']
-                        NGALsum      += profilesums['NGAL']
-                        WEIGHTwsum   += profilesums['WEIGHT_RTsum']
-                        E1_P         += profilesums['E1_P']
-                        E1_M         += profilesums['E1_M']
-                        E2_P         += profilesums['E2_P']
-                        E2_M         += profilesums['E2_M']
-                        NS1P         += profilesums['NS1P']
-                        NS1M         += profilesums['NS1M']
-                        NS2P         += profilesums['NS2P']
-                        NS2M         += profilesums['NS2M']
+                for j, profilesums in enumerate(salida):
+                        DSIGMAwsum_T[j] = profilesums['DSIGMAwsum_T']
+                        #DSIGMAwsum_X[j] = profilesums['DSIGMAwsum_X']
+                        WEIGHT_RTsum[j] = profilesums['WEIGHT_RTsum']
+                        NGALsum[j]      = profilesums['NGAL']
+                        WEIGHTwsum[j]   = profilesums['WEIGHT_RTsum']
+                        E1_P[j]         = profilesums['E1_P']
+                        E1_M[j]         = profilesums['E1_M']
+                        E2_P[j]         = profilesums['E2_P']
+                        E2_M[j]         = profilesums['E2_M']
+                        NS1P[j]         = profilesums['NS1P']
+                        NS1M[j]         = profilesums['NS1M']
+                        NS2P[j]         = profilesums['NS2P']
+                        NS2M[j]         = profilesums['NS2M']
                         #BOOTwsum_T   += profilesums['BOOTwsum_T']
                         #BOOTwsum_X   += profilesums['BOOTwsum_X']
                         #BOOTwsum     += profilesums['BOOTwsum']
@@ -353,12 +353,28 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         E1_M_mean = E1_M / NS1M
         E2_P_mean = E2_P / NS2P
         E2_M_mean = E2_M / NS2M
+
+        del E1_P
+        del E1_M
+        del E2_P
+        del E2_M
+        del NS1P
+        del NS1M
+        del NS2P
+        del NS2M
+
         Rsel_T    = 0.5 * ((E1_P_mean - E1_M_mean) + (E2_P_mean - E2_M_mean)) / Dg
         DSigma_T  = (DSIGMAwsum_T / (WEIGHT_RTsum + WEIGHTwsum*Rsel_T))
         #DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr
         #eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/Mcorr
         #eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/Mcorr
         
+        del E1_P_mean
+        del E1_M_mean
+        del E2_P_mean
+        del E2_M_mean
+        del Rsel_T
+
         # AVERAGE LENS PARAMETERS
         
         zmean        = np.average(z,weights=Ntot)
@@ -387,12 +403,12 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('z_mean',np.round(zmean,4)))
         h.append(('l_mean',np.round(lmean,4)))
                 
-        outfile = '../profiles/profile_'+sample+'.fits'
+        outfile = f'../profiles/profile_{sample}.fits'
         tbhdu.writeto(outfile,overwrite=True)
                 
         tfin = time.time()
-        print('File saved... ',outfile)
-        print('TOTAL TIME ',(tfin-tini)/60.)
+        print(f'File saved... {outfile}')
+        print(f'TOTAL TIME {(tfin-tini)/60.}')
         
 
 
