@@ -335,7 +335,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                         #BOOTwsum_T   += profilesums['BOOTwsum_T']
                         #BOOTwsum_X   += profilesums['BOOTwsum_X']
                         #BOOTwsum     += profilesums['BOOTwsum']
-                        Ntot         = np.append(Ntot,profilesums['Ntot'][j])
+                        Ntot         = np.append(Ntot,profilesums['Ntot'])
                 
                 t2 = time.time()
                 ts = (t2-t1)/60.
