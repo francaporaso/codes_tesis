@@ -269,19 +269,19 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        DSIGMAwsum_T = np.empty(ndots) 
-        #DSIGMAwsum_X = np.zeros(ndots)
-        WEIGHT_RTsum = np.empty(ndots)
-        NGALsum      = np.empty(ndots)
-        WEIGHTwsum   = np.empty(ndots)
-        E1_P         = np.empty(ndots)
-        E1_M         = np.empty(ndots)
-        E2_P         = np.empty(ndots)
-        E2_M         = np.empty(ndots)
-        NS1P         = np.empty(ndots) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
-        NS1M         = np.empty(ndots)
-        NS2P         = np.empty(ndots)
-        NS2M         = np.empty(ndots)
+        DSIGMAwsum_T = np.empty(ndots+1) 
+        #DSIGMAwsum_X = np.zeros(ndots+1)
+        WEIGHT_RTsum = np.empty(ndots+1)
+        NGALsum      = np.empty(ndots+1)
+        WEIGHTwsum   = np.empty(ndots+1)
+        E1_P         = np.empty(ndots+1)
+        E1_M         = np.empty(ndots+1)
+        E2_P         = np.empty(ndots+1)
+        E2_M         = np.empty(ndots+1)
+        NS1P         = np.empty(ndots+1) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
+        NS1M         = np.empty(ndots+1)
+        NS2P         = np.empty(ndots+1)
+        NS2M         = np.empty(ndots+1)
 
         #BOOTwsum_T   = np.zeros((100,ndots))
         #BOOTwsum_X   = np.zeros((100,ndots))
