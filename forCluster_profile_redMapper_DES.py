@@ -319,23 +319,23 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
 
                 #esta parte separa el dict 'salida' de partial_profile en varios arrays                
                 for j, profilesums in enumerate(salida):
-                        DSIGMAwsum_T[j] = profilesums['DSIGMAwsum_T']
+                        DSIGMAwsum_T[j] = profilesums['DSIGMAwsum_T'][j]
                         #DSIGMAwsum_X[j] = profilesums['DSIGMAwsum_X']
-                        WEIGHT_RTsum[j] = profilesums['WEIGHT_RTsum']
-                        NGALsum[j]      = profilesums['NGAL']
-                        WEIGHTwsum[j]   = profilesums['WEIGHT_RTsum']
-                        E1_P[j]         = profilesums['E1_P']
-                        E1_M[j]         = profilesums['E1_M']
-                        E2_P[j]         = profilesums['E2_P']
-                        E2_M[j]         = profilesums['E2_M']
-                        NS1P[j]         = profilesums['NS1P']
-                        NS1M[j]         = profilesums['NS1M']
-                        NS2P[j]         = profilesums['NS2P']
-                        NS2M[j]         = profilesums['NS2M']
+                        WEIGHT_RTsum[j] = profilesums['WEIGHT_RTsum'][j]
+                        NGALsum[j]      = profilesums['NGAL'][j]
+                        WEIGHTwsum[j]   = profilesums['WEIGHT_RTsum'][j]
+                        E1_P[j]         = profilesums['E1_P'][j]
+                        E1_M[j]         = profilesums['E1_M'][j]
+                        E2_P[j]         = profilesums['E2_P'][j]
+                        E2_M[j]         = profilesums['E2_M'][j]
+                        NS1P[j]         = profilesums['NS1P'][j]
+                        NS1M[j]         = profilesums['NS1M'][j]
+                        NS2P[j]         = profilesums['NS2P'][j]
+                        NS2M[j]         = profilesums['NS2M'][j]
                         #BOOTwsum_T   += profilesums['BOOTwsum_T']
                         #BOOTwsum_X   += profilesums['BOOTwsum_X']
                         #BOOTwsum     += profilesums['BOOTwsum']
-                        Ntot         = np.append(Ntot,profilesums['Ntot'])
+                        Ntot         = np.append(Ntot,profilesums['Ntot'][j])
                 
                 t2 = time.time()
                 ts = (t2-t1)/60.
