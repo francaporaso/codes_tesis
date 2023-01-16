@@ -28,7 +28,7 @@ pcc_min = 0.
 RIN = 300.
 ROUT =1000.
 ndots= 20
-ncores=10
+ncores=128
 hcosmo=1.
 h = hcosmo
 main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
@@ -269,19 +269,19 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        DSIGMAwsum_T = np.empty(ndots+1) 
-        #DSIGMAwsum_X = np.zeros(ndots+1)
-        WEIGHT_RTsum = np.empty(ndots+1)
-        NGALsum      = np.empty(ndots+1)
-        WEIGHTwsum   = np.empty(ndots+1)
-        E1_P         = np.empty(ndots+1)
-        E1_M         = np.empty(ndots+1)
-        E2_P         = np.empty(ndots+1)
-        E2_M         = np.empty(ndots+1)
-        NS1P         = np.empty(ndots+1) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
-        NS1M         = np.empty(ndots+1)
-        NS2P         = np.empty(ndots+1)
-        NS2M         = np.empty(ndots+1)
+        DSIGMAwsum_T = np.zeros(ndots)
+        #DSIGMAwsum_X = np.zeros(ncores*ndots)
+        WEIGHT_RTsum = np.zeros(ndots)
+        NGALsum      = np.zeros(ndots)
+        WEIGHTwsum   = np.zeros(ndots)
+        E1_P         = np.zeros(ndots)
+        E1_M         = np.zeros(ndots)
+        E2_P         = np.zeros(ndots)
+        E2_M         = np.zeros(ndots)
+        NS1P         = np.zeros(ndots) #cantidad de galaxias en el bin para poder hacer el promedio de e_i
+        NS1M         = np.zeros(ndots)
+        NS2P         = np.zeros(ndots)
+        NS2M         = np.zeros(ndots)
 
         #BOOTwsum_T   = np.zeros((100,ndots))
         #BOOTwsum_X   = np.zeros((100,ndots))
@@ -319,19 +319,19 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
 
                 #esta parte separa el dict 'salida' de partial_profile en varios arrays                
                 for j, profilesums in enumerate(salida):
-                        DSIGMAwsum_T[j] = profilesums['DSIGMAwsum_T'][j]
+                        DSIGMAwsum_T += profilesums['DSIGMAwsum_T']
                         #DSIGMAwsum_X[j] = profilesums['DSIGMAwsum_X']
-                        WEIGHT_RTsum[j] = profilesums['WEIGHT_RTsum'][j]
-                        NGALsum[j]      = profilesums['NGAL'][j]
-                        WEIGHTwsum[j]   = profilesums['WEIGHT_RTsum'][j]
-                        E1_P[j]         = profilesums['E1_P'][j]
-                        E1_M[j]         = profilesums['E1_M'][j]
-                        E2_P[j]         = profilesums['E2_P'][j]
-                        E2_M[j]         = profilesums['E2_M'][j]
-                        NS1P[j]         = profilesums['NS1P'][j]
-                        NS1M[j]         = profilesums['NS1M'][j]
-                        NS2P[j]         = profilesums['NS2P'][j]
-                        NS2M[j]         = profilesums['NS2M'][j]
+                        WEIGHT_RTsum += profilesums['WEIGHT_RTsum']
+                        NGALsum      += profilesums['NGAL']
+                        WEIGHTwsum   += profilesums['WEIGHT_RTsum']
+                        E1_P         += profilesums['E1_P']
+                        E1_M         += profilesums['E1_M']
+                        E2_P         += profilesums['E2_P']
+                        E2_M         += profilesums['E2_M']
+                        NS1P         += profilesums['NS1P']
+                        NS1M         += profilesums['NS1M']
+                        NS2P         += profilesums['NS2P']
+                        NS2M         += profilesums['NS2M']
                         #BOOTwsum_T   += profilesums['BOOTwsum_T']
                         #BOOTwsum_X   += profilesums['BOOTwsum_X']
                         #BOOTwsum     += profilesums['BOOTwsum']
