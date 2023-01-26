@@ -161,8 +161,8 @@ def partial_profile(RA0,DEC0,Z,
                 
                 DSIGMAwsum_T[nbin] = (et[mbin]*peso[mbin]).sum()     #numerador ec 12 McClintock
                 DSIGMAwsum_X[nbin] = (ex[mbin]*peso[mbin]).sum() 
-                WEIGHT_RTsum[nbin] = (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum()  #1mer termino denominador ec 12 McClintock
-                WEIGHTwsum[nbin]   = (sigma_c_mof[mbin]*peso[mbin]).sum()        #parentesis 2do termnino denominador 
+                WEIGHT_RTsum[nbin] = ((1/sigma_c_mof[mbin])*peso[mbin]*Rg_T[mbin]).sum()  #1mer termino denominador ec 12 McClintock
+                WEIGHTwsum[nbin]   = ((1/sigma_c_mof[mbin])*peso[mbin]).sum()        #parentesis 2do termnino denominador 
                 E1_P[nbin]         = e1[mbin & mS1p].sum()
                 E1_M[nbin]         = e1[mbin & mS1m].sum()
                 E2_P[nbin]         = e2[mbin & mS2p].sum()
