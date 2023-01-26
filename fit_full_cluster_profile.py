@@ -136,7 +136,7 @@ sampler.run_mcmc(pos, nit, progress=True)
     
     
 print('TOTAL TIME FIT')    
-print((time.time()-t1)/60. , 'min')
+print(f'{(time.time()-t1)/60.} min')
 
 #-------------------
 # saving mcmc out
