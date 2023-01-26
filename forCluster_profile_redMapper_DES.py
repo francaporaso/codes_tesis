@@ -19,7 +19,7 @@ pc   = pc.value # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
 '''
-sample='pruDES'
+sample='pruDES2'
 z_min = 0.1
 z_max = 0.3
 lmin = 30.
@@ -125,7 +125,7 @@ def partial_profile(RA0,DEC0,Z,
         #get tangential ellipticities 
         et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))
         #get cross ellipticities
-        #ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
+        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))
 
         r = np.rad2deg(rads)*3600*KPCSCALE
         del rads
@@ -139,7 +139,7 @@ def partial_profile(RA0,DEC0,Z,
         dig = np.digitize(r,bines)
         
         DSIGMAwsum_T = np.empty(ndots)
-        #DSIGMAwsum_X = []
+        DSIGMAwsum_X = np.empty(ndots)
         WEIGHT_RTsum = np.empty(ndots)
         WEIGHTwsum   = np.empty(ndots)
         E1_P         = np.empty(ndots) #elipticidad promedio de ec 5 McClintock para Rsel
@@ -160,7 +160,7 @@ def partial_profile(RA0,DEC0,Z,
                 mbin = dig == nbin+1              
                 
                 DSIGMAwsum_T[nbin] = (et[mbin]*peso[mbin]).sum()     #numerador ec 12 McClintock
-                #DSIGMAwsum_X = np.append(DSIGMAwsum_X,(ex[mbin]*peso[mbin]).sum()) 
+                DSIGMAwsum_X[nbin] = (ex[mbin]*peso[mbin]).sum() 
                 WEIGHT_RTsum[nbin] = (sigma_c_mof[mbin]*peso[mbin]*Rg_T[mbin]).sum()  #1mer termino denominador ec 12 McClintock
                 WEIGHTwsum[nbin]   = (sigma_c_mof[mbin]*peso[mbin]).sum()        #parentesis 2do termnino denominador 
                 E1_P[nbin]         = e1[mbin & mS1p].sum()
@@ -176,7 +176,7 @@ def partial_profile(RA0,DEC0,Z,
                 
         
         output = {'DSIGMAwsum_T':DSIGMAwsum_T,
-                  #'DSIGMAwsum_X':DSIGMAwsum_X, 
+                  'DSIGMAwsum_X':DSIGMAwsum_X, 
                   'WEIGHT_RTsum':WEIGHT_RTsum,'WEIGHTwsum':WEIGHTwsum, 
                   'E1_P':E1_P, 'E1_M':E1_M, 'E2_P':E2_P, 'E2_M':E2_M, 
                   'NS1P':NS1P, 'NS1M':NS1M, 'NS2P':NS2P, 'NS2M':NS2M,
@@ -270,7 +270,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
         DSIGMAwsum_T = np.zeros(ndots)
-        #DSIGMAwsum_X = np.zeros(ncores*ndots)
+        DSIGMAwsum_X = np.zeros(ndots)
         WEIGHT_RTsum = np.zeros(ndots)
         NGALsum      = np.zeros(ndots)
         WEIGHTwsum   = np.zeros(ndots)
@@ -307,7 +307,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                                    Lsplit_l.T[2],
                                    RIN,ROUT,ndots,hcosmo]
                         
-                        salida = [partial_profile_unpack(entrada)]
+                        salida = np.array(partial_profile_unpack(entrada))
                 else:          
                         entrada = np.array([Lsplit_l.T[0], Lsplit_l.T[1],
                                            Lsplit_l.T[2],
@@ -320,7 +320,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 #esta parte separa el dict 'salida' de partial_profile en varios arrays                
                 for j, profilesums in enumerate(salida):
                         DSIGMAwsum_T += profilesums['DSIGMAwsum_T']
-                        #DSIGMAwsum_X[j] = profilesums['DSIGMAwsum_X']
+                        DSIGMAwsum_X += profilesums['DSIGMAwsum_X']
                         WEIGHT_RTsum += profilesums['WEIGHT_RTsum']
                         NGALsum      += profilesums['NGAL']
                         WEIGHTwsum   += profilesums['WEIGHT_RTsum']
@@ -342,7 +342,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 tslice = np.append(tslice,ts)
                 print('TIME SLICE')
                 print(ts)
-                print('Estimated ramaining time')
+                print('Estimated remaining time')
                 print((np.mean(tslice)*(len(Lsplit)-(l+1))))
         
         # COMPUTING PROFILE        
@@ -354,26 +354,11 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         E2_P_mean = E2_P / NS2P
         E2_M_mean = E2_M / NS2M
 
-        del E1_P
-        del E1_M
-        del E2_P
-        del E2_M
-        del NS1P
-        del NS1M
-        del NS2P
-        del NS2M
-
         Rsel_T    = 0.5 * ((E1_P_mean - E1_M_mean) + (E2_P_mean - E2_M_mean)) / Dg
         DSigma_T  = (DSIGMAwsum_T / (WEIGHT_RTsum + WEIGHTwsum*Rsel_T))
-        #DSigma_X  = (DSIGMAwsum_X/WEIGHTsum)/Mcorr
+        DSigma_X  = (DSIGMAwsum_X / (WEIGHT_RTsum + WEIGHTwsum*Rsel_T))
         #eDSigma_T =  np.std((BOOTwsum_T/BOOTwsum),axis=0)/Mcorr
         #eDSigma_X =  np.std((BOOTwsum_X/BOOTwsum),axis=0)/Mcorr
-        
-        del E1_P_mean
-        del E1_M_mean
-        del E2_P_mean
-        del E2_M_mean
-        del Rsel_T
 
         # AVERAGE LENS PARAMETERS
         
@@ -387,7 +372,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 [fits.Column(name='Rp', format='D', array=R),
                  fits.Column(name='DSigma_T', format='D', array=DSigma_T),
                  #fits.Column(name='error_DSigma_T', format='D', array=eDSigma_T),
-                 #fits.Column(name='DSigma_X', format='D', array=DSigma_X),
+                 fits.Column(name='DSigma_X', format='D', array=DSigma_X),
                  #fits.Column(name='error_DSigma_X', format='D', array=eDSigma_X),
                  #fits.Column(name='NGAL_w', format='D', array=WEIGHTsum),
                  fits.Column(name='NGAL', format='D', array=NGALsum)
