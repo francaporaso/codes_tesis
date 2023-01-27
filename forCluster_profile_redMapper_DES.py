@@ -26,16 +26,16 @@ Msun = M_sun.value # Solar mass (kg)
 Dg   = 0.02       #delta gamma for calculating Rsel
 
 '''
-sample='pruDES2'
+sample='pruCOV'
 z_min = 0.1
 z_max = 0.3
-lmin = 30.
-lmax = 32.
+lmin = 20.
+lmax = 150.
 pcc_min = 0.
 RIN = 300.
 ROUT =1000.
 ndots= 20
-ncores=128
+ncores=32
 hcosmo=1.
 h = hcosmo
 main(sample,z_min,z_max,lmin,lmax,pcc_min,RIN,ROUT,nbins,ncores,hcosmo)
@@ -263,7 +263,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         print(f'CORRIENDO EN {ncores} CORES')
 
         # Define K masks   
-        ncen = 50
+        ncen = 40
         X    = np.array([RA[mlenses],DEC[mlenses]]).T
         
         km = kmeans_sample(X, ncen, maxiter=100, tol=1.0e-5)
@@ -287,7 +287,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         DSIGMAwsum_T = np.zeros((ncen+1,ndots))
         DSIGMAwsum_X = np.zeros((ncen+1,ndots))
         WEIGHT_RTsum = np.zeros((ncen+1,ndots))
-        NGALsum      = np.zeros((ncen+1,ndots))
+        NGALsum      = np.zeros((ndots))
         WEIGHTwsum   = np.zeros((ncen+1,ndots))
 
         E1_P         = np.zeros((ncen+1,ndots))
@@ -333,22 +333,22 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 #esta parte separa el dict 'salida' de partial_profile en varios arrays                
                 for j, profilesums in enumerate(salida):
 
-                        km      = np.tile(Ksplit[l][j],(3,ndots,1)).T
+                        km      = np.tile(Ksplit[l][j],(ndots,1)).T
 
-                        DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km[:,:,0]
-                        DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km[:,:,0]
-                        WEIGHT_RTsum += np.tile(profilesums['WEIGHT_RTsum'],(ncen+1,1))*km[:,:,0]
-                        NGALsum      += np.tile(profilesums['NGAL'],(ncen+1,1))*km[:,:,0]
-                        WEIGHTwsum   += np.tile(profilesums['WEIGHT_RTsum'],(ncen+1,1))*km[:,:,0]
+                        DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
+                        DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
+                        WEIGHT_RTsum += np.tile(profilesums['WEIGHT_RTsum'],(ncen+1,1))*km
+                        NGALsum      += profilesums['NGAL']
+                        WEIGHTwsum   += np.tile(profilesums['WEIGHT_RTsum'],(ncen+1,1))*km
                         
-                        E1_P         += np.tile(profilesums['E1_P'],(ncen+1,1))*km[:,:,0]
-                        E1_M         += np.tile(profilesums['E1_M'],(ncen+1,1))*km[:,:,0]
-                        E2_P         += np.tile(profilesums['E2_P'],(ncen+1,1))*km[:,:,0]
-                        E2_M         += np.tile(profilesums['E2_M'],(ncen+1,1))*km[:,:,0]
-                        NS1P         += np.tile(profilesums['NS1P'],(ncen+1,1))*km[:,:,0]
-                        NS1M         += np.tile(profilesums['NS1M'],(ncen+1,1))*km[:,:,0]
-                        NS2P         += np.tile(profilesums['NS2P'],(ncen+1,1))*km[:,:,0]
-                        NS2M         += np.tile(profilesums['NS2M'],(ncen+1,1))*km[:,:,0]
+                        E1_P         += np.tile(profilesums['E1_P'],(ncen+1,1))*km
+                        E1_M         += np.tile(profilesums['E1_M'],(ncen+1,1))*km
+                        E2_P         += np.tile(profilesums['E2_P'],(ncen+1,1))*km
+                        E2_M         += np.tile(profilesums['E2_M'],(ncen+1,1))*km
+                        NS1P         += np.tile(profilesums['NS1P'],(ncen+1,1))*km
+                        NS1M         += np.tile(profilesums['NS1M'],(ncen+1,1))*km
+                        NS2P         += np.tile(profilesums['NS2P'],(ncen+1,1))*km
+                        NS2M         += np.tile(profilesums['NS2M'],(ncen+1,1))*km
                         
                         Ntot         = np.append(Ntot,profilesums['Ntot'])
                 
@@ -358,7 +358,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                 print('TIME SLICE')
                 print(f'{ts} min')
                 print('Estimated remaining time')
-                print(np.round((np.mean(tslice)*(len(Lsplit)-(l+1))),2))
+                print(f'{np.round((np.mean(tslice)*(len(Lsplit)-(l+1))),3)} min')
         
         # COMPUTING PROFILE
 
@@ -393,8 +393,8 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('l_mean',np.round(lmean,4)))
 
         table_pro = [fits.Column(name='Rp', format='D', array=R),
-                     fits.Column(name='DSigma_T', format='D', array=DSigma_T),
-                     fits.Column(name='DSigma_X', format='D', array=DSigma_X),
+                     fits.Column(name='DSigma_T', format='D', array=DSigma_T[0]),
+                     fits.Column(name='DSigma_X', format='D', array=DSigma_X[0]),
                      fits.Column(name='NGAL', format='D', array=NGALsum)]
 
         table_cov = [fits.Column(name='COV_DST', format='E', array=COV_DSt.flatten()),
