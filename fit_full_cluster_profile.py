@@ -73,14 +73,8 @@ print(f'outfile {outfile}')
 profile = fits.open(folder+file_name)
 h       = profile[1].header
 p       = profile[1].data
-cov     = profile[2].data
 zmean   = h['Z_MEAN'] 
 lmean   = h['L_MEAN']
-
-mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
-
-CovDST  = cov['COV_ST'].reshape(len(p.Rp),len(p.Rp))[mr]
-CovDSX  = cov['COV_SX'].reshape(len(p.Rp),len(p.Rp))[mr]
 
 Rl = (lmean/100.)**(0.2)
 
