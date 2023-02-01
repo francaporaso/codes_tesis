@@ -389,8 +389,8 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         h.append(('l_min',np.round(lmin,4)))
         h.append(('l_max',np.round(lmax,4)))
         h.append(('pcc_min',np.round(pcc_min,4)))
-        h.append(('z_mean',np.round(zmean,4)))
-        h.append(('l_mean',np.round(lmean,4)))
+        h.append(('Z_MEAN',np.round(zmean,4)))
+        h.append(('L_MEAN',np.round(lmean,4)))
 
         table_pro = [fits.Column(name='Rp', format='D', array=R),
                      fits.Column(name='DSigma_T', format='D', array=DSigma_T[0]),

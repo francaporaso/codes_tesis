@@ -127,8 +127,6 @@ def SigmaCrit(zl, zs, h=1.):
     zs:   (float) redshift de la fuente (source)
     h :   (float) H0 = 100.*h
     '''
-    #if zl > zs:
-    #    raise ValueError('Redshift de la fuente es menor al de la lente')
 
     cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
 
@@ -138,9 +136,8 @@ def SigmaCrit(zl, zs, h=1.):
     dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value      #dist ang diam entre fuente y lente
                 
     BETA_array = dls / ds
-        
-    sigma_crit = (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
-    return sigma_crit
+
+    return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
 
 
 def partial_map(RA0,DEC0,Z,Rv,
@@ -310,7 +307,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         del rads
         
-        
+     
         Ntot = len(catdata)
         del catdata    
         
@@ -433,14 +430,14 @@ def main(lcat, sample='pru',
 
         if idlist:
                 ides = np.loadtxt(idlist).astype(int)
-                mlenses = np.in1d(L[0],ides)
+                mvoids = np.in1d(L[0],ides)
         else:                
                 mradio  = (Rv >= Rv_min)&(Rv < Rv_max)
                 mz      = (z >= z_min)&(z < z_max)
                 mrho1   = (rho_1 >= rho1_min)&(rho_1 < rho2_max)
                 mrho2   = (rho_2 >= rho2_min)&(rho_2 < rho2_max)
                 mflag   = flag >= FLAG
-                mlenses = mradio & mz & mrho1 & mrho2 & mflag
+                mvoids = mradio & mz & mrho1 & mrho2 & mflag
 
                 del mradio
                 del mz
@@ -450,48 +447,48 @@ def main(lcat, sample='pru',
         
         # SELECT RELAXED HALOS
                 
-        Nlenses = mlenses.sum()
+        Nvoids = mvoids.sum()
 
-        if Nlenses < ncores:
-                ncores = Nlenses
+        if Nvoids < ncores:
+                ncores = Nvoids
         
-        print(f'Nvoids {Nlenses}')
+        print(f'Nvoids {Nvoids}')
         print(f'CORRIENDO EN {ncores} CORES')
         
-        L = L[:,mlenses]
+        L = L[:,mvoids]
                         
         # Define K masks   
         ncen = 100
         
-        kmask = np.zeros((ncen+1,len(ra)))
+        kmask    = np.zeros((ncen+1,len(ra)))
         kmask[0] = np.ones(len(ra)).astype(bool)
         
         ramin  = np.min(ra)
         cdec   = np.sin(np.deg2rad(dec))
         decmin = np.min(cdec)
-        dra  = ((np.max(ra)+1.e-5)  - ramin)/10.
-        ddec = ((np.max(cdec)+1.e-5) - decmin)/10.
+        dra    = ((np.max(ra)+1.e-5)  - ramin)/10.
+        ddec   = ((np.max(cdec)+1.e-5) - decmin)/10.
         
-        c    = 1
+        c = 1
         
         for a in range(10): 
                 for d in range(10): 
-                        mra  = (ra  >= ramin + a*dra)*(ra < ramin + (a+1)*dra) 
-                        mdec = (cdec >= decmin + d*ddec)*(cdec < decmin + (d+1)*ddec) 
+                        mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra) 
+                        mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec) 
                         # plt.plot(ra[(mra*mdec)],dec[(mra*mdec)],'C'+str(c+1)+',')
-                        kmask[c] = ~(mra*mdec)
+                        kmask[c] = ~(mra&mdec)
                         c += 1
         
-        ind_rand0 = np.arange(Nlenses)
+        ind_rand0 = np.arange(Nvoids)
         np.random.shuffle(ind_rand0)
         
         
                                 
         # SPLIT LENSING CAT
         
-        lbins = int(round(Nlenses/float(ncores), 0))
+        lbins = int(round(Nvoids/float(ncores), 0))
         slices = ((np.arange(lbins)+1)*ncores).astype(int)
-        slices = slices[(slices < Nlenses)]
+        slices = slices[(slices < Nvoids)]
         Lsplit = np.split(L.T,slices)
         Ksplit = np.split(kmask.T,slices)
         
@@ -632,7 +629,7 @@ def main(lcat, sample='pru',
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
         h = fits.Header()
-        h.append(('N_VOIDS',np.int(Nlenses)))
+        h.append(('N_VOIDS',np.int(Nvoids)))
         h.append(('Lens cat',lcat))
         #h.append(('MICE version sources 2.0'))
         h.append(('Rv_min',np.round(Rv_min,2)))
