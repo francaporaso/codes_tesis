@@ -77,10 +77,12 @@ lmean   = h['L_MEAN']
 
 
 Rl = (lmean/100.)**(0.2)
+tau = 0.17
+pcc = 0.8
 
 def log_likelihood(data, R, DS, iCds):
     
-    logM,pcc,tau = data
+    logM = data
     
     s_off = tau * Rl
 
@@ -94,9 +96,9 @@ def log_likelihood(data, R, DS, iCds):
 
 def log_probability(data, R, DS, eDS):
     
-    logM,pcc,tau = data
+    logM = data
     
-    if 13. < logM < 15. and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
+    if 13. < logM < 15. : #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
         return log_likelihood(data, R, DS, eDS)
         
     return -np.inf
@@ -108,9 +110,9 @@ def log_probability(data, R, DS, eDS):
 #                np.random.uniform(0.7,0.9,15)]).T
 
 #distribucion unifomre en masa y gaussiana en pcc
-pos = np.array([np.random.uniform(13.5,14.5,15),
-                np.random.normal(0.8,0.1,15),
-                np.random.normal(0.2,0.04,15)]).T
+pos = np.array([np.random.uniform(13.5,14.5,15)]).T
+                #np.random.normal(0.8,0.1,15),
+                #np.random.normal(0.2,0.04,15)]).T
 
 nwalkers, ndim = pos.shape
 
@@ -151,9 +153,9 @@ pcc      = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
 tau      = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
 c200 = concentration.concentration(10**logM[1], '200c', zmean, model = cmodel)
 
-table = [fits.Column(name='logM', format='E', array=mcmc_out[0]),
-         fits.Column(name='pcc', format='E', array=mcmc_out[1]),
-         fits.Column(name='tau', format='E', array=mcmc_out[2])]
+table = [fits.Column(name='logM', format='E', array=mcmc_out[0])]
+         #fits.Column(name='pcc', format='E', array=mcmc_out[1]),
+         #fits.Column(name='tau', format='E', array=mcmc_out[2])]
 
 tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs(table))
 
@@ -163,12 +165,12 @@ h.append(('c200',np.round(c200,4)))
 h.append(('lM200',np.round(logM[1],4)))
 h.append(('elM200_min',np.round(np.diff(logM)[0],4)))
 h.append(('elM200_max',np.round(np.diff(logM)[1],4)))
-h.append(('pcc',np.round(pcc[1],4)))
-h.append(('epcc_min',np.round(np.diff(pcc)[0],4)))
-h.append(('epecc_max',np.round(np.diff(pcc)[1],4)))
-h.append(('tau',np.round(tau[1],4)))
-h.append(('etau_min',np.round(np.diff(tau)[0],4)))
-h.append(('etau_max',np.round(np.diff(tau)[1],4)))
+#h.append(('pcc',np.round(pcc[1],4)))
+#h.append(('epcc_min',np.round(np.diff(pcc)[0],4)))
+#h.append(('epecc_max',np.round(np.diff(pcc)[1],4)))
+#h.append(('tau',np.round(tau[1],4)))
+#h.append(('etau_min',np.round(np.diff(tau)[0],4)))
+#h.append(('etau_max',np.round(np.diff(tau)[1],4)))
 
 primary_hdu = fits.PrimaryHDU(header=h)
 
