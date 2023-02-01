@@ -263,7 +263,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
         print(f'CORRIENDO EN {ncores} CORES')
 
         # Define K masks   
-        ncen = 40
+        ncen = 100
         X    = np.array([RA[mlenses],DEC[mlenses]]).T
         
         km = kmeans_sample(X, ncen, maxiter=100, tol=1.0e-5)
@@ -353,7 +353,7 @@ def main(sample='pru',z_min = 0.1, z_max = 0.4,
                         Ntot         = np.append(Ntot,profilesums['Ntot'])
                 
                 t2 = time.time()
-                ts = np.round((t2-t1)/60. ,2)
+                ts = np.round((t2-t1)/60. ,3) 
                 tslice = np.append(tslice,ts)
                 print('TIME SLICE')
                 print(f'{ts} min')

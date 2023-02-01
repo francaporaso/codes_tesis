@@ -34,7 +34,7 @@ ROUT =5000.
 # '''
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-folder', action='store', dest='folder', default='../profiles/')
+parser.add_argument('-folder', action='store', dest='folder', default='../profiles/des/')
 parser.add_argument('-file', action='store', dest='file_name', default='profile.fits')
 parser.add_argument('-outfile', action='store', dest='out', default='.fits')
 parser.add_argument('-ncores', action='store', dest='ncores', default=2)
@@ -56,29 +56,34 @@ RIN       = float(args.RIN)
 ROUT      = float(args.ROUT)
 
 
-outfile     = 'fitresults_boost_'+str(int(RIN))+'_'+str(int(ROUT))+'_'+file_name[:-5]+out
+outfile     = f'fitresults_boost_{str(int(RIN))}_{str(int(ROUT))}_{file_name[:-5]+out}'
 
 
 
 print('fitting profiles')
 print(folder)
 print(file_name)
-print('ncores = ',ncores)
-print('RIN ',RIN)
-print('ROUT ',ROUT)
-print('nit', nit)
-print('outfile',outfile)
+print(f'ncores = {ncores}')
+print(f'RIN {RIN}')
+print(f'ROUT {ROUT}')
+print(f'nit {nit}')
+print(f'outfile {outfile}')
 
 
 profile = fits.open(folder+file_name)
 h       = profile[1].header
 p       = profile[1].data
+cov     = profile[2].data
 zmean   = h['Z_MEAN'] 
 lmean   = h['L_MEAN']
 
+mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
+
+CovDST  = cov['COV_ST'].reshape(len(p.Rp),len(p.Rp))[mr]
+CovDSX  = cov['COV_SX'].reshape(len(p.Rp),len(p.Rp))[mr]
+
 Rl = (lmean/100.)**(0.2)
 
-        
 def log_likelihood(data, R, DS, eDS):
     
     logM,pcc,tau = data
@@ -125,7 +130,7 @@ p  = p[maskr]
 
 t1 = time.time()
 
-### como reconoce los datos la funcion log_probability?
+
 # pool = Pool(processes=(ncores))    
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, 
                                 args=(p.Rp,p.DSigma_T,p.error_DSigma_T))
