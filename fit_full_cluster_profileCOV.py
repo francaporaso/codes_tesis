@@ -8,7 +8,7 @@ from multiprocessing import Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
-from models_profiles import *
+from models_profiles import Gamma, DELTA_SIGMA_full_parallel
 # import corner
 import os
 from colossus.cosmology import cosmology  
@@ -58,8 +58,6 @@ ROUT      = float(args.ROUT)
 
 outfile     = f'fitresults_boost_{str(int(RIN))}_{str(int(ROUT))}_{file_name[:-5]+out}'
 
-
-
 print('fitting profiles')
 print(folder)
 print(file_name)
@@ -77,14 +75,10 @@ cov     = profile[2].data
 zmean   = h['Z_MEAN'] 
 lmean   = h['L_MEAN']
 
-mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
-
-CovDST  = cov['COV_ST'].reshape(len(p.Rp),len(p.Rp))[mr]
-CovDSX  = cov['COV_SX'].reshape(len(p.Rp),len(p.Rp))[mr]
 
 Rl = (lmean/100.)**(0.2)
 
-def log_likelihood(data, R, DS, eDS):
+def log_likelihood(data, R, DS, iCds):
     
     logM,pcc,tau = data
     
@@ -95,8 +89,7 @@ def log_likelihood(data, R, DS, eDS):
     ds   = DELTA_SIGMA_full_parallel(R, zmean, 10**logM, c200, s_off=s_off, pcc=pcc, 
                                      P_Roff = Gamma, cosmo_params=params, ncores=ncores)
     
-    sigma2 = eDS**2
-    return -0.5 * np.sum((DS - ds)**2 / sigma2 + np.log(2.*np.pi*sigma2))
+    return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
 
 def log_probability(data, R, DS, eDS):
@@ -125,15 +118,20 @@ nwalkers, ndim = pos.shape
 # running emcee
 
 maskr   = (p.Rp > (RIN/1000.))*(p.Rp < (ROUT/1000.))
-p  = p[maskr]
+mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
 
+CovDS  = cov['COV_ST'].reshape(len(p.Rp),len(p.Rp))[mr]
+CovDS  = CovDS.reshape(maskr.sum(),maskr.sum())
+iCds   =  np.linalg.inv(CovDS)
+
+p  = p[maskr]
 
 t1 = time.time()
 
 
 # pool = Pool(processes=(ncores))    
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, 
-                                args=(p.Rp,p.DSigma_T,p.error_DSigma_T))
+                                args=(p.Rp,p.DSigma_T,iCds))
                                 # pool = pool)
 				
 sampler.run_mcmc(pos, nit, progress=True)
