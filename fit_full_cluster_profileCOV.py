@@ -69,11 +69,11 @@ print(f'outfile {outfile}')
 
 
 profile = fits.open(folder+file_name)
-h       = profile[1].header
+h       = profile[0].header
 p       = profile[1].data
 cov     = profile[2].data
-zmean   = h['z_mean'] 
-lmean   = h['l_mean']
+zmean   = h['Z_MEAN'] 
+lmean   = h['L_MEAN']
 
 
 Rl = (lmean/100.)**(0.2)
