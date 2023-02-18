@@ -94,6 +94,7 @@ def test1():
 
 
 def test2():
+    SIGMAwsum_2 = np.zeros(ndots)
      for nbin in range(0,ndots):
         mbin = dig==nbin+1
         SIGMAwsum_2[nbin] = k[mbin].sum()
