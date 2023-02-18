@@ -101,8 +101,8 @@ def test2():
 if __name__ == '__main__':
     print('Testeando...')
 
-    list_comp = min(timeit.repeat(test1, repeat=10, number=1_000_000))
-    for_loop  = min(timeit.repeat(test2, repeat=10, number=1_000_000))
+    list_comp = min(timeit.repeat(test1, repeat=10, number=10_000))
+    for_loop  = min(timeit.repeat(test2, repeat=10, number=10_000))
 
     print(f'Metodo de list comprehension: {round(list_comp, 3)}')
     print(f'Metodo de for loop: {round(for_loop, 3)}')
