@@ -312,7 +312,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r, bines)
 
-        SIGMAwsum    = np.zeros(ndots)
+
+        '''SIGMAwsum    = np.zeros(ndots)
         DSIGMAwsum_T = np.zeros(ndots)
         DSIGMAwsum_X = np.zeros(ndots)
         N_inbin      = np.zeros(ndots)
@@ -323,7 +324,12 @@ def partial_profile(RA0,DEC0,Z,Rv,
             SIGMAwsum[nbin]    = k[mbin].sum()
             DSIGMAwsum_T[nbin] = et[mbin].sum()
             DSIGMAwsum_X[nbin] = ex[mbin].sum()
-            N_inbin[nbin]      = np.count_nonzero(mbin)
+            N_inbin[nbin]      = np.count_nonzero(mbin)'''
+
+        SIGMAwsum    = np.array([sum(k[dig==nbin+1]) for nbin in range(0,ndots)])
+        DSIGMAwsum_T = np.array([sum(et[dig==nbin+1]) for nbin in range(0,ndots)])
+        DSIGMAwsum_X = np.array([sum(ex[dig==nbin+1]) for nbin in range(0,ndots)])
+        N_inbin      = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
