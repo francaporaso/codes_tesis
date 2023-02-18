@@ -327,7 +327,10 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 DSIGMAwsum_T[nbin] = et[mbin].sum()
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
                 N_inbin[nbin]      = len(et[mbin])
-                
+        
+        for n in N_inbin:
+                if n <= 0:
+                        raise ValueError('Un valor de N_inbin es <= a 0')
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
