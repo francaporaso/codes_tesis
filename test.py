@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/frncprs/FAMAF/Lensing/lens_codes_v3.7')
+sys.path.append('../lens_codes_v3.7')
 from maria_func import *
 import timeit
 import numpy as np
@@ -22,7 +22,7 @@ addnoise = False
 folder = '/mnt/simulations/MICE/'
 S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
 
-L = np.loadtxt('/home/frncprs/Descargas/voids_MICE.dat')
+L = np.loadtxt(folder+'/voids_MICE.dat')
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
