@@ -22,7 +22,7 @@ addnoise = False
 folder = '/mnt/simulations/MICE/'
 S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
 
-L = np.loadtxt(folder+'/voids_MICE.dat')
+L = np.loadtxt(folder+'/voids_MICE.dat').T
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
@@ -45,7 +45,7 @@ def SigmaCrit(zl, zs, h=1.):
     return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
 
 
-RA0,DEC0,Z,Rv,RIN,ROUT,ndots,h,addnoise = L[2][0], L[3][0],L[4][0],L[1][0],RIN,ROUT,ndots,hcosmo,addnoise
+RA0,DEC0,Z,Rv,ndots,h = L[2][0], L[3][0],L[4][0],L[1][0],ndots,hcosmo
 
 ndots = int(ndots)
 Rv   = Rv/h
@@ -90,25 +90,22 @@ dig = np.digitize(r, bines)
 
 
 def test1():
-    SIGMAwsum = np.array([k[dig==nbin+1].sum() for nbin in range(0,ndots)])
+    N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
 
 
 def test2():
-    SIGMAwsum_2 = np.zeros(ndots)
-    for nbin in range(0,ndots):
-        mbin = dig==nbin+1
-        SIGMAwsum_2[nbin] = k[mbin].sum()
+    N_inbin = np.array([len(et[dig==nbin+1]) for nbin in range(0,ndots)])
 
 if __name__ == '__main__':
     print('Testeando...')
 
-    list_comp = min(timeit.repeat(test1, repeat=10, number=10_000))
-    for_loop  = min(timeit.repeat(test2, repeat=10, number=10_000))
+    otra_ver = min(timeit.repeat(test1, repeat=10, number=10_000))
+    ref  = min(timeit.repeat(test2, repeat=10, number=10_000))
 
-    print(f'Metodo de list comprehension: {round(list_comp, 3)}')
-    print(f'Metodo de for loop: {round(for_loop, 3)}')
+    print(f'Con np.count_nonzero: {round(otra_ver, 5)}')
+    print(f'Referencia len(et[mbin]): {round(ref, 5)}')
 
-    percent_faster = (1 - (for_loop/list_comp))*100
-    print(f'for loop es {round(percent_faster, 2):,}% mas rapido')
+    percent_faster = (1 - (ref/otra_ver))*100
+    print(f'Referencia {round(percent_faster, 3):,}% mas rapido')
      
 
