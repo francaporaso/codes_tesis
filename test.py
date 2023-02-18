@@ -13,9 +13,9 @@ G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
 pc   = pc.value    # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
-RIN      = 0.05
-ROUT     = 5.0
-ndots    = 40
+RIN      = 0.1
+ROUT     = 3.0
+ndots    = 20
 hcosmo   = 1
 addnoise = False
 
