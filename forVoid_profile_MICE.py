@@ -141,7 +141,6 @@ def SigmaCrit(zl, zs, h=1.):
 
     return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
 
-
 def partial_map(RA0,DEC0,Z,Rv,
                 RIN,ROUT,ndots,h,
                 addnoise):
@@ -301,10 +300,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         # '''
         k  = catdata.kappa*sigma_c
           
-        del e1
-        del e2
-        del theta
-        del sigma_c
+        del e1, e2, theta, sigma_c
 
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         del rads
@@ -314,31 +310,20 @@ def partial_profile(RA0,DEC0,Z,Rv,
         del catdata    
         
         bines = np.linspace(RIN,ROUT,num=ndots+1)
-        #dig = np.digitize(r,bines)
+        dig = np.digitize(r, bines)
 
-        #prueba -> idea de chatetc
-
-        chunk_size = 1000000  # number of elements to process in each chunk
-        bins = np.zeros(r.shape, dtype=int)
-        start_idx = 0
-
-        while start_idx < r.size:
-            end_idx = min(start_idx + chunk_size, r.size)
-            chunk = r[start_idx:end_idx]
-            bins[start_idx:end_idx] = np.digitize(chunk, bines)
-            start_idx = end_idx
-
-        SIGMAwsum = np.zeros(ndots)
+        SIGMAwsum    = np.zeros(ndots)
         DSIGMAwsum_T = np.zeros(ndots)
         DSIGMAwsum_X = np.zeros(ndots)
-        N_inbin = np.zeros(ndots)
+        N_inbin      = np.zeros(ndots)
 
-        for nbin in range(1, ndots+1):
-            mbin = bins == nbin
-            SIGMAwsum[nbin-1] = k[mbin].sum()
-            DSIGMAwsum_T[nbin-1] = et[mbin].sum()
-            DSIGMAwsum_X[nbin-1] = ex[mbin].sum()
-            N_inbin[nbin-1] = np.count_nonzero(mbin)
+        for nbin in range(0, ndots):
+            mbin = dig == nbin+1
+            
+            SIGMAwsum[nbin]    = k[mbin].sum()
+            DSIGMAwsum_T[nbin] = et[mbin].sum()
+            DSIGMAwsum_X[nbin] = ex[mbin].sum()
+            N_inbin[nbin]      = np.count_nonzero(mbin)
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
@@ -450,11 +435,7 @@ def main(lcat, sample='pru',
                 mflag   = flag >= FLAG
                 mvoids = mradio & mz & mrho1 & mrho2 & mflag
 
-                del mradio
-                del mz
-                del mrho1
-                del mrho2
-                del mflag
+                del mradio, mz, mrho1, mrho2, mflag
         
         # SELECT RELAXED HALOS
                 
@@ -575,12 +556,7 @@ def main(lcat, sample='pru',
                 t1 = time.time()
                 
                 num = len(Lsplit_l)
-                
-                rin  = RIN*np.ones(num)
-                rout = ROUT*np.ones(num)
-                nd   = ndots*np.ones(num)
-                h_array   = hcosmo*np.ones(num)
-                addnoise_array   = np.array([addnoise]*np.ones(num))
+
                 
                 if num == 1:
                         entrada = [Lsplit_l[2], Lsplit_l[3],
@@ -589,7 +565,13 @@ def main(lcat, sample='pru',
                                    addnoise]
                         
                         salida = [partial(entrada)]
-                else:          
+                else:
+                        rin            = np.full(num, RIN)
+                        rout           = np.full(num, ROUT)
+                        nd             = np.full(num, ndots)
+                        h_array        = np.full(num, hcosmo)
+                        addnoise_array = np.full(num, addnoise, dtype=bool)         
+                        
                         entrada = np.array([Lsplit_l.T[2],Lsplit_l.T[3],
                                         Lsplit_l.T[4],Lsplit_l.T[1],
                                         rin,rout,nd,h_array,
@@ -599,11 +581,7 @@ def main(lcat, sample='pru',
                         salida = np.array(pool.map(partial, entrada))
                         pool.terminate()
                                 
-                del rin
-                del rout
-                del nd
-                del h_array
-                del addnoise_array
+                        del rin, rout, nd, h_array, addnoise_array
                 
                 for j, profilesums in enumerate(salida):
                         
