@@ -314,22 +314,31 @@ def partial_profile(RA0,DEC0,Z,Rv,
         del catdata    
         
         bines = np.linspace(RIN,ROUT,num=ndots+1)
-        dig = np.digitize(r,bines)
-                
+        #dig = np.digitize(r,bines)
 
-        SIGMAwsum    = np.empty(ndots)
-        DSIGMAwsum_T = np.empty(ndots)
-        DSIGMAwsum_X = np.empty(ndots)
-        N_inbin      = np.empty(ndots)
-                                             
-        for nbin in range(ndots):
-                mbin = dig == nbin+1              
+        #prueba -> idea de chatetc
 
-                SIGMAwsum[nbin]    = k[mbin].sum()
-                DSIGMAwsum_T[nbin] = et[mbin].sum()
-                DSIGMAwsum_X[nbin] = ex[mbin].sum()
-                N_inbin[nbin]      = len(et[mbin])
-                
+        chunk_size = 1000000  # number of elements to process in each chunk
+        bins = np.zeros(r.shape, dtype=int)
+        start_idx = 0
+
+        while start_idx < r.size:
+            end_idx = min(start_idx + chunk_size, r.size)
+            chunk = r[start_idx:end_idx]
+            bins[start_idx:end_idx] = np.digitize(chunk, bines)
+            start_idx = end_idx
+
+        SIGMAwsum = np.zeros(ndots)
+        DSIGMAwsum_T = np.zeros(ndots)
+        DSIGMAwsum_X = np.zeros(ndots)
+        N_inbin = np.zeros(ndots)
+
+        for nbin in range(1, ndots+1):
+            mbin = bins == nbin
+            SIGMAwsum[nbin-1] = k[mbin].sum()
+            DSIGMAwsum_T[nbin-1] = et[mbin].sum()
+            DSIGMAwsum_X[nbin-1] = ex[mbin].sum()
+            N_inbin[nbin-1] = np.count_nonzero(mbin)
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
