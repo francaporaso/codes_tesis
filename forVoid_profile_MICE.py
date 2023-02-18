@@ -329,7 +329,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         SIGMAwsum    = np.array([sum(k[dig==nbin+1]) for nbin in range(0,ndots)])
         DSIGMAwsum_T = np.array([sum(et[dig==nbin+1]) for nbin in range(0,ndots)])
         DSIGMAwsum_X = np.array([sum(ex[dig==nbin+1]) for nbin in range(0,ndots)])
-        N_inbin      = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
+        N_inbin      = np.array([len(et[dig==nbin+1]) for nbin in range(0,ndots)])
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
