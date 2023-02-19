@@ -15,8 +15,8 @@ Msun = M_sun.value # Solar mass (kg)
 
 RIN      = 0.1
 ROUT     = 3.0
-ndots    = 20
-hcosmo   = 1
+ndots    = 10
+hcosmo   = 1.
 addnoise = False
 
 folder = '/mnt/simulations/MICE/'
@@ -24,7 +24,7 @@ S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
 
 L = np.loadtxt(folder+'/voids_MICE.dat').T
 
-def SigmaCrit(zl, zs, h=1.):
+""" def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
     Debe ser usada con astropy.cosmology y con astropy.constants
     
@@ -42,12 +42,12 @@ def SigmaCrit(zl, zs, h=1.):
                 
     BETA_array = dls / ds
 
-    return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
+    return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun) """
 
 
-RA0,DEC0,Z,Rv,ndots,h = L[2][0], L[3][0],L[4][0],L[1][0],ndots,hcosmo
+RA0,DEC0,Z,Rv,h = L[2][0], L[3][0],L[4][0],L[1][0],hcosmo
 
-ndots = int(ndots)
+#ndots = int(ndots)
 Rv   = Rv/h
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 dl  = cosmo.angular_diameter_distance(Z).value
@@ -55,9 +55,8 @@ KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
 
 delta = ROUT*(Rv*1000.)*5./(3600*KPCSCALE)
 
-mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
-catdata = S[mask]
-del mask
+
+""" del mask
 del delta
 sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
 
@@ -87,25 +86,26 @@ del catdata
 
 bines = np.linspace(RIN,ROUT,num=ndots+1)
 dig = np.digitize(r, bines)
-
+ """
 
 def test1():
-    N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
+    mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
+    catdata = S[mask]
 
 
-def test2():
-    N_inbin = np.array([len(et[dig==nbin+1]) for nbin in range(0,ndots)])
+# def test2():
+#     N_inbin = np.array([len(et[dig==nbin+1]) for nbin in range(0,ndots)])
 
 if __name__ == '__main__':
     print('Testeando...')
 
-    otra_ver = min(timeit.repeat(test1, repeat=10, number=10_000))
-    ref  = min(timeit.repeat(test2, repeat=10, number=10_000))
+    mascara = min(timeit.repeat(test1, repeat=10, number=10_000))
+    #ref  = min(timeit.repeat(test2, repeat=10, number=10_000))
 
     print(f'Con np.count_nonzero: {round(otra_ver, 5)}')
-    print(f'Referencia len(et[mbin]): {round(ref, 5)}')
+    # print(f'Referencia len(et[mbin]): {round(ref, 5)}')
 
-    percent_faster = (1 - (ref/otra_ver))*100
-    print(f'Referencia {round(percent_faster, 3):,}% mas rapido')
+    # percent_faster = (1 - (ref/otra_ver))*100
+    # print(f'Referencia {round(percent_faster, 3):,}% mas rapido')
      
 
