@@ -329,11 +329,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         SIGMAwsum    = np.array([sum(k[dig==nbin+1]) for nbin in range(0,ndots)])
         DSIGMAwsum_T = np.array([sum(et[dig==nbin+1]) for nbin in range(0,ndots)])
         DSIGMAwsum_X = np.array([sum(ex[dig==nbin+1]) for nbin in range(0,ndots)])
-        N_inbin      = np.array([len(et[dig==nbin+1]) for nbin in range(0,ndots)])
-        
-        for n in N_inbin:
-                if n <= 0:
-                        raise ValueError('Un valor de N_inbin es <= a 0')
+        N_inbin      = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
 
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
@@ -698,9 +694,9 @@ def main(lcat, sample='pru',
             
             # COMPUTE COVARIANCE
     
-            COV_S   = cov_matrix(Sigma[1:,:])
+            '''COV_S   = cov_matrix(Sigma[1:,:])
             COV_DSt  = cov_matrix(DSigma_T[1:,:])
-            COV_DSx  = cov_matrix(DSigma_X[1:,:])
+            COV_DSx  = cov_matrix(DSigma_X[1:,:])'''
 
             # WRITING OUTPUT FITS FILE
             
@@ -711,21 +707,21 @@ def main(lcat, sample='pru',
                     fits.Column(name='Ninbin', format='E', array=Ninbin[0])]
                     
                         
-            table_cov = [fits.Column(name='COV_DST', format='E', array=COV_DSt.flatten()),
+            '''table_cov = [fits.Column(name='COV_DST', format='E', array=COV_DSt.flatten()),
                         fits.Column(name='COV_S', format='E', array=COV_S.flatten()),
-                        fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())]
+                        fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())]'''
         
             #table_cov = [fits.Column(name='Sigma', format='E', array=Sigma.flatten()),
             #            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
             #            fits.Column(name='DSIgma_X', format='E', array=DSIgma_X.flatten())]
 
         tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
-        tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_cov))
+        #tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_cov))
         
         
         primary_hdu = fits.PrimaryHDU(header=h)
         
-        hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
+        hdul = fits.HDUList([primary_hdu, tbhdu_pro])#, tbhdu_cov])
         
         hdul.writeto(f'../{output_file}',overwrite=True)
                 
