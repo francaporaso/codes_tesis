@@ -256,9 +256,6 @@ def partial_profile(RA0,DEC0,Z,Rv,
                     RIN,ROUT,ndots,h,
                     addnoise):
 
-        ndots = int(ndots)
-
-
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         dl  = cosmo.angular_diameter_distance(Z).value
@@ -269,18 +266,15 @@ def partial_profile(RA0,DEC0,Z,Rv,
         mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
-        del mask
-        del delta
+        del mask, delta
 
         sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
         
-        rads, theta, test1,test2 = eq2p2(np.deg2rad(catdata.ra_gal),
-                                        np.deg2rad(catdata.dec_gal),
-                                        np.deg2rad(RA0),
-                                        np.deg2rad(DEC0))
+        rads, theta, _, _ = eq2p2(np.deg2rad(catdata.ra_gal),
+                                  np.deg2rad(catdata.dec_gal),
+                                  np.deg2rad(RA0),
+                                  np.deg2rad(DEC0))
                                
-        del test1
-        del test2
         
         e1     = catdata.gamma1
         e2     = -1.*catdata.gamma2
@@ -296,25 +290,17 @@ def partial_profile(RA0,DEC0,Z,Rv,
         et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c
         #get cross ellipticities
         ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))*sigma_c
-        # '''
+        #get convergence
         k  = catdata.kappa*sigma_c
           
-        del e1
-        del e2
-        del theta
-        del sigma_c
+        del e1, e2, theta, sigma_c, rads, catdata
 
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
-        del rads
-        
-     
-        Ntot = len(catdata)
-        del catdata    
-        
+        Ntot = len(catdata)        
+
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
                 
-
         SIGMAwsum    = np.empty(ndots)
         DSIGMAwsum_T = np.empty(ndots)
         DSIGMAwsum_X = np.empty(ndots)
@@ -326,11 +312,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 SIGMAwsum[nbin]    = k[mbin].sum()
                 DSIGMAwsum_T[nbin] = et[mbin].sum()
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
-                N_inbin[nbin]      = len(et[mbin])
-        
-        for n in N_inbin:
-                if n <= 0:
-                        raise ValueError('Un valor de N_inbin es <= a 0')
+                N_inbin[nbin]      = np.count_nonzero(mbin)
         
         output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
@@ -556,23 +538,15 @@ def main(lcat, sample='pru',
 
         print(f'Saved in ../{output_file}')
                                    
-                
-        Ntot         = np.array([])
-        tslice       = np.array([])
+        LARGO = len(Lsplit)        
+        Ntot         = np.empty(LARGO)
+        tslice       = np.empty(LARGO)
         
         for l, Lsplit_l in enumerate(Lsplit):
                 
-                print(f'RUN {l+1} OF {len(Lsplit)}')
+                print(f'RUN {l+1} OF {LARGO}')
                 
                 t1 = time.time()
-                
-                num = len(Lsplit_l)
-                
-                rin  = RIN*np.ones(num)
-                rout = ROUT*np.ones(num)
-                nd   = ndots*np.ones(num)
-                h_array   = hcosmo*np.ones(num)
-                addnoise_array   = np.array([addnoise]*np.ones(num))
                 
                 if num == 1:
                         entrada = [Lsplit_l[2], Lsplit_l[3],
@@ -581,26 +555,29 @@ def main(lcat, sample='pru',
                                    addnoise]
                         
                         salida = [partial(entrada)]
-                else:          
+                else:
+                        num = len(Lsplit_l)
+                
+                        rin       = np.full(num, RIN)
+                        rout      = np.full(num, ROUT)
+                        nd        = np.full(num, ndots, dtype=int)
+                        h_array   = np.full(num, hcosmo)
+                        addnoise_array = np.full(num, addnoise, dtype=bool)
+                        
                         entrada = np.array([Lsplit_l.T[2],Lsplit_l.T[3],
-                                        Lsplit_l.T[4],Lsplit_l.T[1],
-                                        rin,rout,nd,h_array,
-                                        addnoise_array]).T
+                                            Lsplit_l.T[4],Lsplit_l.T[1],
+                                            rin,rout,nd,h_array,
+                                            addnoise_array]).T
                         
                         pool = Pool(processes=(num))
                         salida = np.array(pool.map(partial, entrada))
                         pool.terminate()
                                 
-                del rin
-                del rout
-                del nd
-                del h_array
-                del addnoise_array
+                        del rin, rout, nd, h_array, addnoise_array
                 
                 for j, profilesums in enumerate(salida):
                         
-                        #profilesums = salida[j]
-                        Ntot         = np.append(Ntot,profilesums['Ntot'])
+                        Ntot[j] = profilesums['Ntot']
                         
                         if domap:
                             
@@ -614,7 +591,6 @@ def main(lcat, sample='pru',
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-
                             Ninbin += np.tile(profilesums['N_inbin'],(ncen+1,1))*km
                                                 
                             SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
@@ -623,11 +599,11 @@ def main(lcat, sample='pru',
 
                 t2 = time.time()
                 ts = (t2-t1)/60.
-                tslice = np.append(tslice,ts)
+                tslice[j] = ts
                 print('TIME SLICE')
                 print(ts)
                 print('Estimated remaining time')
-                print(np.mean(tslice)*(len(Lsplit)-(l+1)))
+                print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
@@ -735,7 +711,7 @@ def main(lcat, sample='pru',
                 
         tfin = time.time()
         
-        print(f'TOTAL TIME {(tfin-tini)/60.}')
+        print(f'TOTAL TIME {np.round((tfin-tini)/60. , 3)} mins')
         
 
 
