@@ -624,8 +624,8 @@ def main(lcat, sample='pru',
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
         h = fits.Header()
-        h.append(('N_VOIDS',np.int(Nvoids)))
-        h.append(('Lens cat',lcat))
+        h.append(('N_VOIDS',np.int32(Nvoids)))
+        h.append(('Lens_cat',lcat))
         #h.append(('MICE version sources 2.0'))
         h.append(('Rv_min',np.round(Rv_min,2)))
         h.append(('Rv_max',np.round(Rv_max,2)))
