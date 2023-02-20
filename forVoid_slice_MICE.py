@@ -315,7 +315,8 @@ def main(lcat, sample='pru',
         kmask[0] = np.ones(len(ra)).astype(bool)
         
         ramin  = np.min(ra)
-        decmin = np.min(np.sin(np.deg2rad(dec)))
+        cdec   = np.sin(np.deg2rad(dec))
+        decmin = np.min(cdec)
         dra    = ((np.max(ra)+1.e-5)  - ramin)/10.
         ddec   = ((np.max(cdec)+1.e-5) - decmin)/10.
         
