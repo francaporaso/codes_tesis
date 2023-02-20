@@ -547,6 +547,8 @@ def main(lcat, sample='pru',
                 print(f'RUN {l+1} OF {LARGO}')
                 
                 t1 = time.time()
+
+                num = len(Lsplit_l)
                 
                 if num == 1:
                         entrada = [Lsplit_l[2], Lsplit_l[3],
@@ -555,9 +557,7 @@ def main(lcat, sample='pru',
                                    addnoise]
                         
                         salida = [partial(entrada)]
-                else:
-                        num = len(Lsplit_l)
-                
+                else:                
                         rin       = np.full(num, RIN)
                         rout      = np.full(num, ROUT)
                         nd        = np.full(num, ndots, dtype=int)
