@@ -314,22 +314,12 @@ def main(lcat, sample='pru',
         print(f'Saved in ../{output_file}')
 
 
-        LARGO = len(Lsplit)        
-        
-        # if LARGO <= 1:
-        #         print(f'El valor de largo es demasiado corto: LARGO = {LARGO}')
-        #         raise ValueError('Probar Lsplit[0] !')
-
-        try:
-                print(Lsplit.shape)
-        except AttributeError:
-                print('Lsplit no tiene atributo shape')
-                print(f'Lsplit[0] : {Lsplit[0].shape}')
+        LARGO = len(Lsplit[0])
 
         Ntot         = np.empty(LARGO)
         tslice       = np.empty(LARGO)
         
-        for l, Lsplit_l in enumerate(Lsplit):
+        for l, Lsplit_l in enumerate(Lsplit[0]):
                 
                 print(f'RUN {l+1} OF {LARGO}')
                 
