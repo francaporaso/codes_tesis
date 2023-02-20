@@ -312,8 +312,14 @@ def main(lcat, sample='pru',
             
 
         print(f'Saved in ../{output_file}')
-                                   
+
+
         LARGO = len(Lsplit)        
+        
+        if LARGO >= 1 and Nvoids > ncores:
+                print(f'El valor de largo es demasiado corto: LARGO = {LARGO}')
+                raise ValueError('Probar Lsplit[0] !')
+
         Ntot         = np.empty(LARGO)
         tslice       = np.empty(LARGO)
         
