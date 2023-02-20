@@ -142,9 +142,10 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
                 N_inbin[nbin]      = np.count_nonzero(mbin)
         
-        output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
-                  'DSIGMAwsum_X':DSIGMAwsum_X,
-                  'N_inbin':N_inbin,'Ntot':Ntot}
+        # output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
+        #           'DSIGMAwsum_X':DSIGMAwsum_X,
+        #           'N_inbin':N_inbin,'Ntot':Ntot}
+        output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
         
         ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
         #  como deberia modificarse el pool cada vez que tiene que llamar?
@@ -155,9 +156,9 @@ def partial_profile_unpack(minput):
 
         
 def main(lcat, sample='pru',
-         Rv_min=0.,Rv_max=50.,
-         rho1_min=-1.,rho1_max=0.,
-         rho2_min=-1.,rho2_max=100.,
+         Rv_min=0., Rv_max=50.,
+         rho1_min=-1., rho1_max=0.,
+         rho2_min=-1., rho2_max=100.,
          z_min = 0.1, z_max = 1.0,
          domap = False, RIN = 400., ROUT =5000.,
          ndots= 40, ncores=10, 
@@ -217,7 +218,7 @@ def main(lcat, sample='pru',
         if addnoise:
             print('ADDING SHAPE NOISE')
         
-        #reading cats
+        #reading Lens catalog
                 
         L = np.loadtxt(folder+lcat).T
 
@@ -359,7 +360,7 @@ def main(lcat, sample='pru',
                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot[j] = profilesums['Ntot']
+                        Ntot[j] = profilesums[-1]
                         
                         if domap:
                                 print('Sin mapa')
@@ -367,11 +368,13 @@ def main(lcat, sample='pru',
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-                            Ninbin += np.tile(profilesums['N_inbin'],(ncen+1,1))*km
+                            Ninbin += np.tile(profilesums[-2],(ncen+1,1))*km
                                                 
-                            SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
-                            DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
-                            DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
+                            SIGMAwsum    += np.tile(profilesums[0],(ncen+1,1))*km
+                            DSIGMAwsum_T += np.tile(profilesums[1],(ncen+1,1))*km
+                            DSIGMAwsum_X += np.tile(profilesums[2],(ncen+1,1))*km
+
+                #Ntot = np.array([tot for i,tot in enumerate(salida[i][-1])])
 
                 t2 = time.time()
                 ts = (t2-t1)/60.
@@ -512,7 +515,7 @@ if __name__=='__main__':
             S  = S[j]
 
         print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
-        
+
         main(lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max, z_min, z_max,
              domap, RIN, ROUT, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
 
