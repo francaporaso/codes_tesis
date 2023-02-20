@@ -573,7 +573,7 @@ def main(lcat, sample='pru',
                         salida = np.array(pool.map(partial, entrada))
                         pool.terminate()
                                 
-                        del rin, rout, nd, h_array, addnoise_array
+                        del entrada, rin, rout, nd, h_array, addnoise_array
                 
                 for j, profilesums in enumerate(salida):
                         
@@ -597,6 +597,7 @@ def main(lcat, sample='pru',
                             DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
                             DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
 
+                del salida
                 t2 = time.time()
                 ts = (t2-t1)/60.
                 tslice[j] = ts
