@@ -349,7 +349,7 @@ def main(lcat, sample='pru',
                         ### prodria poner el pool dentro del if __name__ etc?? mejoraria el uso de memoria? o la
                         #   eficiencia del paquete? (asi esta diseñado para usarse...)
                         with Pool(processes=num) as pool:
-                                salida = np.array(pool.imap(partial,entrada))
+                                salida = np.array(pool.map(partial,entrada))
                                 pool.close()
                                 pool.join()
                         
