@@ -56,16 +56,6 @@ addnoise   = False
 '''
 
 
-folder = '/mnt/simulations/MICE/'
-S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
-
-if nback < 30.:
-    nselec = int(nback*5157*3600.)
-    j      = np.random.choice(np.array(len(S)),nselec)
-    S  = S[j]
-
-print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
-
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
     Debe ser usada con astropy.cosmology y con astropy.constants
@@ -513,6 +503,16 @@ if __name__=='__main__':
         elif args.addnoise == 'False':
             addnoise = False
 
+        folder = '/mnt/simulations/MICE/'
+        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
+        
+        if nback < 30.:
+            nselec = int(nback*5157*3600.)
+            j      = np.random.choice(np.array(len(S)),nselec)
+            S  = S[j]
+
+        print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
+        
         main(lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max, z_min, z_max,
              domap, RIN, ROUT, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
 
