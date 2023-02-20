@@ -319,7 +319,7 @@ def main(lcat, sample='pru',
         Ntot         = np.empty(LARGO)
         tslice       = np.empty(LARGO)
         
-        for l, Lsplit_l in enumerate(Lsplit[0]):
+        for l, Lsplit_l in enumerate(Lsplit):
                 
                 print(f'RUN {l+1} OF {LARGO}')
                 
