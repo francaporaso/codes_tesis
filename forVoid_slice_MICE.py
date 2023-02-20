@@ -1,4 +1,5 @@
 '''for small cuts in Rv or z, to be used with a forVoid_paste to paste profiles'''
+
 import sys
 sys.path.append('../lens_codes_v3.7')
 import time
@@ -11,8 +12,7 @@ from maria_func import *
 from fit_profiles_curvefit import *
 from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
-from multiprocessing import Pool
-from multiprocessing import Process
+from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
 from scipy import stats
@@ -30,60 +30,6 @@ cvel = c.value;    # Speed of light (m.s-1)
 G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
 pc   = pc.value    # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-sample', action='store', dest='sample',default='pru')
-parser.add_argument('-lens_cat', action='store', dest='lcat',default='voids_MICE.dat')
-parser.add_argument('-Rv_min', action='store', dest='Rv_min', default=0.)
-parser.add_argument('-Rv_max', action='store', dest='Rv_max', default=50.)
-parser.add_argument('-rho1_min', action='store', dest='rho1_min', default=-1.)
-parser.add_argument('-rho1_max', action='store', dest='rho1_max', default=1.)
-parser.add_argument('-rho2_min', action='store', dest='rho2_min', default=-1.)
-parser.add_argument('-rho2_max', action='store', dest='rho2_max', default=100.)
-parser.add_argument('-FLAG', action='store', dest='FLAG', default=2.)
-parser.add_argument('-z_min', action='store', dest='z_min', default=0.1)
-parser.add_argument('-z_max', action='store', dest='z_max', default=0.5)
-parser.add_argument('-domap', action='store', dest='domap', default='False')
-parser.add_argument('-addnoise', action='store', dest='addnoise', default='False')
-parser.add_argument('-RIN', action='store', dest='RIN', default=0.05)
-parser.add_argument('-ROUT', action='store', dest='ROUT', default=5.)
-parser.add_argument('-nbins', action='store', dest='nbins', default=40)
-parser.add_argument('-ncores', action='store', dest='ncores', default=10)
-parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
-parser.add_argument('-ides_list', action='store', dest='idlist', default=None)
-parser.add_argument('-nback', action='store', dest='nback', default=30)
-args = parser.parse_args()
-
-sample     = args.sample
-idlist     = args.idlist
-lcat       = args.lcat
-Rv_min     = float(args.Rv_min)
-Rv_max     = float(args.Rv_max) 
-rho1_min   = float(args.rho1_min)
-rho1_max   = float(args.rho1_max) 
-rho2_min   = float(args.rho2_min)
-rho2_max   = float(args.rho2_max) 
-FLAG       = float(args.FLAG) 
-z_min      = float(args.z_min) 
-z_max      = float(args.z_max) 
-RIN        = float(args.RIN)
-ROUT       = float(args.ROUT)
-ndots      = int(args.nbins)
-ncores     = int(args.ncores)
-hcosmo     = float(args.h_cosmo)
-nback      = float(args.nback)
-
-
-if args.domap == 'True':
-    domap = True
-elif args.domap == 'False':
-    domap = False
-
-if args.addnoise == 'True':
-    addnoise = True
-elif args.addnoise == 'False':
-    addnoise = False
 
 
 '''
@@ -152,7 +98,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
         
         delta = ROUT*(Rv*1000.)*5./(3600*KPCSCALE)
         
-        mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
+        mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(
+                S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
         del mask, delta
@@ -209,7 +156,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
                   'DSIGMAwsum_X':DSIGMAwsum_X,
                   'N_inbin':N_inbin,'Ntot':Ntot}
         
-        ###podria devolver un iterable (yield) en vez de un diccionario (return)? como deberia modificarse el pool cada vez que tiene que llamar?
+        ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
+        #  como deberia modificarse el pool cada vez que tiene que llamar?
         return output
 
 def partial_profile_unpack(minput):
@@ -295,7 +243,8 @@ def main(lcat, sample='pru',
                 ides = np.loadtxt(idlist).astype(int)
                 mvoids = np.in1d(L[0],ides)
         else:                
-                mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
+                mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
+                         (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
         Nvoids = mvoids.sum()
@@ -404,10 +353,17 @@ def main(lcat, sample='pru',
                                             rin,rout,nd,h_array,
                                             addnoise_array]).T
                         
-                        ### prodria poner el pool dentro del if __name__ etc?? mejoraria el uso de memoria? o la eficiencia del paquete? (asi esta diseñado para usarse...)
-                        pool = Pool(processes=(num))
-                        salida = np.array(pool.map(partial, entrada))
-                        pool.terminate()
+                        ### prodria poner el pool dentro del if __name__ etc?? mejoraria el uso de memoria? o la
+                        #   eficiencia del paquete? (asi esta diseñado para usarse...)
+                        with Pool(processes=num) as pool:
+                                salida = np.array(pool.imap(partial,entrada))
+                                pool.close()
+                                pool.join()
+                        
+                        
+                        # pool = Pool(processes=(num))
+                        # salida = np.array(pool.map(partial, entrada))
+                        # pool.terminate()
                                 
                         #del entrada, rin, rout, nd, h_array, addnoise_array
                 
@@ -427,7 +383,6 @@ def main(lcat, sample='pru',
                             DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
                             DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
 
-                del salida
                 t2 = time.time()
                 ts = (t2-t1)/60.
                 tslice[j] = ts
@@ -504,4 +459,60 @@ def main(lcat, sample='pru',
         
 
 
-main(lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max, z_min, z_max, domap, RIN, ROUT, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
+if __name__=='__main__':
+        
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-sample', action='store', dest='sample',default='pru')
+        parser.add_argument('-lens_cat', action='store', dest='lcat',default='voids_MICE.dat')
+        parser.add_argument('-Rv_min', action='store', dest='Rv_min', default=0.)
+        parser.add_argument('-Rv_max', action='store', dest='Rv_max', default=50.)
+        parser.add_argument('-rho1_min', action='store', dest='rho1_min', default=-1.)
+        parser.add_argument('-rho1_max', action='store', dest='rho1_max', default=1.)
+        parser.add_argument('-rho2_min', action='store', dest='rho2_min', default=-1.)
+        parser.add_argument('-rho2_max', action='store', dest='rho2_max', default=100.)
+        parser.add_argument('-FLAG', action='store', dest='FLAG', default=2.)
+        parser.add_argument('-z_min', action='store', dest='z_min', default=0.1)
+        parser.add_argument('-z_max', action='store', dest='z_max', default=0.5)
+        parser.add_argument('-domap', action='store', dest='domap', default='False')
+        parser.add_argument('-addnoise', action='store', dest='addnoise', default='False')
+        parser.add_argument('-RIN', action='store', dest='RIN', default=0.05)
+        parser.add_argument('-ROUT', action='store', dest='ROUT', default=5.)
+        parser.add_argument('-nbins', action='store', dest='nbins', default=40)
+        parser.add_argument('-ncores', action='store', dest='ncores', default=10)
+        parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
+        parser.add_argument('-ides_list', action='store', dest='idlist', default=None)
+        parser.add_argument('-nback', action='store', dest='nback', default=30)
+        args = parser.parse_args()
+
+        sample     = args.sample
+        idlist     = args.idlist
+        lcat       = args.lcat
+        Rv_min     = float(args.Rv_min)
+        Rv_max     = float(args.Rv_max) 
+        rho1_min   = float(args.rho1_min)
+        rho1_max   = float(args.rho1_max) 
+        rho2_min   = float(args.rho2_min)
+        rho2_max   = float(args.rho2_max) 
+        FLAG       = float(args.FLAG) 
+        z_min      = float(args.z_min) 
+        z_max      = float(args.z_max) 
+        RIN        = float(args.RIN)
+        ROUT       = float(args.ROUT)
+        ndots      = int(args.nbins)
+        ncores     = int(args.ncores)
+        hcosmo     = float(args.h_cosmo)
+        nback      = float(args.nback)
+
+        if args.domap == 'True':
+            domap = True
+        elif args.domap == 'False':
+            domap = False
+
+        if args.addnoise == 'True':
+            addnoise = True
+        elif args.addnoise == 'False':
+            addnoise = False
+
+        main(lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max, z_min, z_max,
+             domap, RIN, ROUT, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
+
