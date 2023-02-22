@@ -318,8 +318,8 @@ def main(lcat, sample='pru',
 
         LARGO = len(Lsplit)
 
-        Ntot         = np.empty(LARGO)
-        tslice       = np.empty(LARGO)
+        Ntot         = np.array([])
+        tslice       = np.array([])
         
         for l, Lsplit_l in enumerate(Lsplit):
                 
@@ -364,7 +364,7 @@ def main(lcat, sample='pru',
                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot[j] = profilesums['Ntot']
+                        Ntot = np.append(Ntot, profilesums['Ntot'])
                         
                         if domap:
                                 print('Sin mapa')
@@ -382,7 +382,7 @@ def main(lcat, sample='pru',
 
                 t2 = time.time()
                 ts = (t2-t1)/60.
-                tslice[j] = ts
+                tslice = np.append(tslice, ts)
                 print('TIME SLICE')
                 print(ts)
                 print('Estimated remaining time')
