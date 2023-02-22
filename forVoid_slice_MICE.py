@@ -81,6 +81,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
                     RIN,ROUT,ndots,h,
                     addnoise):
 
+        ndots = int(ndots)
+
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         dl  = cosmo.angular_diameter_distance(Z).value
