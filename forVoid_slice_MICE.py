@@ -120,11 +120,11 @@ def partial_profile(RA0,DEC0,Z,Rv,
                
         #get convergence
         k  = catdata.kappa*sigma_c
-          
-        del e1, e2, theta, sigma_c, rads, catdata
 
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
+
+        del e1, e2, theta, sigma_c
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
@@ -160,7 +160,7 @@ def main(lcat, sample='pru',
          rho1_min=-1., rho1_max=0.,
          rho2_min=-1., rho2_max=100.,
          z_min = 0.1, z_max = 1.0,
-         domap = False, RIN = 400., ROUT =5000.,
+         domap = False, RIN = .05, ROUT =5.,
          ndots= 40, ncores=10, 
          idlist= None, hcosmo=1.0, 
          addnoise = False, FLAG = 2.):
@@ -314,7 +314,7 @@ def main(lcat, sample='pru',
         print(f'Saved in ../{output_file}')
 
 
-        LARGO = len(Lsplit[0])
+        LARGO = len(Lsplit)
 
         Ntot         = np.empty(LARGO)
         tslice       = np.empty(LARGO)
