@@ -144,10 +144,10 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
                 N_inbin[nbin]      = np.count_nonzero(mbin)
         
-        # output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
-        #           'DSIGMAwsum_X':DSIGMAwsum_X,
-        #           'N_inbin':N_inbin,'Ntot':Ntot}
-        output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
+        output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
+                  'DSIGMAwsum_X':DSIGMAwsum_X,
+                  'N_inbin':N_inbin,'Ntot':Ntot}
+        #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
         
         ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
         #  como deberia modificarse el pool cada vez que tiene que llamar?
@@ -364,7 +364,7 @@ def main(lcat, sample='pru',
                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot[j] = profilesums[-1]
+                        Ntot[j] = profilesums['Ntot']
                         
                         if domap:
                                 print('Sin mapa')
@@ -372,11 +372,11 @@ def main(lcat, sample='pru',
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-                            Ninbin += np.tile(profilesums[-2],(ncen+1,1))*km
+                            Ninbin += np.tile(profilesums['N_inbin'],(ncen+1,1))*km
                                                 
-                            SIGMAwsum    += np.tile(profilesums[0],(ncen+1,1))*km
-                            DSIGMAwsum_T += np.tile(profilesums[1],(ncen+1,1))*km
-                            DSIGMAwsum_X += np.tile(profilesums[2],(ncen+1,1))*km
+                            SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
+                            DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
+                            DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
 
                 #Ntot = np.array([tot for i,tot in enumerate(salida[i][-1])])
 
@@ -403,6 +403,11 @@ def main(lcat, sample='pru',
         h.append(('z_min',np.round(z_min,2)))
         h.append(('z_max',np.round(z_max,2)))
         h.append(('hcosmo',np.round(hcosmo,4)))
+        
+        h.append(('---SLICES_INFO---'))
+        h.append(('Rp_min',np.round(RIN,4)))
+        h.append(('Rp_max',np.round(ROUT,4)))
+
 
         if domap:
                 print('Sin mapa')         
