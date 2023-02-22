@@ -391,7 +391,7 @@ def main(lcat, sample='pru',
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
         h = fits.Header()
-        h.append(('N_VOIDS',np.int(Nvoids)))
+        h.append(('N_VOIDS',int(Nvoids)))
         h.append(('Lens_cat',lcat))
         #h.append(('MICE version sources 2.0'))
         h.append(('Rv_min',np.round(Rv_min,2)))
@@ -442,7 +442,7 @@ def main(lcat, sample='pru',
             
                 table_p = [fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
                            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
-                           fits.Column(name='DSIgma_X', format='E', array=DSIgma_X.flatten())]
+                           fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten())]
 
         #tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
         #tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_cov))
