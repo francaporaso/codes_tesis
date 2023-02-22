@@ -384,7 +384,7 @@ def main(lcat, sample='pru',
                 ts = (t2-t1)/60.
                 tslice = np.append(tslice, ts)
                 print('TIME SLICE')
-                print(ts)
+                print(f'{np.round(ts,4)} min')
                 print('Estimated remaining time')
                 print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
