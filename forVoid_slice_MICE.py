@@ -407,6 +407,7 @@ def main(lcat, sample='pru',
         h.append(('---SLICES_INFO---'))
         h.append(('Rp_min',np.round(RIN,4)))
         h.append(('Rp_max',np.round(ROUT,4)))
+        h.append(('ndots',np.round(ndots,4)))
 
 
         if domap:
@@ -440,7 +441,8 @@ def main(lcat, sample='pru',
                             fits.Column(name='COV_S', format='E', array=COV_S.flatten()),
                             fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())] """
             
-                table_p = [fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
+                table_p = [fits.Column(name='Rp', format='E', array=R),
+                           fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
                            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
                            fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten())]
 
@@ -454,6 +456,8 @@ def main(lcat, sample='pru',
         hdul = fits.HDUList([primary_hdu, tbhdu_p])
         
         hdul.writeto(f'../{output_file}',overwrite=True)
+
+        print(f'File saved... {output_file}')
                 
         tfin = time.time()
         

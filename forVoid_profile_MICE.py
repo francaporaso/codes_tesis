@@ -712,6 +712,8 @@ def main(lcat, sample='pru',
         hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
         
         hdul.writeto(f'../{output_file}',overwrite=True)
+
+        print(f'File saved... {output_file}')
                 
         tfin = time.time()
         
