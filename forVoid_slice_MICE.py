@@ -98,10 +98,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
         
-        rads, theta, _, _ = eq2p2(np.deg2rad(catdata.ra_gal),
-                                  np.deg2rad(catdata.dec_gal),
-                                  np.deg2rad(RA0),
-                                  np.deg2rad(DEC0))
+        rads, theta, _, _ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+                                  np.deg2rad(RA0), np.deg2rad(DEC0))
                                
         
         e1     = catdata.gamma1
