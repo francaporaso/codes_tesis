@@ -149,7 +149,7 @@ def main(lcat, sample='pru',
                                             rin,rout,nd]).T
                         
                         with Pool(processes=num) as pool:
-                            salida = np.array(pool.imap(partial, entrada))
+                            salida = np.array(pool.map(partial, entrada))
                             pool.close()
                             pool.join()
                                                 
