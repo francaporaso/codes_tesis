@@ -35,15 +35,15 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         del mask
         del delta
 
-        rads, _, _, _ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
-                                        np.deg2rad(RA0), np.deg2rad(DEC0))
+        rads = (rad for rad,_,_,_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+                                                          np.deg2rad(RA0), np.deg2rad(DEC0)))
         
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
      
         Ntot = len(catdata)
         
-        bines = np.linspace(RIN,ROUT,num=ndots+1)
-        dig   = np.digitize(r, bines)
+        bines = (i for i in np.linspace(RIN,ROUT,num=ndots+1))
+        dig   = np.digitize(r, (x for x in bines))
 
         N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
@@ -78,19 +78,14 @@ def main(lcat, sample='pru',
         L = np.loadtxt(folder+lcat).T
 
         Rv, ra, dec, z, rho_1, rho_2, flag = L[1], L[2], L[3], L[4], L[8], L[9], L[11]
+ 
+        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= rho1_min)&(rho_1 < rho2_max))&(
+                 (rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)
 
-        mradio  = (Rv >= Rv_min)&(Rv < Rv_max)
-        mz      = (z >= z_min)&(z < z_max)
-        mrho1   = (rho_1 >= rho1_min)&(rho_1 < rho2_max)
-        mrho2   = (rho_2 >= rho2_min)&(rho_2 < rho2_max)
-        mflag   = flag >= FLAG
-        mvoids = mradio & mz & mrho1 & mrho2 & mflag
-
-        del mradio, mz, mrho1, mrho2, mflag
         
         # SELECT RELAXED HALOS
                 
-        Nvoids = mvoids.sum()
+        Nvoids = sum(mvoids)
 
         if Nvoids < ncores:
                 ncores = Nvoids
@@ -115,8 +110,8 @@ def main(lcat, sample='pru',
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
-        bines = np.linspace(RIN,ROUT,num=ndots+1)
-        R = (bines[:-1] + np.diff(bines)*0.5)
+        bines = (i for i in np.linspace(RIN,ROUT,num=ndots+1))
+        R = ((b[:-1] + np.diff(b)*0.5) for b in bines)
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
@@ -154,7 +149,7 @@ def main(lcat, sample='pru',
                                             rin,rout,nd]).T
                         
                         with Pool(processes=num) as pool:
-                            salida = np.array(pool.map(partial, entrada))
+                            salida = np.array(pool.imap(partial, entrada))
                             pool.close()
                             pool.join()
                                                 
