@@ -244,6 +244,8 @@ if __name__ == '__main__':
     main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
          z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
+    print('Listorti')
+
     S.close()
 
 
