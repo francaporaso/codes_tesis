@@ -203,7 +203,7 @@ if __name__ == '__main__':
     print('Testeando...')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-sample', action='store', dest='z_min', default='pru')
+    parser.add_argument('-sample', action='store', dest='sample', default='pru')
     parser.add_argument('-lens_cat', action='store', dest='lcat',default='voids_MICE.dat')
     parser.add_argument('-Rv_min', action='store', dest='Rv_min', default=10.)
     parser.add_argument('-Rv_max', action='store', dest='Rv_max', default=20.)
