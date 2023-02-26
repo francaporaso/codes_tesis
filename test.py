@@ -55,8 +55,8 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         del mask
         del delta
 
-        rads, *_ = (rad for rad,*_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
-                                            np.deg2rad(RA0), np.deg2rad(DEC0)))
+        rads, *_ = np.array([rad for rad,*_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+                                            np.deg2rad(RA0), np.deg2rad(DEC0))])
         
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
      
@@ -138,7 +138,7 @@ def main(lcat, sample='pru',
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
-        bines = div_area(RIN,ROUT,num=ndots+1)
+        bines = div_area(RIN,ROUT,num=ndots)
         R = bines[:-1] + np.diff(bines)*0.5
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
