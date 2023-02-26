@@ -142,7 +142,7 @@ def main(lcat, sample='pru',
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        Ninbin = np.zeros((ndots,ncores))
+        Ninbin = np.zeros((ncores,ndots))
 
         # FUNCTION TO RUN IN PARALLEL
         partial = gal_inbin_unpack
