@@ -142,7 +142,7 @@ def main(lcat, sample='pru',
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        Ninbin = np.zeros(ndots)
+        Ninbin = np.zeros((ndots,ncores))
 
         # FUNCTION TO RUN IN PARALLEL
         partial = gal_inbin_unpack
@@ -207,7 +207,7 @@ def main(lcat, sample='pru',
         H.append(('z_max',np.round(z_max,2)))
 
         table_pro = [fits.Column(name='Rp', format='E', array=R),
-                    fits.Column(name='Ninbin', format='E', array=Ninbin)]
+                    fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())]
 
         tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
         primary_hdu = fits.PrimaryHDU(header=H)
