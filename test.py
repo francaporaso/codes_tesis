@@ -82,6 +82,7 @@ def main(lcat, sample='pru',
          hcosmo=1.0, FLAG = 2.):
 
         cosmo = LambdaCDM(H0=100*hcosmo, Om0=0.25, Ode0=0.75)
+        print('Starting timer')
         tini = time.time()
         
         print(f'Voids catalog {lcat}')
@@ -266,5 +267,5 @@ if __name__ == '__main__':
     main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
          z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
-    S.close()
+    #S.close()
     print('Listorti')
