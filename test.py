@@ -196,6 +196,10 @@ def main(lcat, sample='pru',
 
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
+        for j,_ in enumerate(Ninbin.flatten()):
+                if Ninbin.flatten()[j] == 0:
+                        raise ValueError('Mal calculado, hay valores de Ninbin = 0 (probablemente todos)')
+
         H = fits.Header()
         H.append(('N_VOIDS',np.int32(Nvoids)))
         H.append(('Rv_min',np.round(Rv_min,2)))
