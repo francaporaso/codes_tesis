@@ -58,7 +58,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         rads, *_ = (rad for rad,*_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                             np.deg2rad(RA0), np.deg2rad(DEC0)))
         
-        r = np.array([(np.rad2deg(rad)*3600*KPCSCALE)/(Rv*1000.) for rad in rads])
+        r = (np.rad2deg(rad)*3600*KPCSCALE)/(Rv*1000.)
      
         Ntot = len(catdata)
         
@@ -126,7 +126,14 @@ def main(lcat, sample='pru',
 
         print(f'Profile has {ndots} bins')
         print(f'from {RIN} Rv to {ROUT} Rv')
-        os.system('mkdir ../tests')
+        
+        try:
+                os.mkdir('../tests')
+                print("Directory created successfully!")
+        except FileExistsError:
+                print("Directory already exists!")
+        #os.system('mkdir ../tests')
+        
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
