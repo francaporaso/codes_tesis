@@ -255,8 +255,9 @@ if __name__ == '__main__':
 
     folder = '/mnt/simulations/MICE/'
     scat = 'MICE_sources_HSN_withextra.fits'
-    with fits.open(folder+scat) as S:
-        main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-             z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+    S = fits.open(folder+scat)[1].data
+    main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+         z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
+    S.close()
     print('Listorti')
