@@ -16,6 +16,26 @@ G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
 pc   = pc.value    # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
+def div_area(a, b, num=50):
+    '''a(float): radio interno
+       b(float): radio externo
+       num(int): numero de anillos de igual area
+       
+       returns
+       r(1d-array): radios de los num+1 anillos, con el último elemento igual a b'''
+    num = int(num)
+    r = np.zeros(num+1)
+    r[0] = a
+    A = np.pi * (b**2 - a**2)
+    
+    for k in np.arange(1,num+1):
+        r[k] = np.sqrt(k*A/(num*np.pi) + a**2)
+        
+    if r[-1] != b:
+        raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
+    return r
+
+
 def gal_inbin(RA0,DEC0,Z,Rv,
               RIN,ROUT,ndots,h=1):
 
@@ -38,12 +58,12 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         rads = (rad for rad,_,_,_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                                           np.deg2rad(RA0), np.deg2rad(DEC0)))
         
-        r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
+        r = np.array([(np.rad2deg(rad)*3600*KPCSCALE)/(Rv*1000.) for rad in rads])
      
         Ntot = len(catdata)
         
-        bines = (i for i in np.linspace(RIN,ROUT,num=ndots+1))
-        dig   = np.digitize(r, (x for x in bines))
+        bines = (i for i in div_area(RIN,ROUT,num=ndots+1))
+        dig   = np.digitize(r, np.array([x for x in bines]))
 
         N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
@@ -110,8 +130,8 @@ def main(lcat, sample='pru',
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
-        bines = (i for i in np.linspace(RIN,ROUT,num=ndots+1))
-        R = ((b[:-1] + np.diff(b)*0.5) for b in bines)
+        bines = np.array([i for i in div_area(RIN,ROUT,num=ndots+1)])
+        R = np.array([(b[:-1] + np.diff(b)*0.5) for b in bines])
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
@@ -121,12 +141,12 @@ def main(lcat, sample='pru',
         partial = gal_inbin_unpack
         
         print(f'Saved in ../{output_file}')
-                
-        Ntot         = np.array([])
-        tslice       = np.array([])
+
+        LARGO  = len(Lslpit)
+        Ntot   = np.zeros(LARGO)
+        tslice = np.zeros(LARGO)
         
         for l, Lsplit_l in enumerate(Lsplit):
-                
                 print(f'RUN {l+1} OF {len(Lsplit)}')
                 
                 t1 = time.time()
@@ -134,15 +154,15 @@ def main(lcat, sample='pru',
                 num = len(Lsplit_l)
 
                 if num == 1:
-                        entrada = [Lsplit_l[2], Lsplit_l[3],
+                        entrada = np.array([Lsplit_l[2], Lsplit_l[3],
                                    Lsplit_l[4],Lsplit_l[1],
-                                   RIN,ROUT,ndots]
+                                   RIN,ROUT,ndots])
                         
-                        salida = [partial(entrada)]
+                        salida = np.array([partial(entrada)])
                 else:
-                        rin            = np.full(num, RIN)
-                        rout           = np.full(num, ROUT)
-                        nd             = np.full(num, ndots)
+                        rin  = np.full(num, RIN)
+                        rout = np.full(num, ROUT)
+                        nd   = np.full(num, ndots)
                         
                         entrada = np.array([Lsplit_l.T[2],Lsplit_l.T[3],
                                             Lsplit_l.T[4],Lsplit_l.T[1],
@@ -155,12 +175,12 @@ def main(lcat, sample='pru',
                                                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot   = np.append(Ntot,profilesums['Ntot'])
-                        Ninbin = np.append(Ninbin, profilesums['N_inbin'])
+                        Ntot[j]   = profilesums['Ntot']
+                        Ninbin[j] = profilesums['N_inbin']
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
-                tslice = np.append(tslice,ts)
+                tslice[l] = ts
                 print('TIME SLICE')
                 print(f'{np.round(ts,2)} min')
                 print('Estimated remaining time')
@@ -234,14 +254,9 @@ if __name__ == '__main__':
     hcosmo     = float(args.h_cosmo)
 
     folder = '/mnt/simulations/MICE/'
-    S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
-
-    main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-         z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+    scat = 'MICE_sources_HSN_withextra.fits'
+    with fits.open(folder+scat) as S:
+        main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+             z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
     print('Listorti')
-
-    S.close()
-
-
-
