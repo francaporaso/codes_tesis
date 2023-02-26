@@ -62,12 +62,18 @@ def gal_inbin(RA0,DEC0,Z,Rv,
      
         Ntot = len(catdata)
         
-        bines = div_area(RIN,ROUT,num=ndots+1)
+        bines = div_area(RIN,ROUT,num=ndots)
         dig   = np.digitize(r, bines)
 
-        N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
+        Ninbin = np.zeros(ndots)
+        for nbin in np.arange(ndots):
+                mbin = dig == nbin+1
+                Ninbin[mbin] = np.sum(mbin)
+
+
+        #N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
-        return {'N_inbin':N_inbin, 'Ntot':Ntot}
+        return {'Ninbin':Ninbin, 'Ntot':Ntot}
 
 def gal_inbin_unpack(a):
     return gal_inbin(*a)
@@ -183,7 +189,7 @@ def main(lcat, sample='pru',
                                                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ninbin[j] = profilesums['N_inbin']
+                        Ninbin[j] = profilesums['Ninbin']
                         Ntot   = np.append(Ntot,profilesums['Ntot'])
                         
                 t2 = time.time()
