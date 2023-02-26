@@ -150,7 +150,7 @@ def main(lcat, sample='pru',
         print(f'Saved in ../{output_file}')
 
         LARGO  = len(Lsplit)
-        Ntot   = np.zeros(LARGO)
+        Ntot   = np.array([])
         tslice = np.zeros(LARGO)
         
         for l, Lsplit_l in enumerate(Lsplit):
@@ -183,7 +183,7 @@ def main(lcat, sample='pru',
                 for j, profilesums in enumerate(salida):
                         
                         Ninbin[j] = profilesums['N_inbin']
-                        Ntot[j]   = profilesums['Ntot']
+                        Ntot   = np.append(Ntot,profilesums['Ntot'])
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
