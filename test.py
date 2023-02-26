@@ -182,8 +182,8 @@ def main(lcat, sample='pru',
                                                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot[j]   = profilesums['Ntot']
-                        Ninbin[j] = profilesums['N_inbin']
+                        Ninbin[j] = profilesums[0]
+                        Ntot[j]   = profilesums[1]
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
