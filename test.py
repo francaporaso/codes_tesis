@@ -31,7 +31,7 @@ def div_area(a, b, num=50):
     for k in np.arange(1,num+1):
         r[k] = np.sqrt(k*A/(num*np.pi) + a**2)
         
-    if r[-1] != b:
+    if np.round(r[-1],2) != b:
         raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
     return r
 
