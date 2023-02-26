@@ -58,7 +58,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         rads, *_ = (rad for rad,*_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                             np.deg2rad(RA0), np.deg2rad(DEC0)))
         
-        r = (np.rad2deg(rad)*3600*KPCSCALE)/(Rv*1000.)
+        r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
      
         Ntot = len(catdata)
         
