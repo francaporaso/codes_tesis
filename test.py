@@ -130,8 +130,8 @@ def main(lcat, sample='pru',
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
-        bines = np.array([i for i in div_area(RIN,ROUT,num=ndots+1)])
-        R = np.array([(b[:-1] + np.diff(b)*0.5) for b in bines])
+        bines = div_area(RIN,ROUT,num=ndots+1)
+        R = bines[:-1] + np.diff(bines)*0.5
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
