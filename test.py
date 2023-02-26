@@ -62,8 +62,8 @@ def gal_inbin(RA0,DEC0,Z,Rv,
      
         Ntot = len(catdata)
         
-        bines = (i for i in div_area(RIN,ROUT,num=ndots+1))
-        dig   = np.digitize(r, np.array([x for x in bines]))
+        bines = div_area(RIN,ROUT,num=ndots+1)
+        dig   = np.digitize(r, bines)
 
         N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
@@ -177,7 +177,7 @@ def main(lcat, sample='pru',
                                             rin,rout,nd]).T
                         
                         with Pool(processes=num) as pool:
-                            salida = np.array(pool.map(partial, entrada), dtype=object)
+                            salida = np.array(pool.map(partial, entrada))
                             pool.close()
                             pool.join()
                                                 
