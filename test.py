@@ -67,7 +67,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
 
         N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
         
-        return N_inbin, Ntot
+        return {'N_inbin':N_inbin, 'Ntot':Ntot}
 
 def gal_inbin_unpack(a):
     return gal_inbin(*a)
@@ -176,14 +176,14 @@ def main(lcat, sample='pru',
                                             rin,rout,nd]).T
                         
                         with Pool(processes=num) as pool:
-                            salida = np.array(pool.map(partial, entrada))
+                            salida = np.array(pool.map(partial, entrada), dtype=object)
                             pool.close()
                             pool.join()
                                                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ninbin[j] = profilesums[0]
-                        Ntot[j]   = profilesums[1]
+                        Ninbin[j] = profilesums['N_inbin']
+                        Ntot[j]   = profilesums['Ntot']
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
