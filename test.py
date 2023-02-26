@@ -143,7 +143,7 @@ def main(lcat, sample='pru',
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        Ninbin = np.zeros((ncores,ndots))
+        Ninbin = np.full((ncores,ndots), -np.inf)
 
         # FUNCTION TO RUN IN PARALLEL
         partial = gal_inbin_unpack
@@ -195,10 +195,6 @@ def main(lcat, sample='pru',
                 print(f'{np.round(np.mean(tslice)*(len(Lsplit)-(l+1)),2)} min')
 
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
-
-        for j,_ in enumerate(Ninbin.flatten()):
-                if Ninbin.flatten()[j] == 0:
-                        raise ValueError('Mal calculado, hay valores de Ninbin = 0 (probablemente todos)')
 
         H = fits.Header()
         H.append(('N_VOIDS',np.int32(Nvoids)))
