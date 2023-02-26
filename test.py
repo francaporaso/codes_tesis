@@ -142,7 +142,7 @@ def main(lcat, sample='pru',
         
         print(f'Saved in ../{output_file}')
 
-        LARGO  = len(Lslpit)
+        LARGO  = len(Lsplit)
         Ntot   = np.zeros(LARGO)
         tslice = np.zeros(LARGO)
         
