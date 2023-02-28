@@ -29,13 +29,13 @@ def div_area(a, b, num=50):
     A = np.pi * (b**2 - a**2)
     
     for k in np.arange(1,num+1):
-        r[k] = np.sqrt(k*A/(num*np.pi) + a**2)
+        r[k] = np.round(np.sqrt(k*A/(num*np.pi) + a**2),2)
         
-    if np.round(r[-1],2) != b:
+    if r[-1] != b:
         raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
     return r
 
-
+        
 def gal_inbin(RA0,DEC0,Z,Rv,
               RIN,ROUT,ndots,h=1):
 
@@ -55,14 +55,14 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         del mask
         del delta
 
-        rads, *_ = np.array([rad for rad,*_ in eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
-                                            np.deg2rad(RA0), np.deg2rad(DEC0))])
+        rads, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+                                            np.deg2rad(RA0), np.deg2rad(DEC0))
         
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
      
         Ntot = len(catdata)
         
-        bines = div_area(RIN,ROUT,num=ndots)
+        bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig   = np.digitize(r, bines)
 
         Ninbin = np.zeros(ndots)
@@ -88,7 +88,6 @@ def main(lcat, sample='pru',
          hcosmo=1.0, FLAG = 2.):
 
         cosmo = LambdaCDM(H0=100*hcosmo, Om0=0.25, Ode0=0.75)
-        print('Starting timer')
         tini = time.time()
         
         print(f'Voids catalog {lcat}')
@@ -144,7 +143,7 @@ def main(lcat, sample='pru',
         output_file = f'tests/count_{sample}.fits'
 
         # Defining radial bins
-        bines = div_area(RIN,ROUT,num=ndots)
+        bines = np.linspace(RIN,ROUT,num=ndots+1)
         R = bines[:-1] + np.diff(bines)*0.5
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
@@ -198,7 +197,7 @@ def main(lcat, sample='pru',
                 print('TIME SLICE')
                 print(f'{np.round(ts,2)} min')
                 print('Estimated remaining time')
-                print(f'{np.round(np.mean(tslice)*(len(Lsplit)-(l+1)),2)} min')
+                print(f'{np.round(np.mean(tslice[:l+1])*(len(Lsplit)-(l+1)),2)} min')
 
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
@@ -225,7 +224,47 @@ def main(lcat, sample='pru',
                 
         tfin = time.time()
         
-        print(f'TOTAL TIME {(tfin-tini)/60.}')
+        print(f'TOTAL TIME {np.round((tfin-tini)/60.,3)} min')
+
+def run_in_parts(RIN,ROUT, nslices,
+                lcat, sample='pru', Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., rho2_min=-1.,rho2_max=100.,
+                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.):
+        '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
+        
+        RIN, ROUT: radios interno y externo del profile
+        nslices(int): cantidad de cortes
+        
+        '''
+        if RIN<ROUT:
+            cuts = div_area(RIN,ROUT,num=nslices)
+        else:
+            cuts = np.array([RIN,ROUT])
+            nslices = 1
+        
+        try:
+                os.mkdir(f'../tests/Rv_{int(Rv_min)}-{int(Rv_max)}')
+        except FileExistsError:
+                print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+        
+        tslice = np.zeros(nslices)
+
+        for j in np.arange(nslices):
+                RIN, ROUT = cuts[j], cuts[j+1]
+                
+                t1 = time.time()
+
+                print(f'RUN {j+1} out of {nslices} slices')
+                print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
+
+                main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+                     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+
+                t2 = time.time()
+                tslice[j] = (t2-t1)/60.     
+                print('TIME SLICE')
+                print(f'{np.round(tslice[j],2)} min')
+                print('Estimated remaining time for run in parts')
+                print(f'{np.round(np.mean(tslice[:j+1])*(nslices-(j+1)),2)} min')
 
 
 if __name__ == '__main__':
@@ -248,6 +287,7 @@ if __name__ == '__main__':
     parser.add_argument('-nbins', action='store', dest='nbins', default=20)
     parser.add_argument('-ncores', action='store', dest='ncores', default=10)
     parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
+    parser.add_argument('-nslices', action='store', dest='nslices', default=1)
     args = parser.parse_args()
     
     sample     = args.sample
@@ -266,12 +306,19 @@ if __name__ == '__main__':
     ndots      = int(args.nbins)
     ncores     = int(args.ncores)
     hcosmo     = float(args.h_cosmo)
+    nslices    = int(args.nslices)
+
 
     folder = '/mnt/simulations/MICE/'
     scat = 'MICE_sources_HSN_withextra.fits'
     S = fits.open(folder+scat)[1].data
-    main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-         z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+    
+    run_in_parts(RIN,ROUT, nslices,
+                lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max,
+                z_min, z_max, ndots, ncores, hcosmo, FLAG)
+    
+    #main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+    #     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
     #S.close()
     print('Listorti')
