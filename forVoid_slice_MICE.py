@@ -462,6 +462,45 @@ def main(lcat, sample='pru',
         print(f'TOTAL TIME {np.round((tfin-tini)/60. , 3)} mins')
         
 
+def run_in_parts(RIN,ROUT, nslices,
+                lcat, sample='pru', Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., rho2_min=-1.,rho2_max=100.,
+                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.):
+        '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
+        
+        RIN, ROUT: radios interno y externo del profile
+        nslices(int): cantidad de cortes
+        
+        '''
+        if RIN<ROUT:
+            cuts = div_area(RIN,ROUT,num=nslices)
+        else:
+            cuts = np.array([RIN,ROUT])
+            nslices = 1
+        
+        try:
+                os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
+        except FileExistsError:
+                print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+        
+        tslice = np.zeros(nslices)
+
+        for j in np.arange(nslices):
+                RIN, ROUT = cuts[j], cuts[j+1]
+                
+                t1 = time.time()
+
+                print(f'RUN {j+1} out of {nslices} slices')
+                #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
+
+                main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+                     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+
+                t2 = time.time()
+                tslice[j] = (t2-t1)/60.     
+                #print('TIME SLICE')
+                #print(f'{np.round(tslice[j],2)} min')
+                print('Estimated remaining time for run in parts')
+                print(f'{np.round(np.mean(tslice[:j+1])*(nslices-(j+1)),2)} min')
 
 if __name__=='__main__':
         
@@ -486,6 +525,7 @@ if __name__=='__main__':
         parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
         parser.add_argument('-ides_list', action='store', dest='idlist', default=None)
         parser.add_argument('-nback', action='store', dest='nback', default=30)
+        parser.add_argument('-nslices', action='store', dest='nslices', default=1.)
         args = parser.parse_args()
 
         sample     = args.sample
@@ -506,6 +546,7 @@ if __name__=='__main__':
         ncores     = int(args.ncores)
         hcosmo     = float(args.h_cosmo)
         nback      = float(args.nback)
+        nslices      = int(args.nslices)
 
         if args.domap == 'True':
             domap = True
@@ -527,6 +568,7 @@ if __name__=='__main__':
 
         print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
-        main(lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max, z_min, z_max,
-             domap, RIN, ROUT, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
+        run_in_parts(RIN,ROUT, nslices,
+                lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min=-1.,rho2_max=100.,
+                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.)
 
