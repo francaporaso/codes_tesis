@@ -55,8 +55,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         del mask
         del delta
 
-        rads, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
-                                            np.deg2rad(RA0), np.deg2rad(DEC0))
+        rads, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal), np.deg2rad(RA0), np.deg2rad(DEC0))
         
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
      
@@ -111,7 +110,7 @@ def main(lcat, sample='pru',
         
         # SELECT RELAXED HALOS
                 
-        Nvoids = sum(mvoids)
+        Nvoids = np.sum(mvoids)
 
         if Nvoids < ncores:
                 ncores = Nvoids
@@ -131,7 +130,7 @@ def main(lcat, sample='pru',
         del L
 
         print(f'Profile has {ndots} bins')
-        print(f'from {RIN} Rv to {ROUT} Rv')
+        #print(f'from {RIN} Rv to {ROUT} Rv')
         
         try:
                 os.mkdir('../tests')
@@ -290,6 +289,24 @@ if __name__ == '__main__':
     parser.add_argument('-nslices', action='store', dest='nslices', default=1)
     args = parser.parse_args()
     
+    '''
+    lcat = 'voids_MICE.dat'
+    Rv_min = 20.
+    Rv_max = 21.
+    rho1_min = -1.
+    rho1_max = 1.
+    rho2_min = -1.
+    rho2_max = 100.
+    z_min = 0.1
+    z_max = 0.2
+    nbins = 20
+    ncores = 14
+    h_cosmo = 1.
+    nslices = 1
+    '''
+
+
+
     sample     = args.sample
     lcat       = args.lcat
     Rv_min     = float(args.Rv_min)
@@ -312,13 +329,18 @@ if __name__ == '__main__':
     folder = '/mnt/simulations/MICE/'
     scat = 'MICE_sources_HSN_withextra.fits'
     S = fits.open(folder+scat)[1].data
+
+    tin = time.time()
     
     run_in_parts(RIN,ROUT, nslices,
                 lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max,
                 z_min, z_max, ndots, ncores, hcosmo, FLAG)
+
+
+    tfin = time.time()
     
     #main(lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
     #     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
     #S.close()
-    print('Listorti')
+    print(f'Total time: {np.round((tfin-tin)/60.,2)} min')
