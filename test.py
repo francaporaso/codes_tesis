@@ -68,7 +68,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         Ninbin = np.zeros(ndots)
         for nbin in np.arange(ndots):
                 mbin = dig == nbin+1
-                Ninbin[mbin] = np.sum(mbin)
+                Ninbin[nbin] = np.count_nonzero(mbin)
 
 
         #N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
@@ -254,21 +254,21 @@ def run_in_parts(RIN,ROUT, nslices,
                 t1 = time.time()
 
                 print(f'RUN {j+1} out of {nslices} slices')
-                print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
+                #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
                 main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
                      z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
                 t2 = time.time()
                 tslice[j] = (t2-t1)/60.     
-                print('TIME SLICE')
-                print(f'{np.round(tslice[j],2)} min')
+                #print('TIME SLICE')
+                #print(f'{np.round(tslice[j],2)} min')
                 print('Estimated remaining time for run in parts')
                 print(f'{np.round(np.mean(tslice[:j+1])*(nslices-(j+1)),2)} min')
 
 
 if __name__ == '__main__':
-    print('Testeando...')
+    #print('Testeando...')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sample', action='store', dest='sample', default='pru')
