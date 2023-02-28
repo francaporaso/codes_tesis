@@ -147,7 +147,7 @@ def main(lcat, sample='pru',
 
         # WHERE THE SUMS ARE GOING TO BE SAVED
         
-        Ninbin = np.full((ncores,ndots), -np.inf)
+        #Ninbin = np.zeros(ndots)
 
         # FUNCTION TO RUN IN PARALLEL
         partial = gal_inbin_unpack
@@ -185,10 +185,13 @@ def main(lcat, sample='pru',
                             pool.close()
                             pool.join()
                                                 
-                for j, profilesums in enumerate(salida):
+                #for j, profilesums in enumerate(salida):
                         
-                        Ninbin[j] = profilesums['Ninbin']
-                        Ntot   = np.append(Ntot,profilesums['Ntot'])
+                        #Ninbin += profilesums['Ninbin']
+                        #Ntot   = np.append(Ntot,profilesums['Ntot'])
+
+                Ninbin = np.sum([n['Ninbin'] for n in salida], axis=0)
+                Ntot   = np.array([n['Ntot'] for n in salida])
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
@@ -212,7 +215,7 @@ def main(lcat, sample='pru',
         H.append(('z_max',np.round(z_max,2)))
 
         table_pro = [fits.Column(name='Rp', format='E', array=R),
-                    fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())]
+                    fits.Column(name='Ninbin', format='E', array=Ninbin)]
 
         tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
         primary_hdu = fits.PrimaryHDU(header=H)
@@ -234,11 +237,8 @@ def run_in_parts(RIN,ROUT, nslices,
         nslices(int): cantidad de cortes
         
         '''
-        if RIN<ROUT:
-            cuts = div_area(RIN,ROUT,num=nslices)
-        else:
-            cuts = np.array([RIN,ROUT])
-            nslices = 1
+        
+        cuts = div_area(RIN,ROUT,num=nslices)
         
         try:
                 os.mkdir(f'../tests/Rv_{int(Rv_min)}-{int(Rv_max)}')
