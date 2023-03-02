@@ -64,13 +64,13 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig   = np.digitize(r, bines)
 
-        Ninbin = np.zeros(ndots)
-        for nbin in np.arange(ndots):
-                mbin = dig == nbin+1
-                Ninbin[nbin] = np.count_nonzero(mbin)
+        # Ninbin = np.zeros(ndots)
+        # for nbin in np.arange(ndots):
+        #         mbin = dig == nbin+1
+        #         Ninbin[nbin] = np.count_nonzero(mbin)
 
 
-        #N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in range(0,ndots)])
+        N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
         
         return {'Ninbin':Ninbin, 'Ntot':Ntot}
 
@@ -155,7 +155,7 @@ def main(lcat, sample='pru',
         print(f'Saved in ../{output_file}')
 
         LARGO  = len(Lsplit)
-        Ntot   = np.array([])
+        #Ntot   = np.array([])
         tslice = np.zeros(LARGO)
         
         for l, Lsplit_l in enumerate(Lsplit):
@@ -304,8 +304,6 @@ if __name__ == '__main__':
     h_cosmo = 1.
     nslices = 1
     '''
-
-
 
     sample     = args.sample
     lcat       = args.lcat
