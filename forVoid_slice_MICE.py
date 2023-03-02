@@ -54,7 +54,24 @@ nback      = 30.
 domap      = False
 addnoise   = False
 '''
-
+def div_area(a, b, num=50):
+    '''a(float): radio interno
+       b(float): radio externo
+       num(int): numero de anillos de igual area
+       
+       returns
+       r(1d-array): radios de los num+1 anillos, con el último elemento igual a b'''
+    num = int(num)
+    r = np.zeros(num+1)
+    r[0] = a
+    A = np.pi * (b**2 - a**2)
+    
+    for k in np.arange(1,num+1):
+        r[k] = np.round(np.sqrt(k*A/(num*np.pi) + a**2),2)
+        
+    if r[-1] != b:
+        raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
+    return r
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
@@ -98,7 +115,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
         
-        rads, theta, _, _ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+        rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
                                
         
@@ -124,7 +141,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
 
-        del e1, e2, theta, sigma_c
+        del e1, e2, rads, theta, sigma_c
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
@@ -132,7 +149,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         SIGMAwsum    = np.empty(ndots)
         DSIGMAwsum_T = np.empty(ndots)
         DSIGMAwsum_X = np.empty(ndots)
-        N_inbin      = np.empty(ndots)
+        #N_inbin      = np.empty(ndots)
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
@@ -140,12 +157,17 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 SIGMAwsum[nbin]    = k[mbin].sum()
                 DSIGMAwsum_T[nbin] = et[mbin].sum()
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
-                N_inbin[nbin]      = np.count_nonzero(mbin)
+                #N_inbin[nbin]      = np.count_nonzero(mbin)
         
-        output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
-                  'DSIGMAwsum_X':DSIGMAwsum_X,
-                  'N_inbin':N_inbin,'Ntot':Ntot}
-        #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
+        #SIGMAwsum = ([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
+        N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
+
+
+        # output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
+        #           'DSIGMAwsum_X':DSIGMAwsum_X,
+        #           'N_inbin':N_inbin,'Ntot':Ntot}
+        
+        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot])
         
         ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
         #  como deberia modificarse el pool cada vez que tiene que llamar?
@@ -238,7 +260,7 @@ def main(lcat, sample='pru',
                          (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
-        Nvoids = mvoids.sum()
+        Nvoids = np.count_nonzero(mvoids)
 
         if Nvoids < ncores:
                 ncores = Nvoids
@@ -292,7 +314,11 @@ def main(lcat, sample='pru',
 
             print(f'Profile has {ndots} bins')
             print(f'from {RIN} Rv to {ROUT} Rv')
-            os.system('mkdir ../profiles')
+            try:
+                os.mkdir('../profiles')
+                print("Directory created successfully!")
+            except FileExistsError:
+                print("Directory already exists!")
             output_file = f'profiles/voids/profile_{sample}.fits'
 
             # Defining radial bins
@@ -301,12 +327,11 @@ def main(lcat, sample='pru',
 
             # WHERE THE SUMS ARE GOING TO BE SAVED
             
-            Ninbin = np.zeros((ncen+1,ndots))
-            
             SIGMAwsum    = np.zeros((ncen+1,ndots)) 
             DSIGMAwsum_T = np.zeros((ncen+1,ndots)) 
             DSIGMAwsum_X = np.zeros((ncen+1,ndots))
-                            
+            Ninbin = np.zeros((ncen+1,ndots))           
+
             # FUNCTION TO RUN IN PARALLEL
             partial = partial_profile_unpack
             
@@ -316,8 +341,8 @@ def main(lcat, sample='pru',
 
         LARGO = len(Lsplit)
 
-        Ntot         = np.array([])
-        tslice       = np.array([])
+        #Ntot         = np.array([])
+        tslice       = np.zeros(largo)
         
         for l, Lsplit_l in enumerate(Lsplit):
                 
@@ -362,7 +387,7 @@ def main(lcat, sample='pru',
                 
                 for j, profilesums in enumerate(salida):
                         
-                        Ntot = np.append(Ntot, profilesums['Ntot'])
+                        #Ntot = np.append(Ntot, profilesums['Ntot'])
                         
                         if domap:
                                 print('Sin mapa')
@@ -376,15 +401,14 @@ def main(lcat, sample='pru',
                             DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
                             DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
 
-                #Ntot = np.array([tot for i,tot in enumerate(salida[i][-1])])
+                Ntot = np.array([n[-1] for n in salida])
 
                 t2 = time.time()
-                ts = (t2-t1)/60.
-                tslice = np.append(tslice, ts)
+                tslice[l] = (t2-t1)/60.
                 print('TIME SLICE')
-                print(f'{np.round(ts,4)} min')
+                print(f'{np.round(tslice[j],2)} min')
                 print('Estimated remaining time')
-                print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
+                print(f'{np.round(np.mean(tslice[:l+1])*(LARGO-(l+1)), 2)} min')
 
         # AVERAGE VOID PARAMETERS AND SAVE IT IN HEADER
 
@@ -403,9 +427,9 @@ def main(lcat, sample='pru',
         h.append(('hcosmo',np.round(hcosmo,4)))
         
         h.append(('---SLICES_INFO---'))
-        h.append(('Rp_min',np.round(RIN,4)))
-        h.append(('Rp_max',np.round(ROUT,4)))
-        h.append(('ndots',np.round(ndots,4)))
+        h.append(('RIN',np.round(RIN,4)))
+        h.append(('ROUT',np.round(ROUT,4)))
+        h.append(('ndots',int(ndots)))
 
 
         if domap:
@@ -459,7 +483,7 @@ def main(lcat, sample='pru',
                 
         tfin = time.time()
         
-        print(f'TOTAL TIME {np.round((tfin-tini)/60. , 3)} mins')
+        print(f'SLICE TIME {np.round((tfin-tini)/60. , 3)} mins')
         
 
 def run_in_parts(RIN,ROUT, nslices,
@@ -471,16 +495,14 @@ def run_in_parts(RIN,ROUT, nslices,
         nslices(int): cantidad de cortes
         
         '''
-        if RIN<ROUT:
-            cuts = div_area(RIN,ROUT,num=nslices)
-        else:
-            cuts = np.array([RIN,ROUT])
-            nslices = 1
+        
+        #cuts = div_area(RIN,ROUT,num=nslices)
+        cuts = np.linspace(RIN,ROUT,num=nslices)
         
         try:
                 os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
         except FileExistsError:
-                print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+                print(f'Directory ../profiles/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
         
         tslice = np.zeros(nslices)
 
@@ -492,7 +514,7 @@ def run_in_parts(RIN,ROUT, nslices,
                 print(f'RUN {j+1} out of {nslices} slices')
                 #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
-                main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
+                main(lcat, sample+f'cut{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
                      z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
 
                 t2 = time.time()
@@ -546,7 +568,7 @@ if __name__=='__main__':
         ncores     = int(args.ncores)
         hcosmo     = float(args.h_cosmo)
         nback      = float(args.nback)
-        nslices      = int(args.nslices)
+        nslices    = int(args.nslices)
 
         if args.domap == 'True':
             domap = True
@@ -559,16 +581,22 @@ if __name__=='__main__':
             addnoise = False
 
         folder = '/mnt/simulations/MICE/'
-        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
+        with fits.open(folder+'MICE_sources_HSN_withextra.fits') as Sources:
+                S = Sources[1].data
         
-        if nback < 30.:
-            nselec = int(nback*5157*3600.)
-            j      = np.random.choice(np.array(len(S)),nselec)
-            S  = S[j]
+                if nback < 30.:
+                    nselec = int(nback*5157*3600.)
+                    j      = np.random.choice(np.array(len(S)),nselec)
+                    S  = S[j]
 
-        print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
+                print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
-        run_in_parts(RIN,ROUT, nslices,
-                lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min=-1.,rho2_max=100.,
-                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.)
+                tin = time.time()
 
+                run_in_parts(RIN,ROUT, nslices,
+                        lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min=-1.,rho2_max=100.,
+                        z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.)
+
+                tfin = time.time()
+
+                print(f'Total time: {np.round((tfin-tin)/60.,2)} min')
