@@ -62,7 +62,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         # catdata = np.array_split(catdata,chunck) / (se puede cambiar la lin 53 y no crear 2 catdata:) catdata = np.array_split(S[mask],chunck)
         # dig = np.array([])
         # for c in catdata:
-        #         rads, *_ = = eq2p2(np.deg2rad(c.ra_gal), np.deg2rad(c.dec_gal), np.deg2rad(RA0), np.deg2rad(DEC0))
+        #         rads, *_ = eq2p2(np.deg2rad(c.ra_gal), np.deg2rad(c.dec_gal), np.deg2rad(RA0), np.deg2rad(DEC0))
         #         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         #         d = np.digitize(r, bines)
         #         dig = np.append(dig,d)
@@ -73,7 +73,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
      
         Ntot = len(catdata)
 
-        bines = np.linspace(RIN,ROUT,num=ndots+1)
+        bines = div_area(RIN,ROUT,num=ndots)
         dig   = np.digitize(r, bines)
 
         Ninbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
@@ -83,7 +83,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         #         mbin = dig == nbin+1
         #         Ninbin[nbin] = np.count_nonzero(mbin)
         
-        return np.array([Ninbin, Ntot])
+        return np.array([Ninbin, Ntot], dtype=object)
 
 def gal_inbin_unpack(a):
     return gal_inbin(*a)
