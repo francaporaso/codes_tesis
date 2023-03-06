@@ -141,6 +141,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
 
+        del catdata
         del e1, e2, rads, theta, sigma_c
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
@@ -151,12 +152,12 @@ def partial_profile(RA0,DEC0,Z,Rv,
         DSIGMAwsum_X = np.empty(ndots)
         #N_inbin      = np.empty(ndots)
                                              
-        for nbin in range(ndots):
+        for nbin in np.arange(ndots):
                 mbin = dig == nbin+1              
 
-                SIGMAwsum[nbin]    = k[mbin].sum()
-                DSIGMAwsum_T[nbin] = et[mbin].sum()
-                DSIGMAwsum_X[nbin] = ex[mbin].sum()
+                SIGMAwsum[nbin]    = np.sum(k[mbin])
+                DSIGMAwsum_T[nbin] = np.sum(et[mbin])
+                DSIGMAwsum_X[nbin] = np.sum(ex[mbin])
                 #N_inbin[nbin]      = np.count_nonzero(mbin)
         
         #SIGMAwsum = ([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
@@ -167,7 +168,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         #           'DSIGMAwsum_X':DSIGMAwsum_X,
         #           'N_inbin':N_inbin,'Ntot':Ntot}
         
-        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot])
+        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot], dtype=object)
         
         ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
         #  como deberia modificarse el pool cada vez que tiene que llamar?
@@ -342,7 +343,7 @@ def main(lcat, sample='pru',
         LARGO = len(Lsplit)
 
         #Ntot         = np.array([])
-        tslice       = np.zeros(largo)
+        tslice       = np.zeros(LARGO)
         
         for l, Lsplit_l in enumerate(Lsplit):
                 
@@ -371,19 +372,11 @@ def main(lcat, sample='pru',
                                             rin,rout,nd,h_array,
                                             addnoise_array]).T
                         
-                        ### prodria poner el pool dentro del if __name__ etc?? mejoraria el uso de memoria? o la
-                        #   eficiencia del paquete? (asi esta diseñado para usarse...)
                         with Pool(processes=num) as pool:
-                                salida = np.array(pool.map(partial,entrada))
+                                salida = np.array(pool.imap(partial,entrada))
                                 pool.close()
                                 pool.join()
                         
-                        
-                        # pool = Pool(processes=(num))
-                        # salida = np.array(pool.map(partial, entrada))
-                        # pool.terminate()
-                                
-                        #del entrada, rin, rout, nd, h_array, addnoise_array
                 
                 for j, profilesums in enumerate(salida):
                         
@@ -395,11 +388,11 @@ def main(lcat, sample='pru',
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-                            Ninbin += np.tile(profilesums['N_inbin'],(ncen+1,1))*km
+                            Ninbin += np.tile(profilesums[3],(ncen+1,1))*km
                                                 
-                            SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
-                            DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
-                            DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
+                            SIGMAwsum    += np.tile(profilesums[0],(ncen+1,1))*km
+                            DSIGMAwsum_T += np.tile(profilesums[1],(ncen+1,1))*km
+                            DSIGMAwsum_X += np.tile(profilesums[2],(ncen+1,1))*km
 
                 Ntot = np.array([n[-1] for n in salida])
 
@@ -445,23 +438,6 @@ def main(lcat, sample='pru',
                 
                 
                 # COMPUTE COVARIANCE
-        
-                # COV_S   = cov_matrix(Sigma[1:,:])
-                # COV_DSt  = cov_matrix(DSigma_T[1:,:])
-                # COV_DSx  = cov_matrix(DSigma_X[1:,:])
-    
-                # WRITING OUTPUT FITS FILE
-                
-                """table_pro = [fits.Column(name='Rp', format='E', array=R),
-                        fits.Column(name='Sigma', format='E', array=Sigma[0]),
-                        fits.Column(name='DSigma_T', format='E', array=DSigma_T[0]),
-                        fits.Column(name='DSigma_X', format='E', array=DSigma_X[0]),
-                        fits.Column(name='Ninbin', format='E', array=Ninbin[0])]
-                        
-                            
-                table_cov = [fits.Column(name='COV_DST', format='E', array=COV_DSt.flatten()),
-                            fits.Column(name='COV_S', format='E', array=COV_S.flatten()),
-                            fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())] """
             
                 table_p = [fits.Column(name='Rp', format='E', array=R),
                            fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
@@ -497,7 +473,7 @@ def run_in_parts(RIN,ROUT, nslices,
         '''
         
         #cuts = div_area(RIN,ROUT,num=nslices)
-        cuts = np.linspace(RIN,ROUT,num=nslices)
+        cuts = np.round(np.linspace(RIN,ROUT,num=nslices),2)
         
         try:
                 os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
@@ -515,7 +491,7 @@ def run_in_parts(RIN,ROUT, nslices,
                 #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
                 main(lcat, sample+f'cut{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-                     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+                     z_min, z_max, RIN, ROUT, ndots//nslices, ncores, hcosmo, FLAG)
 
                 t2 = time.time()
                 tslice[j] = (t2-t1)/60.     
