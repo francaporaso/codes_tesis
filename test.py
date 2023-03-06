@@ -251,7 +251,7 @@ def run_in_parts(RIN,ROUT, nslices,
         
         '''
         
-        cuts = np.linspace(RIN,ROUT,num=nslices+1)
+        cuts = np.round(np.linspace(RIN,ROUT,num=nslices+1),2)
         
         try:
                 os.mkdir(f'../tests/Rv_{int(Rv_min)}-{int(Rv_max)}')
