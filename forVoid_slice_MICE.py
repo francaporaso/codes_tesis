@@ -253,12 +253,9 @@ def main(lcat, sample='pru',
         rho_2 = L[9] #Sobredensidad integrada máxima entre 2 y 3 radios de void 
         flag  = L[11]
 
-        if idlist:
-                ides = np.loadtxt(idlist).astype(int)
-                mvoids = np.in1d(L[0],ides)
-        else:                
-                mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
-                         (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
+             
+        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
+                 (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
         Nvoids = np.count_nonzero(mvoids)
@@ -527,7 +524,7 @@ if __name__=='__main__':
         parser.add_argument('-nbins', action='store', dest='nbins', default=40)
         parser.add_argument('-ncores', action='store', dest='ncores', default=10)
         parser.add_argument('-h_cosmo', action='store', dest='h_cosmo', default=1.)
-        parser.add_argument('-ides_list', action='store', dest='idlist', default=None)
+        parser.add_argument('-ides_list', action='store', dest='idlist', default= None)
         parser.add_argument('-nback', action='store', dest='nback', default=30)
         parser.add_argument('-nslices', action='store', dest='nslices', default=1.)
         args = parser.parse_args()
