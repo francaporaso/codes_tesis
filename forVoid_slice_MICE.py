@@ -161,7 +161,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
                 N_inbin[nbin]      = np.count_nonzero(mbin)
         
-        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot])
+        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot] dtype=object)
         #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
         
         return output
@@ -366,7 +366,7 @@ def main(lcat, sample='pru', output_file=None,
                                             addnoise_array]).T
 
                         with Pool(processes=num) as pool:
-                                salida = np.array(pool.imap(partial,entrada))
+                                salida = np.array(pool.map(partial,entrada))
                                 pool.close()
                                 pool.join()
                 
