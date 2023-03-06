@@ -468,8 +468,7 @@ def run_in_parts(RIN,ROUT, nslices,
                 rho1_min=-1., rho1_max=0.,
                 rho2_min=-1., rho2_max=100.,
                 z_min = 0.1, z_max = 1.0,
-                domap = False, RIN = .05, ROUT =5.,
-                ndots= 40, ncores=10, 
+                domap = False, ndots= 40, ncores=10, 
                 idlist= None, hcosmo=1.0, 
                 addnoise = False, FLAG = 2.):
         '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
