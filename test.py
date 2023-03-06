@@ -217,7 +217,7 @@ def main(lcat, sample='pru',
 
         H = fits.Header()
         H.append(('N_VOIDS',np.int32(Nvoids)))
-        H.append(('N_Sources',np.int32(Ntot)))
+        H.append(('N_Sources',Ntot))
         H.append(('Rv_min',np.round(Rv_min,2)))
         H.append(('Rv_max',np.round(Rv_max,2)))
         H.append(('rho1_min',np.round(rho1_min,2)))
