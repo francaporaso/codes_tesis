@@ -503,6 +503,8 @@ def run_in_parts(RIN,ROUT, nslices,
                 print('Estimated remaining time for run in parts')
                 print(f'{np.round(np.mean(tslice[:j+1])*(nslices-(j+1)),2)} min')
 
+
+
 if __name__=='__main__':
         
         parser = argparse.ArgumentParser()
@@ -560,22 +562,21 @@ if __name__=='__main__':
             addnoise = False
 
         folder = '/mnt/simulations/MICE/'
-        with fits.open(folder+'MICE_sources_HSN_withextra.fits') as Sources:
-                S = Sources[1].data
-        
-                if nback < 30.:
-                    nselec = int(nback*5157*3600.)
-                    j      = np.random.choice(np.array(len(S)),nselec)
-                    S  = S[j]
+        S = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
+             
+        if nback < 30.:
+            nselec = int(nback*5157*3600.)
+            j      = np.random.choice(np.array(len(S)),nselec)
+            S  = S[j]
 
-                print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
+        print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
-                tin = time.time()
+        tin = time.time()
 
-                run_in_parts(RIN,ROUT, nslices,
-                        lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min,rho2_max,
-                        z_min, z_max, domap, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
+        run_in_parts(RIN,ROUT, nslices,
+                lcat, sample, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min,rho2_max,
+                z_min, z_max, domap, ndots, ncores, idlist, hcosmo, addnoise, FLAG)
 
-                tfin = time.time()
+        tfin = time.time()
 
-                print(f'Total time: {np.round((tfin-tin)/60.,2)} min')
+        print(f'Total time: {np.round((tfin-tin)/60.,2)} min')
