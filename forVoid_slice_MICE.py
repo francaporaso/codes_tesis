@@ -463,8 +463,15 @@ def main(lcat, sample='pru',
         
 
 def run_in_parts(RIN,ROUT, nslices,
-                lcat, sample='pru', Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., rho2_min=-1.,rho2_max=100.,
-                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.):
+                lcat, sample='pru',
+                Rv_min=0., Rv_max=50.,
+                rho1_min=-1., rho1_max=0.,
+                rho2_min=-1., rho2_max=100.,
+                z_min = 0.1, z_max = 1.0,
+                domap = False, RIN = .05, ROUT =5.,
+                ndots= 40, ncores=10, 
+                idlist= None, hcosmo=1.0, 
+                addnoise = False, FLAG = 2.):
         '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
         
         RIN, ROUT: radios interno y externo del profile
@@ -473,7 +480,7 @@ def run_in_parts(RIN,ROUT, nslices,
         '''
         
         #cuts = div_area(RIN,ROUT,num=nslices)
-        cuts = np.round(np.linspace(RIN,ROUT,num=nslices),2)
+        cuts = np.round(np.linspace(RIN,ROUT,num=nslices+1),2)
         
         try:
                 os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
