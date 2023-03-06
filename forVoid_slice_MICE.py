@@ -478,8 +478,9 @@ def run_in_parts(RIN,ROUT, nslices,
                 print(f'RUN {j+1} out of {nslices} slices')
                 #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
-                main(lcat, sample+f'rbin_{j}',output_file, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max,
-                     z_min, z_max, domap, RIN, ROUT, ndots//nslices, ncores, idlist, hcosmo, addnoise, FLAG)
+                main(lcat, sample+f'rbin_{j}',output_file=output_file, Rv_min=Rv_min, Rv_max=Rv_max, rho1_min=rho1_min, 
+                    rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, z_min=z_min, z_max=z_max, domap=domap,
+                    RIN=RIN, ROUT=ROUT, ndots=ndots//nslices, ncores=ncores, idlist=idlist, hcosmo=hcosmo, addnoise=addnoise, FLAG=FLAG)
 
                 t2 = time.time()
                 tslice[j] = (t2-t1)/60.     
