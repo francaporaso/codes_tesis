@@ -217,7 +217,6 @@ def main(lcat, sample='pru',
 
         H = fits.Header()
         H.append(('N_VOIDS',np.int32(Nvoids)))
-        H.append(('N_Sources',Ntot))
         H.append(('Rv_min',np.round(Rv_min,2)))
         H.append(('Rv_max',np.round(Rv_max,2)))
         H.append(('rho1_min',np.round(rho1_min,2)))
@@ -228,7 +227,8 @@ def main(lcat, sample='pru',
         H.append(('z_max',np.round(z_max,2)))
 
         table_pro = [fits.Column(name='Rp', format='E', array=R),
-                    fits.Column(name='Ninbin', format='E', array=Ninbin)]
+                    fits.Column(name='Ninbin', format='E', array=Ninbin),
+                    fits.Column(name='N_sources', format='E', array=Ntot)]
 
         tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
         primary_hdu = fits.PrimaryHDU(header=H)
