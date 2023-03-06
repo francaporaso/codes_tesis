@@ -226,8 +226,8 @@ def main(lcat, sample='pru',
         print(f'{rho1_min}  <= rho1 < {rho1_max}')
         print(f'{rho2_min}  <= rho2 < {rho2_max}')
         
-        if idlist:
-                print('From id list '+idlist)
+        #if idlist:
+        #        print('From id list '+idlist)
         # else:
                 # print(lM_min,' <= log(M) < ',lM_max)
                 # print(z_min,' <= z < ',z_max)
