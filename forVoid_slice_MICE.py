@@ -558,8 +558,8 @@ if __name__=='__main__':
         tin = time.time()
 
         run_in_parts(RIN,ROUT, nslices,
-                lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min=-1.,rho2_max=100.,
-                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.)
+                lcat, sample, Rv_min=Rv_min, Rv_max=Rv_max, rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min,
+                rho2_max=rho2_max, z_min=z_min, z_max=z_max, ndots=ndots, ncores=ncores, hcosmo=hcosmo, FLAG=FLAG)
 
         tfin = time.time()
 
