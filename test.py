@@ -202,8 +202,8 @@ def main(lcat, sample='pru',
                         #Ninbin += profilesums['Ninbin']
                         #Ntot   = np.append(Ntot,profilesums['Ntot'])
 
-                Ninbin = np.sum([n['Ninbin'] for n in salida], axis=0)
-                Ntot   = np.array([n['Ntot'] for n in salida])
+                Ninbin = np.sum([n[0] for n in salida], axis=0)
+                Ntot   = np.array([n[1] for n in salida])
                         
                 t2 = time.time()
                 ts = (t2-t1)/60.
@@ -217,6 +217,7 @@ def main(lcat, sample='pru',
 
         H = fits.Header()
         H.append(('N_VOIDS',np.int32(Nvoids)))
+        H.append(('N_Sources',np.int32(Ntot)))
         H.append(('Rv_min',np.round(Rv_min,2)))
         H.append(('Rv_max',np.round(Rv_max,2)))
         H.append(('rho1_min',np.round(rho1_min,2)))
@@ -250,7 +251,7 @@ def run_in_parts(RIN,ROUT, nslices,
         
         '''
         
-        cuts = div_area(RIN,ROUT,num=nslices)
+        cuts = np.linspace(RIN,ROUT,num=nslices+1)
         
         try:
                 os.mkdir(f'../tests/Rv_{int(Rv_min)}-{int(Rv_max)}')
@@ -268,7 +269,7 @@ def run_in_parts(RIN,ROUT, nslices,
                 #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
                 main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-                     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+                     z_min, z_max, RIN, ROUT, ndots//nslices, ncores, hcosmo, FLAG)
 
                 t2 = time.time()
                 tslice[j] = (t2-t1)/60.     
