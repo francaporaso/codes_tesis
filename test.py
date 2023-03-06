@@ -50,6 +50,8 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         
         mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(
                 S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
+        
+        #ra_gal, dec_gal = S[mask].ra_gal, S[mask].dec_gal
         catdata = S[mask]
 
         del mask
