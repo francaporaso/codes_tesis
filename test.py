@@ -76,7 +76,7 @@ def gal_inbin(RA0,DEC0,Z,Rv,
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig   = np.digitize(r, bines)
 
-        N_inbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
+        Ninbin = np.array([np.count_nonzero(dig==nbin+1) for nbin in np.arange(ndots)])
 
         # Ninbin = np.zeros(ndots)
         # for nbin in np.arange(ndots):
