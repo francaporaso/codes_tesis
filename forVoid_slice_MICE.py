@@ -55,6 +55,24 @@ domap      = False
 addnoise   = False
 '''
 
+def div_area(a, b, num=50):
+    '''a(float): radio interno
+       b(float): radio externo
+       num(int): numero de anillos de igual area
+       
+       returns
+       r(1d-array): radios de los num+1 anillos, con el último elemento igual a b'''
+    num = int(num)
+    r = np.zeros(num+1)
+    r[0] = a
+    A = np.pi * (b**2 - a**2)
+    
+    for k in np.arange(1,num+1):
+        r[k] = np.round(np.sqrt(k*A/(num*np.pi) + a**2),2)
+        
+    if r[-1] != b:
+        raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
+    return r
 
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
@@ -124,7 +142,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
         r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
 
-        del e1, e2, theta, sigma_c
+        del catdata
+        del e1, e2, theta, sigma_c, rads
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
@@ -142,20 +161,16 @@ def partial_profile(RA0,DEC0,Z,Rv,
                 DSIGMAwsum_X[nbin] = ex[mbin].sum()
                 N_inbin[nbin]      = np.count_nonzero(mbin)
         
-        output = {'SIGMAwsum':SIGMAwsum,'DSIGMAwsum_T':DSIGMAwsum_T,
-                  'DSIGMAwsum_X':DSIGMAwsum_X,
-                  'N_inbin':N_inbin,'Ntot':Ntot}
+        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot])
         #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
         
-        ###podria devolver un iterable (yield) en vez de un diccionario (return)? 
-        #  como deberia modificarse el pool cada vez que tiene que llamar?
         return output
 
 def partial_profile_unpack(minput):
 	return partial_profile(*minput)
 
         
-def main(lcat, sample='pru',
+def main(lcat, sample='pru', output_file=None,
          Rv_min=0., Rv_max=50.,
          rho1_min=-1., rho1_max=0.,
          rho2_min=-1., rho2_max=100.,
@@ -198,8 +213,8 @@ def main(lcat, sample='pru',
         print(f'ROUT: {ROUT}')
         print(f'ndots: {ndots}')
         print('Selecting voids with:')
-        print(f'{Rv_min}    <=  Rv  < {Rv_max}')
-        print(f'{z_min}     <=  Z   < {z_max}')
+        print(f'{Rv_min}   <=  Rv  < {Rv_max}')
+        print(f'{z_min}    <=  Z   < {z_max}')
         print(f'{rho1_min}  <= rho1 < {rho1_max}')
         print(f'{rho2_min}  <= rho2 < {rho2_max}')
         
@@ -238,7 +253,7 @@ def main(lcat, sample='pru',
                          (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
-        Nvoids = mvoids.sum()
+        Nvoids = np.count_nonzero(mvoids)
 
         if Nvoids < ncores:
                 ncores = Nvoids
@@ -292,8 +307,13 @@ def main(lcat, sample='pru',
 
             print(f'Profile has {ndots} bins')
             print(f'from {RIN} Rv to {ROUT} Rv')
-            os.system('mkdir ../profiles')
-            output_file = f'profiles/voids/profile_{sample}.fits'
+            try:
+                os.mkdir('../profiles')
+            except FileExistsError:
+                pass
+            
+            if not output_file:
+                output_file = f'../profiles/voids/'
 
             # Defining radial bins
             bines = np.linspace(RIN,ROUT,num=ndots+1)
@@ -311,12 +331,11 @@ def main(lcat, sample='pru',
             partial = partial_profile_unpack
             
 
-        print(f'Saved in ../{output_file}')
+        print(f'Saved in ../{output_file+sample}.fits')
 
 
         LARGO = len(Lsplit)
 
-        Ntot         = np.array([])
         tslice       = np.array([])
         
         for l, Lsplit_l in enumerate(Lsplit):
@@ -345,24 +364,13 @@ def main(lcat, sample='pru',
                                             Lsplit_l.T[4],Lsplit_l.T[1],
                                             rin,rout,nd,h_array,
                                             addnoise_array]).T
-                        
-                        ### prodria poner el pool dentro del if __name__ etc?? mejoraria el uso de memoria? o la
-                        #   eficiencia del paquete? (asi esta diseñado para usarse...)
+
                         with Pool(processes=num) as pool:
-                                salida = np.array(pool.map(partial,entrada))
+                                salida = np.array(pool.imap(partial,entrada))
                                 pool.close()
                                 pool.join()
-                        
-                        
-                        # pool = Pool(processes=(num))
-                        # salida = np.array(pool.map(partial, entrada))
-                        # pool.terminate()
-                                
-                        #del entrada, rin, rout, nd, h_array, addnoise_array
                 
                 for j, profilesums in enumerate(salida):
-                        
-                        Ntot = np.append(Ntot, profilesums['Ntot'])
                         
                         if domap:
                                 print('Sin mapa')
@@ -370,13 +378,13 @@ def main(lcat, sample='pru',
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-                            Ninbin += np.tile(profilesums['N_inbin'],(ncen+1,1))*km
+                            Ninbin += np.tile(profilesums[3],(ncen+1,1))*km
                                                 
-                            SIGMAwsum    += np.tile(profilesums['SIGMAwsum'],(ncen+1,1))*km
-                            DSIGMAwsum_T += np.tile(profilesums['DSIGMAwsum_T'],(ncen+1,1))*km
-                            DSIGMAwsum_X += np.tile(profilesums['DSIGMAwsum_X'],(ncen+1,1))*km
+                            SIGMAwsum    += np.tile(profilesums[0],(ncen+1,1))*km
+                            DSIGMAwsum_T += np.tile(profilesums[1],(ncen+1,1))*km
+                            DSIGMAwsum_X += np.tile(profilesums[2],(ncen+1,1))*km
 
-                #Ntot = np.array([tot for i,tot in enumerate(salida[i][-1])])
+                Ntot   = np.array([profilesums[-1] for profilesums in salida])
 
                 t2 = time.time()
                 ts = (t2-t1)/60.
@@ -419,68 +427,46 @@ def main(lcat, sample='pru',
                 DSigma_T  = (DSIGMAwsum_T/Ninbin)
                 DSigma_X  = (DSIGMAwsum_X/Ninbin)
                 
-                
-                # COMPUTE COVARIANCE
-        
-                # COV_S   = cov_matrix(Sigma[1:,:])
-                # COV_DSt  = cov_matrix(DSigma_T[1:,:])
-                # COV_DSx  = cov_matrix(DSigma_X[1:,:])
-    
-                # WRITING OUTPUT FITS FILE
-                
-                """table_pro = [fits.Column(name='Rp', format='E', array=R),
-                        fits.Column(name='Sigma', format='E', array=Sigma[0]),
-                        fits.Column(name='DSigma_T', format='E', array=DSigma_T[0]),
-                        fits.Column(name='DSigma_X', format='E', array=DSigma_X[0]),
-                        fits.Column(name='Ninbin', format='E', array=Ninbin[0])]
-                        
-                            
-                table_cov = [fits.Column(name='COV_DST', format='E', array=COV_DSt.flatten()),
-                            fits.Column(name='COV_S', format='E', array=COV_S.flatten()),
-                            fits.Column(name='COV_DSX', format='E', array=COV_DSx.flatten())] """
             
                 table_p = [fits.Column(name='Rp', format='E', array=R),
                            fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
                            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
                            fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten())]
 
-        #tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_pro))
-        #tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_cov))
         tbhdu_p = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
-        
         
         primary_hdu = fits.PrimaryHDU(header=h)
         
         hdul = fits.HDUList([primary_hdu, tbhdu_p])
         
-        hdul.writeto(f'../{output_file}',overwrite=True)
+        hdul.writeto(f'{output_file+sample}.fits',overwrite=True)
 
-        print(f'File saved... {output_file}')
+        print(f'File saved... {output_file+sample}.fits')
                 
         tfin = time.time()
         
-        print(f'TOTAL TIME {np.round((tfin-tini)/60. , 3)} mins')
+        print(f'Partial time: {np.round((tfin-tini)/60. , 3)} mins')
         
 
 def run_in_parts(RIN,ROUT, nslices,
-                lcat, sample='pru', Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., rho2_min=-1.,rho2_max=100.,
-                z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.):
+                lcat, sample='pru',output_file=None, Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., 
+                rho2_min=-1.,rho2_max=100., z_min = 0.1, z_max = 1.0,domap=False, ndots= 40, ncores=10,
+                idlist=None, hcosmo=1.0, addnoise=False, FLAG = 2.):
         '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
         
         RIN, ROUT: radios interno y externo del profile
         nslices(int): cantidad de cortes
         
         '''
-        if RIN<ROUT:
-            cuts = div_area(RIN,ROUT,num=nslices)
-        else:
-            cuts = np.array([RIN,ROUT])
-            nslices = 1
+        cuts = np.round(np.linspace(RIN,ROUT,num=nslices+1),2)
         
         try:
                 os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
         except FileExistsError:
-                print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+                pass
+                #print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+        if not output_file:
+                output_file = f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}/'
         
         tslice = np.zeros(nslices)
 
@@ -492,8 +478,8 @@ def run_in_parts(RIN,ROUT, nslices,
                 print(f'RUN {j+1} out of {nslices} slices')
                 #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
 
-                main(lcat, sample+f'rbin_{j}', Rv_min, Rv_max, rho1_min,rho1_max, rho2_min, rho2_max,
-                     z_min, z_max, RIN, ROUT, ndots, ncores, hcosmo, FLAG)
+                main(lcat, sample+f'rbin_{j}',output_file, Rv_min, Rv_max, rho1_min, rho1_max, rho2_min, rho2_max,
+                     z_min, z_max, domap, RIN, ROUT, ndots//nslices, ncores, idlist, hcosmo, addnoise, FLAG)
 
                 t2 = time.time()
                 tslice[j] = (t2-t1)/60.     
@@ -568,7 +554,13 @@ if __name__=='__main__':
 
         print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
+        tin = time.time()
+
         run_in_parts(RIN,ROUT, nslices,
                 lcat, sample, Rv_min, Rv_max, rho1_min,rho1_max, rho2_min=-1.,rho2_max=100.,
                 z_min = 0.1, z_max = 1.0, ndots= 40, ncores=10, hcosmo=1.0, FLAG = 2.)
+
+        tfin = time.time()
+
+        print(f'TOTAL TIME: {np.round((tfin-tin)/60.,2)} min')
 
