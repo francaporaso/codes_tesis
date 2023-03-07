@@ -1,4 +1,4 @@
-'''for small cuts in Rv or z, to be used with a forVoid_paste to paste profiles'''
+'''for small cuts in radial bins, to be used with a forVoid_paste to unify profiles'''
 
 import sys
 sys.path.append('../lens_codes_v3.7')
@@ -12,6 +12,8 @@ from maria_func import *
 from fit_profiles_curvefit import *
 from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
+import astropy.units as u
+from astropy.coordinates import SkyCoord
 from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
@@ -106,8 +108,10 @@ def partial_profile(RA0,DEC0,Z,Rv,
         dl  = cosmo.angular_diameter_distance(Z).value
         KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
         
-        delta = ROUT*(Rv*1000.)*5./(3600*KPCSCALE)
+        delta = ROUT*(Rv*1000.)*2./(3600*KPCSCALE)
         
+
+        #poner valor absoluto
         mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(
                 S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
