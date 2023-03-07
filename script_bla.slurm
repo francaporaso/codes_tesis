@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=forVoid
+#SBATCH --job-name=vvv
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=56
 #SBATCH --time=3-00:00:00
@@ -23,4 +23,4 @@ conda activate env_py39
 
 ##srun ./run_fit_zphot.sh
 ##srun ./run_fit_zphotw3.sh
-srun python forVoid_slice_MICE.py -sample Rv15-20 -ncores 20 -nslices 10 -nbins 40 -Rv_min 15. -Rv_max 20. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 2. 
+srun python forVoid_slice_MICE.py -sample Rv15-18 -ncores 15 -nslices 10 -nbins 40 -Rv_min 20. -Rv_max 25. -z_min 0.2 -z_max 0.35 -RIN 0.05 -ROUT 2. 
