@@ -13,7 +13,7 @@ from fit_profiles_curvefit import *
 from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
 import astropy.units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
@@ -105,22 +105,30 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
-        dl  = cosmo.angular_diameter_distance(Z).value
-        KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
+        dl  = cosmo.angular_diameter_distance(Z).value #en Mpc
+        KPCSCALE   = dl*np.deg2rad(1/3600)*1000.0 
+        #MPCSCALE   = dl*Angle(1*u.arcsec).radian #distancia en Mpc por un angulo de 1 arcsec
         
-        delta = ROUT*(Rv*1000.)*2./(3600*KPCSCALE)
+        delta = ROUT*Rv*1000*2./(3600*KPCSCALE) #el 3600? esta en arcsec?? -> está mal calculada la mascara entonces
+                                                #xq compara grados con segundos de arco! mask es 3600 veces mas grande
+        #delta = ROUT*(Rv*1000)*2./(3600*MPCSCALE)
         
+        pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
+        c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
+        c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
 
-        #poner valor absoluto
-        mask = (S.ra_gal < (RA0+delta))&(S.ra_gal > (RA0-delta))&(S.dec_gal > (DEC0-delta))&(
-                S.dec_gal < (DEC0+delta))&(S.z_cgal_v > (Z+0.1))
+        mask = (Sgal_coord.dec < c2[0].dec)&(Sgal_coord.ra < c2[1].ra)&(Sgal_coord.dec > c2[2].dec)&(
+                Sgal_coord.ra > c2[3].ra)&(S.z_cgal_v > (Z+0.1))
+
+        
+        # mask = (np.abs(S.ra_gal -RA0) < delta)& (np.abs(S.dec_gal-DEC0) < delta)&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
         del mask, delta
 
         sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
         
-        rads, theta, _, _ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+        rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
                                
         
@@ -340,7 +348,7 @@ def main(lcat, sample='pru', output_file=None,
 
         LARGO = len(Lsplit)
 
-        tslice       = np.array([])
+        tslice = np.array([])
         
         for l, Lsplit_l in enumerate(Lsplit):
                 
@@ -465,18 +473,20 @@ def run_in_parts(RIN,ROUT, nslices,
         cuts = np.round(np.linspace(RIN,ROUT,num=nslices+1),2)
         
         try:
-                os.mkdir(f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}')
+                os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}')
         except FileExistsError:
                 pass
-                #print(f'Directory ../tests/Rv_{int(Rv_min)}-{int(Rv_max)} already exists')
+
         if not output_file:
-                output_file = f'../profiles/Rv_{int(Rv_min)}-{int(Rv_max)}/'
+                output_file = f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/'
         
         tslice = np.zeros(nslices)
 
+        #orden inverso: calcula del corte mas externo al mas interno
+        #cuts = cuts[::-1]
         for j in np.arange(nslices):
                 RIN, ROUT = cuts[j], cuts[j+1]
-                
+                #ROUT, RIN = cuts[j], cuts[j+1]
                 t1 = time.time()
 
                 print(f'RUN {j+1} out of {nslices} slices')
@@ -556,6 +566,8 @@ if __name__=='__main__':
             nselec = int(nback*5157*3600.)
             j      = np.random.choice(np.array(len(S)),nselec)
             S  = S[j]
+
+        #Sgal_coord = SkyCoord(S.ra_gal, S.dec_gal, unit='deg', frame='icrs')
 
         print('BACKGROUND GALAXY DENSINTY',len(S)/(5157*3600))
 
