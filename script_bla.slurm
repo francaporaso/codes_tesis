@@ -23,4 +23,4 @@ conda activate env_py39
 
 ##srun ./run_fit_zphot.sh
 ##srun ./run_fit_zphotw3.sh
-srun python forVoid_slice_MICE.py -sample Rv20-25 -ncores 10 -nslices 10 -nbins 40 -Rv_min 20. -Rv_max 25. -z_min 0.2 -z_max 0.35 -RIN 0.05 -ROUT 2. 
+srun python forVoid_slice_MICE.py -sample Rv20-32 -ncores 10 -nslices 10 -nbins 40 -Rv_min 20. -Rv_max 32. -z_min 0.2 -z_max 0.35 -RIN 0.05 -ROUT 2. 
