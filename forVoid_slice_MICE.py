@@ -96,11 +96,24 @@ def SigmaCrit(zl, zs, h=1.):
 
     return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
 
+def partial_map():
+        pass
 
 def partial_profile(RA0,DEC0,Z,Rv,
                     RIN,ROUT,ndots,h,
                     addnoise):
 
+        '''
+        calcula el perfil de 1 solo void, tomando el centro del void y su redshift
+        RA0,DEC0 (float): posicion del centro del void
+        Z: redshift del void
+        RIN,ROUT: bordes del perfil
+        ndots: cantidad de puntos del perfil
+        h: cosmologia
+        addnoise(bool): agregar ruido (forma intrinseca) a las galaxias de fondo
+        devuelve la densidad proyectada (Sigma), el contraste(DSigma), la cant de galaxias por bin (Ninbin) 
+        y las totales (Ntot)'''
+        
         ndots = int(ndots)
 
         Rv   = Rv/h
@@ -142,7 +155,6 @@ def partial_profile(RA0,DEC0,Z,Rv,
             e1 += es1
             e2 += es2
         
-        ### probar crear estos objetos como generadores, ocupan menos memoria xq son iterables en vez de listas
         #get tangential ellipticities 
         et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c
         #get cross ellipticities
