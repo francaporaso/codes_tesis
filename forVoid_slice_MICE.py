@@ -33,7 +33,6 @@ G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
 pc   = pc.value    # 1 pc (m)
 Msun = M_sun.value # Solar mass (kg)
 
-
 '''
 sample     = 'pruDES'
 idlist     = None
@@ -120,19 +119,19 @@ def partial_profile(RA0,DEC0,Z,Rv,
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         dl  = cosmo.angular_diameter_distance(Z).value #en Mpc
         KPCSCALE   = dl*np.deg2rad(1/3600)*1000.0 
-        #MPCSCALE   = dl*Angle(1*u.arcsec).radian #distancia en Mpc por un angulo de 1 arcsec
+        #MPCSCALE   = dl*np.deg2rad(1/3600) #distancia en Mpc por un angulo de 1 arcsec
+        #KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
         
-        delta = ROUT*Rv*1000*2./(3600*KPCSCALE) #el 3600? esta en arcsec?? -> está mal calculada la mascara entonces
+        delta = ROUT*Rv*1000/(3600*KPCSCALE) #el 3600? esta en arcsec?? -> está mal calculada la mascara entonces
                                                 #xq compara grados con segundos de arco! mask es 3600 veces mas grande
-        #delta = ROUT*(Rv*1000)*2./(3600*MPCSCALE)
+        #delta = ROUT*Rv*2./(3600*MPCSCALE)
         
         pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
         c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
         c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
 
-        mask = (Sgal_coord.dec < c2[0].dec)&(Sgal_coord.ra < c2[1].ra)&(Sgal_coord.dec > c2[2].dec)&(
-                Sgal_coord.ra > c2[3].ra)&(S.z_cgal_v > (Z+0.1))
-
+        mask = (S.dec_gal < c2[0].dec.deg)&(S.dec_gal > c2[2].dec.deg)&(S.ra_gal < c2[1].ra.deg)&(
+                S.ra_gal > c2[3].ra.deg)&(S.z_cgal_v > (Z+0.1))
         
         # mask = (np.abs(S.ra_gal -RA0) < delta)& (np.abs(S.dec_gal-DEC0) < delta)&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
@@ -455,7 +454,8 @@ def main(lcat, sample='pru', output_file=None,
                 table_p = [fits.Column(name='Rp', format='E', array=R),
                            fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
                            fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
-                           fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten())]
+                           fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten()),
+                           fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())]
 
         tbhdu_p = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
         
