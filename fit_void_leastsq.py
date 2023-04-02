@@ -28,6 +28,7 @@ def sigma_clampitt_unpack(karg):
 
 def parallel_S(r,Rv,A0,A3):
     '''projected density calculated in parallel'''
+    ncores = 32
     partial = sigma_clampitt_unpack
 
     #Rv,A0,A3 = p_clampitt
@@ -65,7 +66,7 @@ def Dsigma_clampitt_unpack(kargs):
 
 def parallel_DS(r,Rv,A0,A3):
     '''projected density contrast calculated in parallel'''
-
+    ncores = 32
     partial = Dsigma_clampitt_unpack
 
     #Rv,A0,A3 = p_clampitt
