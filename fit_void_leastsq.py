@@ -63,9 +63,8 @@ def Dsigma_clampitt(r,Rv,A0,A3):
 def Dsigma_clampitt_unpack(kargs):
     return Dsigma_clampitt(*kargs)
 
-def parallel_DS(r,Rv,A0,A3,c):
-    '''projected density contrast calculated in parallel
-    difers from Dsigma_clampitt in an aditive constant'''
+def parallel_DS(r,Rv,A0,A3):
+    '''projected density contrast calculated in parallel'''
 
     partial = Dsigma_clampitt_unpack
 
@@ -81,7 +80,7 @@ def parallel_DS(r,Rv,A0,A3,c):
         salida = np.array(pool.map(partial,entrada))
         pool.close()
         pool.join()
-    return salida+c
+    return salida
 
 if __name__ == '__main__':
     ncores = 32
