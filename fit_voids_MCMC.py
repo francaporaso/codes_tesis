@@ -130,7 +130,7 @@ def run_emcee(RIN,ROUT):
     print('SAVED FILE')
 
 if __name__ == '__main__':
-    profile = fits.open('profiles/voids/Rv_15-18/Rv1518.fits')
+    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
     cov = profile[2].data
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    folder = f'profiles/voids/fitting'
+    folder = f'../profiles/voids/fitting'
     outfile = f'fitMCMC_Rv{int(Rv_min)}{int(Rv_max)}.fits'
 
     run_emcee(RIN,ROUT)

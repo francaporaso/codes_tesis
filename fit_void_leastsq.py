@@ -86,7 +86,7 @@ def parallel_DS(r,Rv,A0,A3,c):
 if __name__ == '__main__':
     ncores = 32
 
-    profile = fits.open('profiles/voids/Rv_15-18/Rv1518.fits')
+    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
     cov = profile[2].data
 
@@ -124,5 +124,5 @@ if __name__ == '__main__':
     except FileExistsError:
             pass
 
-    hdul.writeto(f'/profiles/voids/fitting/fit_Rv{int(Rv_min)}-{int(Rv_max)}',overwrite=True)
+    hdul.writeto(f'../profiles/voids/fitting/fit_Rv{int(Rv_min)}-{int(Rv_max)}',overwrite=True)
     
