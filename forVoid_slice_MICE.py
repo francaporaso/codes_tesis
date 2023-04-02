@@ -18,8 +18,6 @@ from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
 from scipy import stats
-import astropy.units as u
-from astropy.coordinates import SkyCoord
 from models_profiles import Gamma
 # For map
 wcs = WCS(naxis=2)
@@ -117,15 +115,15 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
+        '''
         dl  = cosmo.angular_diameter_distance(Z).value #en Mpc
-        KPCSCALE   = dl*np.deg2rad(1/3600)*1000.0 
-        #MPCSCALE   = dl*np.deg2rad(1/3600) #distancia en Mpc por un angulo de 1 arcsec
-        #KPCSCALE   = dl*(((1.0/3600.0)*np.pi)/180.0)*1000.0
+        MPCSCALE   = dl*np.deg2rad(1/3600) 
         
-        delta = ROUT*Rv*1000/(3600*KPCSCALE) #el 3600? esta en arcsec?? -> está mal calculada la mascara entonces
-                                                #xq compara grados con segundos de arco! mask es 3600 veces mas grande
-        #delta = ROUT*Rv*2./(3600*MPCSCALE)
-        
+        delta = ROUT*Rv/(3600*MPCSCALE) 
+        '''
+
+        #delta = ROUT*Rv*1000* cosmo.arcsec_per_kpc_comoving(Z).value
+
         pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
         c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
         c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
