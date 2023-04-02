@@ -50,6 +50,11 @@ nwalkers, ndim = pos.shape
 
 # running emcee
 def run_emcee(RIN,ROUT):
+
+    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
+    p = profile[1].data
+    cov = profile[2].data
+
     maskr   = (p.Rp > (RIN))*(p.Rp < (ROUT))
     mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
 
