@@ -124,5 +124,5 @@ if __name__ == '__main__':
     except FileExistsError:
             pass
 
-    hdul.writeto(f'../profiles/voids/fitting/fit_Rv{int(Rv_min)}-{int(Rv_max)}',overwrite=True)
+    hdul.writeto(f'../profiles/voids/fitting/fitLS_Rv{int(Rv_min)}{int(Rv_max)}',overwrite=True)
     
