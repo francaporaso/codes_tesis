@@ -75,9 +75,9 @@ def fit_sigma(RIN,ROUT,nc):
 
     mcmc_outS = samplerS.get_chain(flat=True).T
 
-    RvS = np.percentile(mcmc_outS[0][1500:], [16, 50, 84])
-    A0S = np.percentile(mcmc_outS[1][1500:], [16, 50, 84])
-    A3S = np.percentile(mcmc_outS[2][1500:], [16, 50, 84])
+    RvS = np.nanpercentile(mcmc_outS[0][1500:], [16, 50, 84])
+    A0S = np.nanpercentile(mcmc_outS[1][1500:], [16, 50, 84])
+    A3S = np.nanpercentile(mcmc_outS[2][1500:], [16, 50, 84])
 
     tableS = [fits.Column(name='RvS', format='D', array=mcmc_outS[0]),
               fits.Column(name='A0S', format='D', array=mcmc_outS[1]),
@@ -128,9 +128,9 @@ def fit_Dsigma(RIN,ROUT,nc):
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
 
-    RvDS = np.percentile(mcmc_outDS[0][1500:], [16, 50, 84])
-    A0DS = np.percentile(mcmc_outDS[1][1500:], [16, 50, 84])
-    A3DS = np.percentile(mcmc_outDS[2][1500:], [16, 50, 84])
+    RvDS = np.nanpercentile(mcmc_outDS[0][1500:], [16, 50, 84])
+    A0DS = np.nanpercentile(mcmc_outDS[1][1500:], [16, 50, 84])
+    A3DS = np.nanpercentile(mcmc_outDS[2][1500:], [16, 50, 84])
     
     tableDS = [fits.Column(name='RvDS', format='D', array=mcmc_outDS[0]),
                fits.Column(name='A0DS', format='D', array=mcmc_outDS[1]),
