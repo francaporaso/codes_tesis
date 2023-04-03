@@ -43,7 +43,7 @@ def parallel_S(r,Rv,A0,A3):
         salida = np.array(pool.map(partial,entrada))
         pool.close()
         pool.join()
-    return salida+c
+    return salida
 
 def Dsigma_clampitt(r,Rv,A0,A3):
     '''projected density contrast from the 3D density clampitt'''
