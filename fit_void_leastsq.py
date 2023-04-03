@@ -102,7 +102,7 @@ if __name__ == '__main__':
     perr_DSt = np.sqrt(np.diag(pcov_DSt))
 
     hdu = fits.Header()
-    hdu.append(('Nvoids',profile[0].header['N_VOIDS']))
+    hdu.append(('Nvoids',profile[0].header['NVOIDS']))
     hdu.append(('Rv_min',profile[0].header['RV_MIN']))
     hdu.append(('Rv_max',profile[0].header['RV_MAX']))
     
