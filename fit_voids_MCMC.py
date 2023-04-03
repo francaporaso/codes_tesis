@@ -195,7 +195,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    folder = f'../profiles/voids/fitting/'
+    folder = f'../profiles/voids//Rv_{int(Rv_min)}-{int(Rv_max)}/fitting/'
     outfile = f'fitMCMC_Rv{int(Rv_min)}{int(Rv_max)}'
 
     if fS:
