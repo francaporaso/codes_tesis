@@ -109,8 +109,8 @@ if __name__ == '__main__':
     table_opt = [fits.Column(name='p_S',format='D',array=p_S),
                  fits.Column(name='p_S',format='D',array=p_DSt)]
     
-    table_err = [fits.Column(name='p_S',format='D',array=perr_S),
-                 fits.Column(name='p_S',format='D',array=perr_DSt)]
+    table_err = [fits.Column(name='p_eS',format='D',array=perr_S),
+                 fits.Column(name='p_eS',format='D',array=perr_DSt)]
 
     tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
     tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
