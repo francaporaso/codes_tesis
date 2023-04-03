@@ -161,7 +161,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-fS', action='store', dest='fS',default='False')
     parser.add_argument('-fDS', action='store', dest='fDS',default='False')
-
+    parser.add_argument('-ncores', action='store', dest='ncores',default=32)
     args = parser.parse_args()
 
     if args.fS == 'True':
@@ -174,13 +174,15 @@ if __name__ == '__main__':
     else:
         fDS = False
 
+    ncores     = int(args.ncores)
+    
     profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
     cov = profile[2].data
 
     Rv_min, Rv_max = profile[0].header['RV_MIN'], profile[0].header['RV_MAX']
 
-    ncores = 128
+    #ncores = 128
     RIN,ROUT = 0.005, 3.
     nit = 500
 
