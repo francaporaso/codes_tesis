@@ -9,12 +9,12 @@ import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
 import os
-from fit_void_leastsq import sigma_clampitt, Dsigma_clampitt
+from fit_void_leastsq import parallel_DS, parallel_S
 
 
 def log_likelihoodDS(data, R, DS, iCds): 
     Rv,A0,A3 = data
-    ds = Dsigma_clampitt(R,Rv,A0,A3)
+    ds = parallel_DS(R,Rv,A0,A3)
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
 def log_probabilityDS(data, R, DS, eDS):
@@ -26,7 +26,7 @@ def log_probabilityDS(data, R, DS, eDS):
 
 def log_likelihoodS(data, R, S, iCs): 
     Rv,A0,A3 = data
-    s = sigma_clampitt(R,Rv,A0,A3)
+    s = parallel_S(R,Rv,A0,A3)
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
 
 def log_probabilityS(data, R, S, eS):
@@ -123,9 +123,8 @@ def fit_Dsigma(RIN,ROUT,nc):
 
     #Delta Sigma
     print('Fitting DSigmaT')
-    with Pool(processes=nc) as pool:
-        samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds),pool=pool)
-        samplerDS.run_mcmc(pos, nit, progress=True)
+    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds))
+    samplerDS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
 
