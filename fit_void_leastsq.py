@@ -26,9 +26,9 @@ def sigma_clampitt(r,Rv,A0,A3):
 def sigma_clampitt_unpack(karg):
     return sigma_clampitt(*karg)
 
-def parallel_S(r,Rv,A0,A3,ncores=40):
+def parallel_S(r,Rv,A0,A3,ncores=int(40)):
     '''projected density calculated in parallel'''
-    #ncores = 32
+    ncores = int(40)
     partial = sigma_clampitt_unpack
 
     #Rv,A0,A3 = p_clampitt
