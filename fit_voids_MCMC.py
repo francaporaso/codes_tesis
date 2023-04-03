@@ -123,8 +123,9 @@ def fit_Dsigma(RIN,ROUT,nc):
 
     #Delta Sigma
     print('Fitting DSigmaT')
-    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds,nc))
-    samplerDS.run_mcmc(pos, nit, progress=True)
+    with Pool() as pool:
+        samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds,nc),pool=pool)
+        samplerDS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
 
