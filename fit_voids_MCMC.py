@@ -197,7 +197,7 @@ if __name__ == '__main__':
     if fS:
         fit_sigma(RIN,ROUT)
     elif fDS:
-        fit_sigma(RIN,ROUT)
+        fit_Dsigma(RIN,ROUT)
     else:
         fit_sigma(RIN,ROUT)
         fit_Dsigma(RIN,ROUT)
