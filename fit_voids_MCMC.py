@@ -13,7 +13,8 @@ from fit_void_leastsq import parallel_DS, parallel_S
 
 
 def log_likelihoodDS(data, R, DS, iCds): 
-    ds = parallel_DS(R,*data)
+    Rv,A0,A3 = data
+    ds = parallel_DS(R,Rv,A0,A3,ncores=ncores)
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
 def log_probabilityDS(data, R, DS, eDS):
@@ -24,7 +25,8 @@ def log_probabilityDS(data, R, DS, eDS):
     return -np.inf
 
 def log_likelihoodS(data, R, S, iCs): 
-    s = parallel_S(R,*data)
+    Rv,A0,A3 = data
+    s = parallel_S(R,Rv,A0,A3,ncores=ncores)
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
 
 def log_probabilityS(data, R, S, eS):
