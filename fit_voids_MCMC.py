@@ -12,28 +12,28 @@ import os
 from fit_void_leastsq import parallel_DS, parallel_S
 
 
-def log_likelihoodDS(data, R, DS, iCds): 
-    Rv,A0,A3,nc = data
+def log_likelihoodDS(data, R, DS, iCds,nc): 
+    Rv,A0,A3 = data
     ds = parallel_DS(R,Rv,A0,A3,ncores=nc)
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
-def log_probabilityDS(data, R, DS, eDS):
+def log_probabilityDS(data, R, DS, eDS,nc):
     Rv,A0,A3 = data
     
     if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodDS(data, R, DS, eDS)    
+        return log_likelihoodDS(data, R, DS, eDS,nc)    
     return -np.inf
 
-def log_likelihoodS(data, R, S, iCs): 
-    Rv,A0,A3,nc = data
+def log_likelihoodS(data, R, S, iCs,nc): 
+    Rv,A0,A3 = data
     s = parallel_S(R,Rv,A0,A3,ncores=nc)
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
 
-def log_probabilityS(data, R, S, eS):
+def log_probabilityS(data, R, S, eS,nc):
     Rv,A0,A3 = data
     
     if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodS(data, R, S, eS)    
+        return log_likelihoodS(data, R, S, eS,nc)    
     return -np.inf
 
 # initializing
