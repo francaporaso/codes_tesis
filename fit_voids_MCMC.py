@@ -128,9 +128,9 @@ def fit_Dsigma(RIN,ROUT,nc):
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
 
-    RvDS = np.nanpercentile(mcmc_outDS[0][1500:], [16, 50, 84])
-    A0DS = np.nanpercentile(mcmc_outDS[1][1500:], [16, 50, 84])
-    A3DS = np.nanpercentile(mcmc_outDS[2][1500:], [16, 50, 84])
+    RvDS = np.nanpercentile(mcmc_outDS[0][15:], [16, 50, 84])
+    A0DS = np.nanpercentile(mcmc_outDS[1][15:], [16, 50, 84])
+    A3DS = np.nanpercentile(mcmc_outDS[2][15:], [16, 50, 84])
     
     tableDS = [fits.Column(name='RvDS', format='D', array=mcmc_outDS[0]),
                fits.Column(name='A0DS', format='D', array=mcmc_outDS[1]),
