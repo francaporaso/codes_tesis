@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     ncores = 128
     RIN,ROUT = 0.005, 3.
-    nit = 100
+    nit = 500
 
     try:
         os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/fitting')
