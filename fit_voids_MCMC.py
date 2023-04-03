@@ -9,31 +9,31 @@ import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
 import os
-from fit_void_leastsq import parallel_DS, parallel_S
+from fit_void_leastsq import sigma_clampitt, Dsigma_clampitt
 
 
-def log_likelihoodDS(data, R, DS, iCds,nc): 
+def log_likelihoodDS(data, R, DS, iCds): 
     Rv,A0,A3 = data
-    ds = parallel_DS(R,Rv,A0,A3,ncores=nc)
+    ds = Dsigma_clampitt(R,Rv,A0,A3)
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
-def log_probabilityDS(data, R, DS, eDS,nc):
+def log_probabilityDS(data, R, DS, eDS):
     Rv,A0,A3 = data
     
     if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodDS(data, R, DS, eDS,nc)    
+        return log_likelihoodDS(data, R, DS, eDS)    
     return -np.inf
 
-def log_likelihoodS(data, R, S, iCs,nc): 
+def log_likelihoodS(data, R, S, iCs): 
     Rv,A0,A3 = data
-    s = parallel_S(R,Rv,A0,A3,ncores=nc)
+    s = sigma_clampitt(R,Rv,A0,A3)
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
 
-def log_probabilityS(data, R, S, eS,nc):
+def log_probabilityS(data, R, S, eS):
     Rv,A0,A3 = data
     
     if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodS(data, R, S, eS,nc)    
+        return log_likelihoodS(data, R, S, eS)    
     return -np.inf
 
 # initializing
@@ -70,7 +70,7 @@ def fit_sigma(RIN,ROUT,nc):
 
     #Sigma
     print('Fitting Sigma')
-    samplerS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityS, args=(p.Rp,p.Sigma,iCs,nc))
+    samplerS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityS, args=(p.Rp,p.Sigma,iCs))
     samplerS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outS = samplerS.get_chain(flat=True).T
@@ -123,8 +123,8 @@ def fit_Dsigma(RIN,ROUT,nc):
 
     #Delta Sigma
     print('Fitting DSigmaT')
-    with Pool() as pool:
-        samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds,nc),pool=pool)
+    with Pool(processes=nc) as pool:
+        samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds),pool=pool)
         samplerDS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
