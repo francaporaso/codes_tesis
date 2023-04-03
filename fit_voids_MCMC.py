@@ -13,8 +13,8 @@ from fit_void_leastsq import parallel_DS, parallel_S
 
 
 def log_likelihoodDS(data, R, DS, iCds): 
-    Rv,A0,A3 = data
-    ds = parallel_DS(R,Rv,A0,A3,ncores=ncores)
+    Rv,A0,A3,nc = data
+    ds = parallel_DS(R,Rv,A0,A3,ncores=nc)
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
 
 def log_probabilityDS(data, R, DS, eDS):
@@ -25,8 +25,8 @@ def log_probabilityDS(data, R, DS, eDS):
     return -np.inf
 
 def log_likelihoodS(data, R, S, iCs): 
-    Rv,A0,A3 = data
-    s = parallel_S(R,Rv,A0,A3,ncores=ncores)
+    Rv,A0,A3,nc = data
+    s = parallel_S(R,Rv,A0,A3,ncores=nc)
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
 
 def log_probabilityS(data, R, S, eS):
@@ -51,7 +51,7 @@ pos = np.array([np.random.uniform(.5,1.5,15),
 nwalkers, ndim = pos.shape
 
 # running emcee
-def fit_sigma(RIN,ROUT):
+def fit_sigma(RIN,ROUT,nc):
 
     profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
@@ -70,7 +70,7 @@ def fit_sigma(RIN,ROUT):
 
     #Sigma
     print('Fitting Sigma')
-    samplerS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityS, args=(p.Rp,p.Sigma,iCs))
+    samplerS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityS, args=(p.Rp,p.Sigma,iCs,nc))
     samplerS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outS = samplerS.get_chain(flat=True).T
@@ -104,7 +104,7 @@ def fit_sigma(RIN,ROUT):
 
     print('SAVED FILE SIGMA')
 
-def fit_Dsigma(RIN,ROUT):
+def fit_Dsigma(RIN,ROUT,nc):
 
     profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
@@ -123,7 +123,7 @@ def fit_Dsigma(RIN,ROUT):
 
     #Delta Sigma
     print('Fitting DSigmaT')
-    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds))
+    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds,nc))
     samplerDS.run_mcmc(pos, nit, progress=True)
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     else:
         fDS = False
 
-    ncores = int(args.ncores)
+    nc = int(args.ncores)
     nit = int(args.nit)
     
     profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
@@ -199,9 +199,9 @@ if __name__ == '__main__':
     outfile = f'fitMCMC_Rv{int(Rv_min)}{int(Rv_max)}'
 
     if fS:
-        fit_sigma(RIN,ROUT)
+        fit_sigma(RIN,ROUT,nc)
     elif fDS:
-        fit_Dsigma(RIN,ROUT)
+        fit_Dsigma(RIN,ROUT,nc)
     else:
-        fit_sigma(RIN,ROUT)
-        fit_Dsigma(RIN,ROUT)
+        fit_sigma(RIN,ROUT,nc)
+        fit_Dsigma(RIN,ROUT,nc)
