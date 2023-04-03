@@ -162,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('-fS', action='store', dest='fS',default='False')
     parser.add_argument('-fDS', action='store', dest='fDS',default='False')
     parser.add_argument('-ncores', action='store', dest='ncores',default=32)
+    parser.add_argument('-nit', action='store', dest='nit',default=50)
     args = parser.parse_args()
 
     if args.fS == 'True':
@@ -174,7 +175,8 @@ if __name__ == '__main__':
     else:
         fDS = False
 
-    ncores     = int(args.ncores)
+    ncores = int(args.ncores)
+    nit = int(args.nit)
     
     profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
     p = profile[1].data
@@ -184,14 +186,14 @@ if __name__ == '__main__':
 
     #ncores = 128
     RIN,ROUT = 0.005, 3.
-    nit = 500
+    #nit = 500
 
     try:
         os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/fitting')
     except FileExistsError:
         pass
 
-    folder = f'../profiles/voids/fitting'
+    folder = f'../profiles/voids/fitting/'
     outfile = f'fitMCMC_Rv{int(Rv_min)}{int(Rv_max)}'
 
     if fS:
