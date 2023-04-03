@@ -66,7 +66,7 @@ def Dsigma_clampitt_unpack(kargs):
 
 def parallel_DS(r,Rv,A0,A3,ncores=40):
     '''projected density contrast calculated in parallel'''
-    #ncores = 32
+    ncores = int(40)
     partial = Dsigma_clampitt_unpack
 
     #Rv,A0,A3 = p_clampitt
