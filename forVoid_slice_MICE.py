@@ -113,30 +113,25 @@ def partial_profile(RA0,DEC0,Z,Rv,
         
         ndots = int(ndots)
 
-        Rv   = Rv/h
+        Rv   = Rv/h *u.Mpc
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
-        '''
-        dl  = cosmo.angular_diameter_distance(Z).value #en Mpc
-        MPCSCALE   = dl*np.deg2rad(1/3600) 
         
-        delta = ROUT*Rv/(3600*MPCSCALE) 
-        '''
-
-        #delta = ROUT*Rv*1000* cosmo.arcsec_per_kpc_comoving(Z).value
+        DEGxMPC = cosmo.arcsec_per_kpc_proper(Z).to('deg/Mpc')
+        delta = (DEGxMPC*(ROUT*Rv))
 
         pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
         c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
         c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
 
         mask = (S.dec_gal < c2[0].dec.deg)&(S.dec_gal > c2[2].dec.deg)&(S.ra_gal < c2[1].ra.deg)&(
-                S.ra_gal > c2[3].ra.deg)&(S.z_cgal_v > (Z+0.1))
+                S.ra_gal > c2[3].ra.deg)&(S.z_cgal > (Z+0.1))
         
         # mask = (np.abs(S.ra_gal -RA0) < delta)& (np.abs(S.dec_gal-DEC0) < delta)&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
         del mask, delta
 
-        sigma_c = SigmaCrit(Z, catdata.z_cgal_v)
+        sigma_c = SigmaCrit(Z, catdata.z_cgal)
         
         rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
@@ -160,7 +155,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
         #get convergence
         k  = catdata.kappa*sigma_c
 
-        r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
+        r = (np.rad2deg(rads)/DEGxMPC.value)/(Rv.value)
+        #r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
 
         del catdata
