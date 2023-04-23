@@ -271,7 +271,7 @@ def main(lcat, sample='pru', output_file=None,
                 mvoids = np.in1d(L[0],ides)
         else:                
                 mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
-                         (rho_1 >= rho1_min)&(rho_1 < rho2_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
+                         (rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
         Nvoids = np.count_nonzero(mvoids)
