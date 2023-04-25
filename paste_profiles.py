@@ -46,7 +46,7 @@ def paste(sample, name, n=10):
     covDSt = cov_matrix(DSigma_T[1:,:]).flatten()
     covDSx = cov_matrix(DSigma_X[1:,:]).flatten()
 
-    Nvoids   = headers[0].header['Nvoids']
+    Nvoids   = headers[0].header['N_voids']
     Rv_min   = headers[0].header['Rv_min']
     Rv_max   = headers[0].header['Rv_max']
     rho2_min = headers[0].header['rho2_min']
