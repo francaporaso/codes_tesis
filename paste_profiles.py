@@ -66,8 +66,9 @@ def paste(sample, name, n=10):
     hdu.append(('z_max',np.round(z_max,2)))
     hdu.append(('ndots',int(ndots)))
 
-    table_p = [fits.Column(name='Rp', format='E', array=R),
-               fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
+    table_r = [fits.Column(name='Rp', format='E', array=R)]
+
+    table_p = [fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
                fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
                fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten()),
                fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())]
@@ -76,10 +77,11 @@ def paste(sample, name, n=10):
                fits.Column(name='covDSt', format='E', array = covDSt),
                fits.Column(name='covDSx', format='E', array = covDSx)]
     
+    tbhdu_r = fits.BinTableHDU.from_columns(fits.ColDefs(table_r))
     tbhdu_p = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
     tbhdu_c = fits.BinTableHDU.from_columns(fits.ColDefs(table_c))
     primary_hdu = fits.PrimaryHDU(header=hdu)
-    hdul = fits.HDUList([primary_hdu, tbhdu_p, tbhdu_c])
+    hdul = fits.HDUList([primary_hdu, tbhdu_r, tbhdu_p, tbhdu_c])
 
     hdul.writeto(f'{directory}{name}_{Rv_min}-{Rv_max}.fits',overwrite=True)
 
