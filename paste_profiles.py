@@ -83,7 +83,7 @@ def paste(sample, name, n=10):
     primary_hdu = fits.PrimaryHDU(header=hdu)
     hdul = fits.HDUList([primary_hdu, tbhdu_r, tbhdu_p, tbhdu_c])
 
-    hdul.writeto(f'{directory}{name}_{Rv_min}-{Rv_max}.fits',overwrite=True)
+    hdul.writeto(f'{directory}{name}_{int(Rv_min)}-{int(Rv_max)}.fits',overwrite=True)
 
 
 if __name__ == '__main__':
