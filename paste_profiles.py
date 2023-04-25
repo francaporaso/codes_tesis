@@ -1,5 +1,5 @@
 import numpy as np
-import astropy.io as fits
+from astropy.io import fits
 import os
 import argparse
 
