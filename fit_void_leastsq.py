@@ -1,87 +1,66 @@
+'''Ajuste de perfiles de voids mediante cuadrados minimos. Por defecto ajusta ambos Sigma y DSigma'''
 import numpy as np
-from astropy.io import fits
-from multiprocessing import Pool, Process
+from scipy.integrate import quad, quad_vec
 import matplotlib.pyplot as plt
+from multiprocessing import Pool
+from astropy.io import fits
 from scipy.optimize import curve_fit
-import scipy.integrate as integrate
-import os
 
-def clampitt(r,Rv,A0,A3):
-    '''3D density from Clampitt et al 2016'''
-    return np.piecewise(r,[r<Rv],[A0+A3*(r/Rv)**3,A0+A3])
+def clampitt(r,Rv,A3):
+    '''Clampitt et al (2016); eq 12'''
+    A0 = 1-A3
+    return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
 
-def sigma_clampitt(r,Rv,A0,A3):
-    '''projected density from the 3D density clampitt'''
-    try:
-        integral = np.array([])
-        for m in r:
-            arg = lambda z: clampitt(np.sqrt(m**2+z**2),Rv,A0,A3)
-            integral = np.append(integral,integrate.quad(arg,-100,100)[0])
-    except:
-        arg = lambda z: clampitt(np.sqrt(r**2+z**2),Rv,A0,A3)
-        integral = integrate.quad(arg,-100,100)[0]
-        
-    return integral
+#fitS = True
 
-def sigma_clampitt_unpack(karg):
-    return sigma_clampitt(*karg)
+def projected_density(rvals, *params, rho=clampitt, rmax=100):
 
-def parallel_S(r,Rv,A0,A3,ncores=int(40)):
-    '''projected density calculated in parallel'''
-    ncores = int(40)
-    partial = sigma_clampitt_unpack
+    '''perfil de densidad proyectada dada la densidad 3D
+    rvals   (float) : punto de r a evaluar el perfil
+    *params (float) : parametros de la funcion rho (los que se ajustan)
+    rho     (func)  : densidad 3D
+    rmax    (int)   : valor maximo de r para integrar
+    
+    return
+    density  (float) : densidad proyectada en rvals'''
 
-    #Rv,A0,A3 = p_clampitt
+    def integrand(z, *params):
+        return rho(np.sqrt(rvals**2 + z**2), *params)
+    
+    density = np.array(quad_vec(integrand, -rmax, rmax, args=params)[0])         
+    
+    return density
 
-    rv = np.full_like(r,Rv)
-    a0 = np.full_like(r,A0)
-    a3 = np.full_like(r,A3)
+#fitDS = True
 
-    entrada = np.array([r,rv,a0,a3]).T
+def projected_density_contrast(rvals, *params, rho=clampitt, rmax=100):
+    
+    '''perfil de densidad proyectada dada la densidad 3D
+    rvals   (float) : punto de r a evaluar el perfil
+    *params (float) : parametros de la funcion rho (los que se ajustan)
+    rho     (func)  : densidad 3D
+    rmax    (int)   : valor maximo de r para integrar
+    
+    contrast (float): contraste de densidad proy en rvals'''
 
-    with Pool(processes=ncores) as pool:
-        salida = np.array(pool.map(partial,entrada))
-        pool.close()
-        pool.join()
-    return salida
+    def integrand(x,*p):
+        proj_profile = projected_density(x,*p)
+    return x*proj_profile
+    
+    anillo = projected_density(rvals,*params)
+    disco  = 2/(rvals**(2))*quad(integrand, 0, rvals, args=params)[0]
+    
+    contrast = disco - anillo
+    return contrast
 
-def Dsigma_clampitt(r,Rv,A0,A3):
-    '''projected density contrast from the 3D density clampitt'''
-    try:
-        Dsigma = np.array([])
-        for m in r:
-            s_disco = integrate.quad(sigma_clampitt,0,m,args=(Rv,A0,A3))[0]/m
-            s_anillo = sigma_clampitt(m,Rv,A0,A3)
-        
-            Dsigma = np.append(Dsigma, s_disco-s_anillo)
-    except:
-        s_disco = integrate.quad(sigma_clampitt,0,r,args=(Rv,A0,A3))[0]/r
-        s_anillo = sigma_clampitt(r,Rv,A0,A3)
-        
-        Dsigma = s_disco-s_anillo
-    return Dsigma
 
-def Dsigma_clampitt_unpack(kargs):
-    return Dsigma_clampitt(*kargs)
 
-def parallel_DS(r,Rv,A0,A3,ncores=40):
-    '''projected density contrast calculated in parallel'''
-    ncores = int(40)
-    partial = Dsigma_clampitt_unpack
 
-    #Rv,A0,A3 = p_clampitt
 
-    rv = np.full_like(r,Rv)
-    a0 = np.full_like(r,A0)
-    a3 = np.full_like(r,A3)
 
-    entrada = np.array([r,rv,a0,a3]).T
+p_S, pcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=(1,1))
+perr_S = np.sqrt(np.diag(pcov_S))
 
-    with Pool(processes=ncores) as pool:
-        salida = np.array(pool.map(partial,entrada))
-        pool.close()
-        pool.join()
-    return salida
 
 if __name__ == '__main__':
     #ncores = 32
