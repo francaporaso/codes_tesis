@@ -6,32 +6,57 @@ from multiprocessing import Pool
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
+## Para que funcione scipy las funciones deben tomar arrays
+
 def clampitt(r,Rv,A3):
     '''Clampitt et al (2016); eq 12'''
     A0 = 1-A3
     return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
 
+def krause(r,Rv,A3,c):
+    pass
+
 #fitS = True
 
 def projected_density(rvals, *params, rho=clampitt, rmax=100):
-
     '''perfil de densidad proyectada dada la densidad 3D
-    rvals   (float) : punto de r a evaluar el perfil
+    rvals   (array) : puntos de r a evaluar el perfil
     *params (float) : parametros de la funcion rho (los que se ajustan)
     rho     (func)  : densidad 3D
     rmax    (int)   : valor maximo de r para integrar
     
     return
     density  (float) : densidad proyectada en rvals'''
-
-    def integrand(z, *params):
-        return rho(np.sqrt(rvals**2 + z**2), *params)
     
-    density = np.array(quad_vec(integrand, -rmax, rmax, args=params)[0])         
+
+
+    def integrand(z, r, *params):
+        return rho(np.sqrt(np.square(r) + np.square(z)), *params)
+    
+    density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+    density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+
     
     return density
 
 #fitDS = True
+
+# def projected_density(rvals, *params, rho=clampitt, rmax=100):
+#     '''perfil de densidad proyectada dada la densidad 3D
+#     rvals   (array) : puntos de r a evaluar el perfil
+#     *params (float) : parametros de la funcion rho (los que se ajustan)
+#     rho     (func)  : densidad 3D
+#     rmax    (int)   : valor maximo de r para integrar
+    
+#     return
+#     density  (float) : densidad proyectada en rvals'''
+    
+#     def integrand(z, r, *params):
+#         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
+    
+#     density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+    
+#     return density
 
 def projected_density_contrast(rvals, *params, rho=clampitt, rmax=100):
     
@@ -43,17 +68,16 @@ def projected_density_contrast(rvals, *params, rho=clampitt, rmax=100):
     
     contrast (float): contraste de densidad proy en rvals'''
 
-    def integrand(x,*p):
-        proj_profile = projected_density(x,*p)
-    return x*proj_profile
+    def integrand(x,*p): 
+        return x*projected_density([x], *p, rho=rho, rmax=rmax)
     
-    anillo = projected_density(rvals,*params)
-    disco  = 2/(rvals**(2))*quad(integrand, 0, rvals, args=params)[0]
+    anillo = projected_density(rvals,*params, rho=rho, rmax=rmax)
+    disco  = np.array([2./(np.square(rvals))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
+    #disco  = np.array([2./(np.square(rvals))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
+
     
     contrast = disco - anillo
     return contrast
-
-
 
 
 
