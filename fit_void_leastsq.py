@@ -41,22 +41,22 @@ def projected_density(rvals, *params, rho=clampitt, rmax=100):
 
 #fitDS = True
 
-# def projected_density(rvals, *params, rho=clampitt, rmax=100):
-#     '''perfil de densidad proyectada dada la densidad 3D
-#     rvals   (array) : puntos de r a evaluar el perfil
-#     *params (float) : parametros de la funcion rho (los que se ajustan)
-#     rho     (func)  : densidad 3D
-#     rmax    (int)   : valor maximo de r para integrar
+def aux(R, *params, rho=clampitt, rmax=100):
+    '''perfil de densidad proyectada dada la densidad 3D
+    r       (float) : puntos de r a evaluar el perfil
+    *params (float) : parametros de la funcion rho (los que se ajustan)
+    rho     (func)  : densidad 3D
+    rmax    (int)   : valor maximo de r para integrar
     
-#     return
-#     density  (float) : densidad proyectada en rvals'''
+    return
+    density  (float) : densidad proyectada en rvals'''
     
-#     def integrand(z, r, *params):
-#         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
+    def integrand(z, r, *params):
+        return rho(np.sqrt(np.square(r) + np.square(z)), *params)
     
-#     density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+    density = quad(integrand, -rmax, rmax, args=(R,)+params)[0]
     
-#     return density
+    return density
 
 def projected_density_contrast(rvals, *params, rho=clampitt, rmax=100):
     
@@ -71,11 +71,12 @@ def projected_density_contrast(rvals, *params, rho=clampitt, rmax=100):
     def integrand(x,*p): 
         return x*projected_density([x], *p, rho=rho, rmax=rmax)
     
-    anillo = projected_density(rvals,*params, rho=rho, rmax=rmax)
-    disco  = np.array([2./(np.square(rvals))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
-    #disco  = np.array([2./(np.square(rvals))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
-
+    # def integrand(x,*p): 
+    #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
+    anillo = projected_density(rvals,*params, rho=rho, rmax=rmax)
+    disco  = np.array([2./(np.square(r))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
+
     contrast = disco - anillo
     return contrast
 
