@@ -19,7 +19,7 @@ def cov_matrix(array):
         return COV
 
 
-def paste(sample, name, n=10):
+def paste(sample, name, ndts=60,nslices=10):
     '''
     COMO DEFLATENAR LOS ARRAYS:
     Sigma, DSigma_T/X y Ninbin son matrices 101xN, donde N es el numero de puntos del perfil entero. En este caso N=60
@@ -29,18 +29,20 @@ def paste(sample, name, n=10):
     Para usarlas usar np.reshape(N,N) 
     '''
 
+    n = ndts//nslices
+
     directory = f'../profiles/voids/{sample}/'
 
-    prof = np.array([name+f'rbin_{j}' for j in np.arange(n)])
+    prof = np.array([name+f'rbin_{j}' for j in np.arange(nslices)])
 
     headers  = np.array([fits.open(directory+f'{p}.fits')[0] for p in prof])
     perfiles = np.array([fits.open(directory+f'{p}.fits')[1] for p in prof])
 
-    R        = np.array([perfiles[j].data.Rp.reshape(101,6)[0] for j in np.arange(n)]).flatten()
-    Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,6) for j in np.arange(n)]),axis=1)
-    DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,6) for j in np.arange(n)]),axis=1)
-    DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,6) for j in np.arange(n)]),axis=1)
-    Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,6) for j in np.arange(n)]),axis=1)
+    R        = np.array([perfiles[j].data.Rp.reshape(101,n)[0] for j in np.arange(nslices)]).flatten()
+    Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n) for j in np.arange(nslices)]),axis=1)
+    DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,n) for j in np.arange(nslices)]),axis=1)
+    DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,n) for j in np.arange(nslices)]),axis=1)
+    Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,n) for j in np.arange(nslices)]),axis=1)
 
     covS   = cov_matrix(Sigma[1:,:]).flatten()
     covDSt = cov_matrix(DSigma_T[1:,:]).flatten()
@@ -53,7 +55,7 @@ def paste(sample, name, n=10):
     rho2_max = headers[0].header['rho2_max']
     z_min    = headers[0].header['z_min']
     z_max    = headers[0].header['z_max']
-    ndots    = np.sum([headers[j].header['ndots'] for j in np.arange(n)])
+    ndots    = np.sum([headers[j].header['ndots'] for j in np.arange(nslices)])
 
 
     hdu = fits.Header()
@@ -91,14 +93,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
     parser.add_argument('-name', action='store', dest='name',default='smallz')
-    parser.add_argument('-n', action='store', dest='n',default=10)
+    parser.add_argument('-ndts', action='store', dest='n',default=60)
+    parser.add_argument('-nslices', action='store', dest='n',default=10)
+
     args = parser.parse_args()
+    sample  = args.sample
+    name    = args.name
+    ndts   = int(args.ndts)
+    nslices = int(args.nslices)
 
-    sample = args.sample
-    name   = args.name
-    n      = int(args.n)
-
-    paste(sample,name,n)  
+    paste(sample,name,ndts,nslices)  
 
 
     
