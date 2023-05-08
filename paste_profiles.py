@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
     parser.add_argument('-name', action='store', dest='name',default='smallz')
     parser.add_argument('-ndts', action='store', dest='n',default=60)
-    parser.add_argument('-nslices', action='store', dest='n',default=10)
+    parser.add_argument('-nslices', action='store', dest='nslices',default=10)
 
     args = parser.parse_args()
     sample  = args.sample
