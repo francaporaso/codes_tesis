@@ -99,7 +99,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     sample  = args.sample
     name    = args.name
-    ndts   = int(args.ndts)
+    ndts   = int(args.n)
     nslices = int(args.nslices)
 
     paste(sample,name,ndts,nslices)  
