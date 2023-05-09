@@ -270,7 +270,7 @@ if __name__ == '__main__':
     hdu.append(('Nvoids',header.header['N_VOIDS']))
     hdu.append(('Rv_min',header.header['RV_MIN']))
     hdu.append(('Rv_max',header.header['RV_MAX']))
-    hdu.append(('using',rho_str))
+    hdu.append(f'using {rho_str}')
     
 
     tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
