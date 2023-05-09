@@ -181,7 +181,7 @@ if __name__ == '__main__':
     if fitS & fitDS:
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
-    variables = np.array([Rp, rho],dtype=object)
+    variables = np.array([Rp, rho],dtype=object).flatten()
     p0 = np.ones(nparams)
     
     if fitS:
