@@ -235,6 +235,7 @@ if __name__ == '__main__':
             print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance matrix')
 
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+            print('FUNCO!')
             f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
