@@ -98,7 +98,9 @@ def projected_density_contrast(data, *params, rmax=np.inf):
     #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
     anillo = projected_density([rvals], rho, *params, rmax=rmax)
-    disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=[(r,)+params])[0] for r in rvals])
+    print(rvals)
+    print([r for r in rvals])
+    # disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=[(r,)+params])[0] for r in rvals])
 
     contrast = disco - anillo
     return contrast
