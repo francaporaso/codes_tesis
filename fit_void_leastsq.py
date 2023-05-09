@@ -91,14 +91,14 @@ def projected_density_contrast(data, *params, rmax=np.inf):
     rvals, rho = data[:-1], data[-1]
     # rho = rho_id.get(rho)
 
-    def integrand(x,rho,*p): 
+    def integrand(x,*p): 
         return x*projected_density([x], rho, *p, rmax=rmax)
     
     # def integrand(x,*p): 
     #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
     anillo = projected_density([rvals], rho, *params, rmax=rmax)
-    disco  = np.array([2./(np.square(r))*quad(integrand, 0, r, args=(r,rho)+params)[0] for r in rvals])
+    disco  = np.array([2./(np.square(r))*quad(integrand, 0, r, args=(r,)+params)[0] for r in rvals])
 
     contrast = disco - anillo
     return contrast
