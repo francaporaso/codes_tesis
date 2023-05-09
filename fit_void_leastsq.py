@@ -64,7 +64,7 @@ def projected_density(data, *params, rmax=np.inf):
     return
     density  (float) : densidad proyectada en rvals'''
 
-    rvals, rho = data
+    rvals, rho = data[:-1], data[-1]
     rho = rho_id.get(rho)
     
     def integrand(z, r, *params):
@@ -86,7 +86,7 @@ def projected_density_contrast(data, *params, rmax=np.inf):
     
     contrast (float): contraste de densidad proy en rvals'''
     
-    rvals, rho = data
+    rvals, rho = data[:-1], data[-1]
     rho = rho_id.get(rho)
 
     def integrand(x,*p): 
@@ -106,7 +106,7 @@ def projected_density_contrast_unpack(kargs):
 
 def projected_density_contrast_parallel(data, ncores, *params, rmax=np.inf):
 
-    rvals, rho = data
+    rvals, rho = data[:-1], data[-1]
     rho = rho_id.get(rho)    
     partial = projected_density_contrast_unpack
     
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     if fitS & fitDS:
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
-    variables = np.array([Rp,rho])
+    variables = np.concatenate(Rp,rho)
     p0 = np.ones(nparams)
 
     print(rho ,rho_str)
