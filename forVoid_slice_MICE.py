@@ -279,7 +279,11 @@ def main(lcat, sample='pru', output_file=None,
         print(f'CORRIENDO EN {ncores} CORES')
         
         L = L[:,mvoids]
-                        
+        
+        zmean    = np.mean(L[4])
+        Rvmean   = np.mean(L[1])
+        rho2mean = np.mean(L[9])
+
         # Define K masks   
         ncen = 100
         
@@ -419,12 +423,15 @@ def main(lcat, sample='pru', output_file=None,
         #h.append(('MICE version sources 2.0'))
         h.append(('Rv_min',np.round(Rv_min,2)))
         h.append(('Rv_max',np.round(Rv_max,2)))
+        h.append(('Rv_mean',np.round(Rvmean,4)))
         h.append(('rho1_min',np.round(rho1_min,2)))
         h.append(('rho1_max',np.round(rho1_max,2)))
         h.append(('rho2_min',np.round(rho2_min,2)))
         h.append(('rho2_max',np.round(rho2_max,2)))
+        h.append(('rho2_mean',np.round(rho2mean,4)))
         h.append(('z_min',np.round(z_min,2)))
         h.append(('z_max',np.round(z_max,2)))
+        h.append(('z_mean',np.round(zmean,4)))
         h.append(('hcosmo',np.round(hcosmo,4)))
         
         h.append(('---SLICES_INFO---'))

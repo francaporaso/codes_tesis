@@ -51,10 +51,13 @@ def paste(sample, name, ndts=60,nslices=10):
     Nvoids   = headers[0].header['N_voids']
     Rv_min   = headers[0].header['Rv_min']
     Rv_max   = headers[0].header['Rv_max']
+    Rv_mean   = headers[0].header['Rv_mean']
     rho2_min = headers[0].header['rho2_min']
     rho2_max = headers[0].header['rho2_max']
+    rho2_mean = headers[0].header['rho2_mean']
     z_min    = headers[0].header['z_min']
     z_max    = headers[0].header['z_max']
+    z_mean    = headers[0].header['z_mean']
     ndots    = np.sum([headers[j].header['ndots'] for j in np.arange(nslices)])
 
 
@@ -62,10 +65,13 @@ def paste(sample, name, ndts=60,nslices=10):
     hdu.append(('N_VOIDS',int(Nvoids)))
     hdu.append(('Rv_min',np.round(Rv_min,2)))
     hdu.append(('Rv_max',np.round(Rv_max,2)))
+    hdu.append(('Rv_mean',np.round(Rv_max,4)))
     hdu.append(('rho2_min',np.round(rho2_min,2)))
     hdu.append(('rho2_max',np.round(rho2_max,2)))
+    hdu.append(('rho2_mean',np.round(rho2_mean,4)))
     hdu.append(('z_min',np.round(z_min,2)))
     hdu.append(('z_max',np.round(z_max,2)))
+    hdu.append(('z_mean',np.round(z_mean,4)))
     hdu.append(('ndots',int(ndots)))
 
     table_r = [fits.Column(name='Rp', format='E', array=R)]
