@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
 
     hdu = fits.Header()
-    hdu.append(('Nvoids',header.header['NVOIDS']))
+    hdu.append(('Nvoids',header.header['N_VOIDS']))
     hdu.append(('Rv_min',header.header['RV_MIN']))
     hdu.append(('Rv_max',header.header['RV_MAX']))
     hdu.append(('using',rho_str))
@@ -293,4 +293,5 @@ if __name__ == '__main__':
     else:
         out =f'full'
 
-    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}',overwrite=True)
+    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits',overwrite=True)
+    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits !')
