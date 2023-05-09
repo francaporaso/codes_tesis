@@ -122,7 +122,7 @@ def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
         rhos   = np.full_like(r_j,data[-2])
         par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
-        entrada = np.append(np.append(r_j,rhos), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
+        entrada = np.append(np.concatenate(r_j,rhos), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
 
         with Pool(processes=ncores) as pool:
             salida = np.array(pool.map(partial,entrada))
