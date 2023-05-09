@@ -216,29 +216,29 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
     elif fitDS:#REVISAR
-        pass
-        # covDSt = covar.covDSt.reshape(60,60)
+        covDSt = covar.covDSt.reshape(60,60)
 
-        # if usecov:
-        #     out = f'DS_cov'
+        if usecov:
+            out = f'DS_cov'
 
-        #     print(f'Fitting Delta Sigma, using covariance matrix')
+            print(f'Fitting Delta Sigma, using covariance matrix')
 
-        #     f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
-        #     table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-        #     table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
-        # else: 
-        #     out = f'DS_diag'
+        else: 
+            out = f'DS_diag'
 
-        #     print(f'Fitting Delta Sigma, using covariance diagonal only')
+            print(f'Fitting Delta Sigma, using covariance diagonal only')
 
-        #     eDSt = np.sqrt(np.diag(covDSt))
-        #     f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            eDSt = np.sqrt(np.diag(covDSt))
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            print('FUNCO 2!')
             
-        #     table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-        #     table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
     
     else:
         covS   = covar.covS.reshape(60,60)
@@ -268,7 +268,6 @@ if __name__ == '__main__':
             print(f'Fitting Delta Sigma, using covariance diagonal only')
 
             f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-            print('FUNCO 2!')
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
                          fits.Column(name='f_DSt',format='D',array=f_DS)]
