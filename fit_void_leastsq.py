@@ -180,10 +180,14 @@ if __name__ == '__main__':
     p      = fits.open(directory)[2].data
     covar = fits.open(directory)[3].data
 
+    print(f'Fitting from {directory}')
+    print(f'Using {ncores} cores')
+    print(f'Model: {rho_str}')
+
     if fitS & fitDS:
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
-    variables = np.concatenate(Rp,rho)
+    variables = np.append(Rp,rho)
     p0 = np.ones(nparams)
 
     print(rho ,rho_str)
