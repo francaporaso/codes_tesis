@@ -104,9 +104,9 @@ def projected_density_contrast(data, *params, rmax=np.inf):
 def projected_density_contrast_unpack(kargs):
     return projected_density_contrast(*kargs)
 
-def projected_density_contrast_parallel(data, ncores, *params, rmax=np.inf):
+def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
-    rvals, rho = data[:-1], data[-1]
+    rvals, rho, ncores = data[:-2], data[-2], int(data[-1])
     rho = rho_id.get(rho)    
     partial = projected_density_contrast_unpack
     
