@@ -15,7 +15,8 @@ import os
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
 def clampitt(r,Rv,A3):
-    '''Clampitt et al (2016); eq 12'''
+    '''Clampitt et al (2016); eq 12
+       id = 0'''
     A0 = 1-A3
     if r<Rv:
         return A0-1+A3*(r/Rv)**3
@@ -24,7 +25,8 @@ def clampitt(r,Rv,A3):
     # return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
 
 def krause(r,Rv,A3,A0):
-    '''Krause et al (2012); eq 1 (see text)'''
+    '''Krause et al (2012); eq 1 (see text)
+       id = 1'''
     if r<Rv:
         return A0-1+A3*(r/Rv)**3
     elif r>2*Rv: #ultima parte
@@ -35,7 +37,8 @@ def krause(r,Rv,A3,A0):
     # return np.piecewise(r,[r<Rv, 2*Rv>r>Rv],[lambda r: A0+A3*(r/Rv)**3, A0+A3, 1])
 
 def higuchi(r,R1,R2,rho1,rho2):
-    '''Higuchi et al (2013); eq 23'''
+    '''Higuchi et al (2013); eq 23
+       id = 2'''
     if r<R1:
         return rho1-1 
     elif r>R2:
@@ -44,10 +47,12 @@ def higuchi(r,R1,R2,rho1,rho2):
         return rho2-1
 
 def hamaus(r, delta, rs, Rv, a, b):
-    '''Hamaus et al (2014); eq 2'''
+    '''Hamaus et al (2014); eq 2
+       id = 3'''
     return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
 
 
+rho_id = {0: clampitt, 1: krause, 2: higuchi, 3: hamaus}
 
 def projected_density(rvals, rho, *params, rmax=np.inf):
     '''perfil de densidad proyectada dada la densidad 3D
@@ -58,6 +63,8 @@ def projected_density(rvals, rho, *params, rmax=np.inf):
     
     return
     density  (float) : densidad proyectada en rvals'''
+
+    rho = rho_id.get(rho)
     
     def integrand(z, r, *params):
         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
@@ -77,6 +84,9 @@ def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
     rmax    (int)   : valor maximo de r para integrar
     
     contrast (float): contraste de densidad proy en rvals'''
+    
+    rho = rho_id.get(rho)
+
 
     def integrand(x,*p): 
         return x*projected_density([x], rho, *p, rmax=rmax)
@@ -94,7 +104,8 @@ def projected_density_contrast_unpack(kargs):
     return projected_density_contrast(*kargs)
 
 def projected_density_contrast_parallel(rvals, rho, ncores, *params, rmax=np.inf):
-    
+
+    rho = rho_id.get(rho)    
     partial = projected_density_contrast_unpack
     
     lbins = int(round(len(rvals)/float(ncores), 0))
@@ -155,8 +166,9 @@ if __name__ == '__main__':
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-    rho_dict = {'clampitt': (clampitt,2), 'krause': (krause,3), 'higuchi': (higuchi,4), 'hamaus': (hamaus,5)}
+    rho_dict = {'clampitt': (0,2), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
     nparams  = rho_dict.get(rho)[1]
+    rho_str  = np.copy(rho)
     rho      = rho_dict.get(rho)[0]
     
 
@@ -176,14 +188,14 @@ if __name__ == '__main__':
         covS   = covar.covS.reshape(60,60)
         
         if usecov:
-            print(f'Fitting Sigma with {rho.__name__}, using covariance matrix')
+            print(f'Fitting Sigma with {rho_str}, using covariance matrix')
             f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
         else:
-            print(f'Fitting Sigma with {rho.__name__}, using covariance diagonal only')
+            print(f'Fitting Sigma with {rho_str}, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
             f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
@@ -195,7 +207,7 @@ if __name__ == '__main__':
         covDSt = covar.covDSt.reshape(60,60)
 
         if usecov:
-            print(f'Fitting Delta Sigma with {rho.__name__}, using covariance matrix')
+            print(f'Fitting Delta Sigma with {rho_str}, using covariance matrix')
 
             f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
@@ -203,7 +215,7 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
         else:
-            print(f'Fitting Delta Sigma with {rho.__name__}, using covariance diagonal only')
+            print(f'Fitting Delta Sigma with {rho_str}, using covariance diagonal only')
 
             eDSt = np.sqrt(np.diag(covDSt))
             f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
@@ -216,7 +228,7 @@ if __name__ == '__main__':
         covDSt = covar.covDSt.reshape(60,60)
 
         if usecov:
-            print(f'Fitting Sigma and Delta Sigma with {rho.__name__}, using covariance matrix')
+            print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance matrix')
 
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
             f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
@@ -228,7 +240,7 @@ if __name__ == '__main__':
                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
         else:
-            print(f'Fitting Sigma and Delta Sigma with {rho.__name__}, using covariance diagonal only')
+            print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
             eDSt = np.sqrt(np.diag(covDSt))
@@ -246,7 +258,7 @@ if __name__ == '__main__':
     hdu.append(('Nvoids',header.header['NVOIDS']))
     hdu.append(('Rv_min',header.header['RV_MIN']))
     hdu.append(('Rv_max',header.header['RV_MAX']))
-    hdu.append(('using',rho.__name__))
+    hdu.append(('using',rho_str))
     
 
     tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
@@ -261,4 +273,4 @@ if __name__ == '__main__':
     except FileExistsError:
             pass
 
-    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho.__name__}',overwrite=True)
+    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}',overwrite=True)
