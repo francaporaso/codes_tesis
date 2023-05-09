@@ -107,7 +107,7 @@ def projected_density_contrast_unpack(kargs):
 def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
     rvals, rho, ncores = data[:-2], data[-2], int(data[-1])
-    rho = rho_id.get(rho)    
+    rho = rho_id.get(rho)
     partial = projected_density_contrast_unpack
     
     lbins = int(round(len(rvals)/float(ncores), 0))
@@ -120,9 +120,9 @@ def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
     for j,r_j in enumerate(Rsplit):
 
-        #rhos   = np.full_like(r_j,rho)
+        rhos   = np.full_like(r_j,data[-2])
         par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
-        entrada = np.append(np.array([r_j]), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
+        entrada = np.append(np.append(r_j,rhos), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
 
         with Pool(processes=ncores) as pool:
             salida = np.array(pool.map(partial,entrada))
