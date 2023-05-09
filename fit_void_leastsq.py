@@ -6,6 +6,7 @@ from multiprocessing import Pool
 from astropy.io import fits
 from scipy.optimize import curve_fit
 import argparse
+import os
 
 '''rho: ( en realidad son las fluctuaciones rho/rhomean - 1 )
     clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
@@ -46,7 +47,9 @@ def hamaus(r, delta, rs, Rv, a, b):
     '''Hamaus et al (2014); eq 2'''
     return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
 
-def projected_density(rvals, *params, rho=clampitt, rmax=np.inf):
+
+
+def projected_density(rvals, rho, *params, rmax=np.inf):
     '''perfil de densidad proyectada dada la densidad 3D
     rvals   (array) : puntos de r a evaluar el perfil
     *params (float) : parametros de la funcion rho (los que se ajustan)
@@ -65,24 +68,7 @@ def projected_density(rvals, *params, rho=clampitt, rmax=np.inf):
     return density
 
 
-# def aux(R, *params, rho=clampitt, rmax=100):
-#     '''perfil de densidad proyectada dada la densidad 3D
-#     r       (float) : puntos de r a evaluar el perfil
-#     *params (float) : parametros de la funcion rho (los que se ajustan)
-#     rho     (func)  : densidad 3D
-#     rmax    (int)   : valor maximo de r para integrar
-    
-#     return
-#     density  (float) : densidad proyectada en rvals'''
-    
-#     def integrand(z, r, *params):
-#         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
-    
-#     density = quad(integrand, -rmax, rmax, args=(R,)+params)[0]
-    
-#     return density
-
-def projected_density_contrast(rvals, *params, rho=clampitt, rmax=np.inf):
+def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
     
     '''perfil de contraste de densidad proyectada dada la densidad 3D
     rvals   (float) : punto de r a evaluar el perfil
@@ -93,13 +79,13 @@ def projected_density_contrast(rvals, *params, rho=clampitt, rmax=np.inf):
     contrast (float): contraste de densidad proy en rvals'''
 
     def integrand(x,*p): 
-        return x*projected_density([x], *p, rho=rho, rmax=rmax)
+        return x*projected_density([x], rho, *p, rmax=rmax)
     
     # def integrand(x,*p): 
     #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
-    anillo = projected_density([rvals],*params, rho=rho, rmax=rmax)
-    disco  = np.array([2./(np.square(r))*quad(integrand, 0, r, args=(r,)+params)[0] for r in [rvals]])
+    anillo = projected_density([rvals], rho, *params, rmax=rmax)
+    disco  = np.array([2./(np.square(r))*quad(integrand, 0, r, args=(r,rho)+params)[0] for r in [rvals]])
 
     contrast = disco - anillo
     return contrast
@@ -107,7 +93,7 @@ def projected_density_contrast(rvals, *params, rho=clampitt, rmax=np.inf):
 def projected_density_contrast_unpack(kargs):
     return projected_density_contrast(*kargs)
 
-def projected_density_contrast_parallel(rvals, *params, rho=clampitt, rmax=np.inf, ncores=10):
+def projected_density_contrast_parallel(rvals, rho, ncores, *params, rmax=np.inf):
     
     partial = projected_density_contrast_unpack
     
@@ -120,10 +106,10 @@ def projected_density_contrast_parallel(rvals, *params, rho=clampitt, rmax=np.in
     nparams = len(params)
 
     for j,r_j in enumerate(Rsplit):
-        
+
+        #rhos   = np.full_like(r_j,rho)
         par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
         entrada = np.append(np.array([r_j]), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
-
 
         with Pool(processes=ncores) as pool:
             salida = np.array(pool.map(partial,entrada))
@@ -135,23 +121,18 @@ def projected_density_contrast_parallel(rvals, *params, rho=clampitt, rmax=np.in
     return dsigma
 
 
-
-# p_S, pcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=(1,1))
-# perr_S = np.sqrt(np.diag(pcov_S))
-
-
 if __name__ == '__main__':
-    #ncores = 32
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
-    parser.add_argument('-name', action='store', dest='sample',default='smallz_6-9')
-    parser.add_argument('-ncores', action='store', dest='sample',default=10)
-    parser.add_argument('-rmax', action='store', dest='sample',default=100)
-    parser.add_argument('-fitS', action='store', dest='sample',default=True)
-    parser.add_argument('-fitDS', action='store', dest='sample',default=True)
-    parser.add_argument('-rho', action='store', dest='sample',default='clampitt')
-    parser.add_argument('-p0', action='store', dest='sample',default=1)
+    parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
+    parser.add_argument('-ncores', action='store', dest='ncores',default=10)
+    parser.add_argument('-rmax', action='store', dest='rmax',default='inf')
+    parser.add_argument('-fitS', action='store', dest='fitS',default=False)
+    parser.add_argument('-fitDS', action='store', dest='fitDS',default=False)
+    parser.add_argument('-usecov', action='store', dest='usecov',default=False)
+    parser.add_argument('-rho', action='store', dest='rho',default='clampitt')
+    parser.add_argument('-p0', action='store', dest='p0',default=1)
     args = parser.parse_args()
     
     sample = args.sample
@@ -159,8 +140,14 @@ if __name__ == '__main__':
     ncores = int(args.ncores)
     fitS   = bool(args.fitS)
     fitDS  = bool(args.fitDS)
+    usecov  = bool(args.usecov)
     rho    = args.rho   
     p0     = float(args.p0)
+    
+    if args.rmax == 'inf':
+        rmax = np.inf
+    else:
+        rmax = float(args.rmax)
 
     '''rho:
     clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
@@ -168,61 +155,99 @@ if __name__ == '__main__':
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
+    rho_dict = {'clampitt': (clampitt,2), 'krause': (krause,3), 'higuchi': (higuchi,4), 'hamaus': (hamaus,5)}
+    rho      = rho_dict.get(rho)[0]
+    nparams  = rho_dict.get(rho)[1]
+    
+
     directory = f'../profiles/voids/{sample}/{name}.fits'
     header = fits.open(directory)[0]
     Rp     = fits.open(directory)[1].data.Rp
     p      = fits.open(directory)[2].data
     covar = fits.open(directory)[3].data
 
+    if fitS & fitDS:
+        raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
-    covDSt = covar.covDSt.reshape(60,60)
-    covDSx = covar.covDSx.reshape(60,60)
-
+    variables = Rp, rho
+    p0 = np.ones(nparams)
+    
     if fitS:
         covS   = covar.covS.reshape(60,60)
         
-        f_S, fcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=covS, p0=(1,1))
+        if usecov:
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
 
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
+        else:
+            eS   = np.sqrt(np.diag(covS))
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
 
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
-    # profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
-    # p = profile[1].data
-    # cov = profile[2].data
+    elif fitDS:
+        covDSt = covar.covDSt.reshape(60,60)
 
-    # Rv_min, Rv_max = profile[0].header['RV_MIN'], profile[0].header['RV_MAX']
-
-    # eS = np.sqrt(np.diag(cov.cov_S.reshape(40,40)))
-    # eDSt = np.sqrt(np.diag(cov.cov_DSt.reshape(40,40)))
-
-    # p_S, pcov_S = curve_fit(parallel_S, p.Rp, p.Sigma, sigma=eS)
-    # p_DSt, pcov_DSt = curve_fit(parallel_DS, p.Rp, p.DSigmaT, sigma=eDSt)
-
-    # perr_S = np.sqrt(np.diag(pcov_S))
-    # perr_DSt = np.sqrt(np.diag(pcov_DSt))
-
-    # hdu = fits.Header()
-    # hdu.append(('Nvoids',profile[0].header['NVOIDS']))
-    # hdu.append(('Rv_min',profile[0].header['RV_MIN']))
-    # hdu.append(('Rv_max',profile[0].header['RV_MAX']))
-    
-    # table_opt = [fits.Column(name='p_S',format='D',array=p_S),
-    #              fits.Column(name='p_S',format='D',array=p_DSt)]
-    
-    # table_err = [fits.Column(name='p_eS',format='D',array=perr_S),
-    #              fits.Column(name='p_eS',format='D',array=perr_DSt)]
-
-    # tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-    # tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
+        if usecov:
+            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
-    # primary_hdu = fits.PrimaryHDU(header=hdu)
-            
-    # hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
-    
-    # try:
-    #         os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/fitting')
-    # except FileExistsError:
-    #         pass
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
-    # hdul.writeto(f'../profiles/voids/fitting/fitLS_Rv{int(Rv_min)}{int(Rv_max)}',overwrite=True)
+        else:
+            eDSt = np.sqrt(np.diag(covDSt))
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
     
+    else:
+        covS   = covar.covS.reshape(60,60)
+        covDSt = covar.covDSt.reshape(60,60)
+
+        if usecov:
+            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+            
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                         fits.Column(name='f_DSt',format='D',array=f_DS)]
+            
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+
+        else:
+            eS   = np.sqrt(np.diag(covS))
+            eDSt = np.sqrt(np.diag(covDSt))
+            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                         fits.Column(name='f_DSt',format='D',array=f_DS)]
+            
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+
+
+    hdu = fits.Header()
+    hdu.append(('Nvoids',header.header['NVOIDS']))
+    hdu.append(('Rv_min',header.header['RV_MIN']))
+    hdu.append(('Rv_max',header.header['RV_MAX']))
+    hdu.append(('using',rho.__name__))
+    
+
+    tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
+    tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
+            
+    primary_hdu = fits.PrimaryHDU(header=hdu)
+            
+    hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
+    
+    try:
+            os.mkdir(f'../profiles/voids/{sample}/fit')
+    except FileExistsError:
+            pass
+
+    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho.__name__}',overwrite=True)
