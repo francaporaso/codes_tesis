@@ -181,79 +181,79 @@ if __name__ == '__main__':
     if fitS & fitDS:
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
-    variables = np.append(Rp,rho)
+    variables = Rp,rho
     p0 = np.ones(nparams)
 
     print(rho ,rho_str)
     
-    # if fitS:
-    #     covS   = covar.covS.reshape(60,60)
+    if fitS:
+        covS   = covar.covS.reshape(60,60)
         
-    #     if usecov:
-    #         print(f'Fitting Sigma with {rho_str}, using covariance matrix')
-    #         f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+        if usecov:
+            print(f'Fitting Sigma with {rho_str}, using covariance matrix')
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
 
-    #         table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-    #         table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
-    #     else:
-    #         print(f'Fitting Sigma with {rho_str}, using covariance diagonal only')
+        else:
+            print(f'Fitting Sigma with {rho_str}, using covariance diagonal only')
 
-    #         eS   = np.sqrt(np.diag(covS))
-    #         f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+            eS   = np.sqrt(np.diag(covS))
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
 
-    #         table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-    #         table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
-    # elif fitDS:
-    #     covDSt = covar.covDSt.reshape(60,60)
+    elif fitDS:
+        covDSt = covar.covDSt.reshape(60,60)
 
-    #     if usecov:
-    #         print(f'Fitting Delta Sigma with {rho_str}, using covariance matrix')
+        if usecov:
+            print(f'Fitting Delta Sigma with {rho_str}, using covariance matrix')
 
-    #         f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
-    #         table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-    #         table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
-    #     else:
-    #         print(f'Fitting Delta Sigma with {rho_str}, using covariance diagonal only')
+        else:
+            print(f'Fitting Delta Sigma with {rho_str}, using covariance diagonal only')
 
-    #         eDSt = np.sqrt(np.diag(covDSt))
-    #         f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            eDSt = np.sqrt(np.diag(covDSt))
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
             
-    #         table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-    #         table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
     
-    # else:
-    #     covS   = covar.covS.reshape(60,60)
-    #     covDSt = covar.covDSt.reshape(60,60)
+    else:
+        covS   = covar.covS.reshape(60,60)
+        covDSt = covar.covDSt.reshape(60,60)
 
-    #     if usecov:
-    #         print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance matrix')
+        if usecov:
+            print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance matrix')
 
-    #         f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-    #         f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
-    #         table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-    #                      fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                         fits.Column(name='f_DSt',format='D',array=f_DS)]
             
-    #         table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-    #                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
-    #     else:
-    #         print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance diagonal only')
+        else:
+            print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance diagonal only')
 
-    #         eS   = np.sqrt(np.diag(covS))
-    #         eDSt = np.sqrt(np.diag(covDSt))
-    #         f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-    #         f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            eS   = np.sqrt(np.diag(covS))
+            eDSt = np.sqrt(np.diag(covDSt))
+            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
 
-    #         table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-    #                      fits.Column(name='f_DSt',format='D',array=f_DS)]
+            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                         fits.Column(name='f_DSt',format='D',array=f_DS)]
             
-    #         table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-    #                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
 
     # hdu = fits.Header()
