@@ -78,7 +78,7 @@ def projected_density(data, *params, rmax=np.inf):
     return density
 
 
-def projected_density_contrast(data, rmax=np.inf):
+def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
     
     '''perfil de contraste de densidad proyectada dada la densidad 3D
     rvals   (float) : punto de r a evaluar el perfil
@@ -88,7 +88,7 @@ def projected_density_contrast(data, rmax=np.inf):
     
     contrast (float): contraste de densidad proy en rvals'''
     
-    rvals, rho, params = data[:60], data[60], data[61:]
+    # rvals, rho, params = data[:60], data[60], data[61:]
     # rho = rho_id.get(rho)
 
     def integrand(x,rho,*p): 
