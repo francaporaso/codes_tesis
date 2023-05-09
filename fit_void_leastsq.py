@@ -156,8 +156,8 @@ if __name__ == '__main__':
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
     rho_dict = {'clampitt': (clampitt,2), 'krause': (krause,3), 'higuchi': (higuchi,4), 'hamaus': (hamaus,5)}
-    rho      = rho_dict.get(rho)[0]
     nparams  = rho_dict.get(rho)[1]
+    rho      = rho_dict.get(rho)[0]
     
 
     directory = f'../profiles/voids/{sample}/{name}.fits'
