@@ -78,7 +78,7 @@ def projected_density(data, *params, rmax=np.inf):
     return density
 
 
-def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
+def projected_density_contrast(data, *params, rmax=np.inf):
     
     '''perfil de contraste de densidad proyectada dada la densidad 3D
     rvals   (float) : punto de r a evaluar el perfil
@@ -88,7 +88,7 @@ def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
     
     contrast (float): contraste de densidad proy en rvals'''
     
-    # rvals, rho, params = data[:60], data[60], data[61:]
+    rvals, rho = data[:-1], data[-1]
     # rho = rho_id.get(rho)
 
     def integrand(x,rho,*p): 
@@ -234,7 +234,7 @@ if __name__ == '__main__':
             print(f'Fitting Delta Sigma, using covariance diagonal only')
 
             eDSt = np.sqrt(np.diag(covDSt))
-            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density_contrast, variables, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
             print('FUNCO 2!')
             
             table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
