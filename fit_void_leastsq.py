@@ -54,7 +54,7 @@ def hamaus(r, delta, rs, Rv, a, b):
 
 rho_id = {0: clampitt, 1: krause, 2: higuchi, 3: hamaus}
 
-def projected_density(rvals, rho, *params, rmax=np.inf):
+def projected_density(data, *params, rmax=np.inf):
     '''perfil de densidad proyectada dada la densidad 3D
     rvals   (array) : puntos de r a evaluar el perfil
     *params (float) : parametros de la funcion rho (los que se ajustan)
@@ -64,6 +64,7 @@ def projected_density(rvals, rho, *params, rmax=np.inf):
     return
     density  (float) : densidad proyectada en rvals'''
 
+    rvals, rho = data
     rho = rho_id.get(rho)
     
     def integrand(z, r, *params):
@@ -75,7 +76,7 @@ def projected_density(rvals, rho, *params, rmax=np.inf):
     return density
 
 
-def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
+def projected_density_contrast(data, *params, rmax=np.inf):
     
     '''perfil de contraste de densidad proyectada dada la densidad 3D
     rvals   (float) : punto de r a evaluar el perfil
@@ -85,8 +86,8 @@ def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
     
     contrast (float): contraste de densidad proy en rvals'''
     
+    rvals, rho = data
     rho = rho_id.get(rho)
-
 
     def integrand(x,*p): 
         return x*projected_density([x], rho, *p, rmax=rmax)
@@ -103,8 +104,9 @@ def projected_density_contrast(rvals, rho, *params, rmax=np.inf):
 def projected_density_contrast_unpack(kargs):
     return projected_density_contrast(*kargs)
 
-def projected_density_contrast_parallel(rvals, rho, ncores, *params, rmax=np.inf):
+def projected_density_contrast_parallel(data, ncores, *params, rmax=np.inf):
 
+    rvals, rho = data
     rho = rho_id.get(rho)    
     partial = projected_density_contrast_unpack
     
