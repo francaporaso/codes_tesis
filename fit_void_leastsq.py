@@ -192,10 +192,10 @@ if __name__ == '__main__':
     p0 = np.ones(nparams)
     
     if fitS:
-        out = f'S'
         covS   = covar.covS.reshape(60,60)
         
         if usecov:
+            out = f'S_cov'
             print(f'Fitting Sigma, using covariance matrix')
             f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
 
@@ -203,6 +203,8 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
         else:
+            out = f'S_diag'
+
             print(f'Fitting Sigma, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
@@ -212,11 +214,12 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
     elif fitDS:#REVISAR
-        out = f'DS'
         pass
         # covDSt = covar.covDSt.reshape(60,60)
 
         # if usecov:
+        #     out = f'DS_cov'
+
         #     print(f'Fitting Delta Sigma, using covariance matrix')
 
         #     f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
@@ -225,6 +228,8 @@ if __name__ == '__main__':
         #     table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
         # else: 
+        #     out = f'DS_diag'
+
         #     print(f'Fitting Delta Sigma, using covariance diagonal only')
 
         #     eDSt = np.sqrt(np.diag(covDSt))
@@ -234,11 +239,11 @@ if __name__ == '__main__':
         #     table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
     
     else:
-        out =f'full'
         covS   = covar.covS.reshape(60,60)
         covDSt = covar.covDSt.reshape(60,60)
 
         if usecov:
+            out =f'full_cov'
             print(f'Fitting Sigma and Delta Sigma, using covariance matrix')
 
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
@@ -251,6 +256,7 @@ if __name__ == '__main__':
                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
         else:
+            out =f'full_diag'
             print(f'Fitting Sigma and Delta Sigma, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
