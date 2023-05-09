@@ -256,7 +256,7 @@ if __name__ == '__main__':
             eDSt = np.sqrt(np.diag(covDSt))
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
             print('FUNCO!')
-            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)(
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
             print('FUNCO 2!')
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
