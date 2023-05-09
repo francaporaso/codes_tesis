@@ -65,7 +65,10 @@ def projected_density(data, *params, rmax=np.inf):
     density  (float) : densidad proyectada en rvals'''
 
     rvals, rho = data[:-1], data[-1]
-    rho = rho_id.get(rho)
+    if isinstance(rho,float):
+        pass
+    else:
+        rho = rho_id.get(rho)
     
     def integrand(z, r, *params):
         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
@@ -87,7 +90,7 @@ def projected_density_contrast(rvals,rho,*params, rmax=np.inf):
     contrast (float): contraste de densidad proy en rvals'''
     
     # rvals, rho, params = data[:60], data[60], data[61:]
-    rho = rho_id.get(rho)
+    # rho = rho_id.get(rho)
 
     def integrand(x,*p): 
         return x*projected_density([x], rho, *p, rmax=rmax)
@@ -257,11 +260,14 @@ if __name__ == '__main__':
 
         else:
             out =f'full_diag'
-            print(f'Fitting Sigma and Delta Sigma, using covariance diagonal only')
+            print(f'Fitting Sigma, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
             eDSt = np.sqrt(np.diag(covDSt))
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+
+            print(f'Fitting Delta Sigma, using covariance diagonal only')
+
             f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
             print('FUNCO 2!')
 
