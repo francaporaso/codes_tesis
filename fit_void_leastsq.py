@@ -266,23 +266,31 @@ if __name__ == '__main__':
                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
 
-    # hdu = fits.Header()
-    # hdu.append(('Nvoids',header.header['NVOIDS']))
-    # hdu.append(('Rv_min',header.header['RV_MIN']))
-    # hdu.append(('Rv_max',header.header['RV_MAX']))
-    # hdu.append(('using',rho_str))
+    hdu = fits.Header()
+    hdu.append(('Nvoids',header.header['NVOIDS']))
+    hdu.append(('Rv_min',header.header['RV_MIN']))
+    hdu.append(('Rv_max',header.header['RV_MAX']))
+    hdu.append(('using',rho_str))
     
 
-    # tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-    # tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
+    tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
+    tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
             
-    # primary_hdu = fits.PrimaryHDU(header=hdu)
+    primary_hdu = fits.PrimaryHDU(header=hdu)
             
-    # hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
+    hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
     
-    # try:
-    #         os.mkdir(f'../profiles/voids/{sample}/fit')
-    # except FileExistsError:
-    #         pass
+    try:
+            os.mkdir(f'../profiles/voids/{sample}/fit')
+    except FileExistsError:
+            pass
 
-    # hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}',overwrite=True)
+
+    if fitS:
+        out = f'S'
+    elif fitDS:
+        out = f'DS'
+    else:
+        out =f'full'
+
+    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}',overwrite=True)
