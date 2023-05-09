@@ -188,6 +188,8 @@ if __name__ == '__main__':
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
 
     variables = np.append(Rp,rho)
+    var_wcores = np.append(variables,ncores)
+
     p0 = np.ones(nparams)
 
     print(rho ,rho_str)
@@ -239,7 +241,6 @@ if __name__ == '__main__':
             print(f'Fitting Sigma and Delta Sigma with {rho_str}, using covariance matrix')
 
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-            print('FUNCO!')
             f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
@@ -254,7 +255,9 @@ if __name__ == '__main__':
             eS   = np.sqrt(np.diag(covS))
             eDSt = np.sqrt(np.diag(covDSt))
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, (variables,ncores), p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            print('FUNCO!')
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)(
+            print('FUNCO 2!')
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
                          fits.Column(name='f_DSt',format='D',array=f_DS)]
