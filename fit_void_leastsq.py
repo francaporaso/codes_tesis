@@ -76,7 +76,7 @@ def projected_density(data, *params, rmax=np.inf):
     return density
 
 
-def projected_density_contrast(data, *params, rmax=np.inf):
+def projected_density_contrast(data, rmax=np.inf):
     
     '''perfil de contraste de densidad proyectada dada la densidad 3D
     rvals   (float) : punto de r a evaluar el perfil
@@ -86,7 +86,7 @@ def projected_density_contrast(data, *params, rmax=np.inf):
     
     contrast (float): contraste de densidad proy en rvals'''
     
-    rvals, rho = data[:-1], data[-1]
+    rvals, rho, params = data[:60], data[60], data[61:]
     rho = rho_id.get(rho)
 
     def integrand(x,*p): 
@@ -262,8 +262,8 @@ if __name__ == '__main__':
             eS   = np.sqrt(np.diag(covS))
             eDSt = np.sqrt(np.diag(covDSt))
             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-            # f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-            # print('FUNCO 2!')
+            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            print('FUNCO 2!')
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
                          fits.Column(name='f_DSt',format='D',array=f_DS)]
@@ -287,9 +287,9 @@ if __name__ == '__main__':
     hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
     
     try:
-            os.mkdir(f'../profiles/voids/{sample}/fit')
+        os.mkdir(f'../profiles/voids/{sample}/fit')
     except FileExistsError:
-            pass
+        pass
 
 
     hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits',overwrite=True)
