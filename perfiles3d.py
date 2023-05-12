@@ -41,23 +41,17 @@ def partial_profile(x,y,z,Rv,
                     RIN,ROUT,ndots,h):
 
 
-        ndots = int(ndots)
-
+        ndots = int(ndots)      
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         
         delta = ROUT*Rv    
         
-        mask = (np.abs(x_halo - x_void) < delta) & (np.abs(y_halo - y_void) < delta) & (np.abs(z_halo - z_void) < delta)        
-
-        catdata = S[mask]
-
+        mask = (np.abs(x_halo - x_void) < delta) & (np.abs(y_halo - y_void) < delta) & (np.abs(z_halo - z_void) < delta)                
+        catdata = S[mask]       
         #sacamos las masas de los halos
-        M = 10**S.halo_mass_exponent
-
-
-        Ntot = len(catdata)        
-
+        M = 10**S.halo_mass_exponent    
+        Ntot = len(catdata)             
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
                 
@@ -66,8 +60,7 @@ def partial_profile(x,y,z,Rv,
         V = np.empty(ndots) #vol de la cascara
                                              
         for nbin in range(ndots):
-                mbin = dig == nbin+1              
-
+                mbin = dig == nbin+1                    
                 SIGMAwsum[nbin]    = M[mbin].sum()
                  
                 N_inbin[nbin]      = np.count_nonzero(mbin)
@@ -76,3 +69,10 @@ def partial_profile(x,y,z,Rv,
         #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
         
         return output
+
+
+if __name__ == '__main__':
+        folder = '/mnt/simulations/MICE/'
+        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data #catalogo de MICE
+
+        M =  fits.open('../cats/MICE/')
