@@ -48,24 +48,34 @@ def paste(sample, name, ndts=60,nslices=10):
     covDSt = cov_matrix(DSigma_T[1:,:]).flatten()
     covDSx = cov_matrix(DSigma_X[1:,:]).flatten()
 
-    Nvoids   = headers[0].header['N_voids']
-    Rv_min   = headers[0].header['Rv_min']
-    Rv_max   = headers[0].header['Rv_max']
-    Rv_mean   = headers[0].header['Rv_mean']
-    rho2_min = headers[0].header['rho2_min']
-    rho2_max = headers[0].header['rho2_max']
-    rho2_mean = headers[0].header['rho2_mean']
-    z_min    = headers[0].header['z_min']
-    z_max    = headers[0].header['z_max']
-    z_mean    = headers[0].header['z_mean']
-    ndots    = np.sum([headers[j].header['ndots'] for j in np.arange(nslices)])
+    Nvoids    = headers[0].header['N_voids']
+    Rv_min    = headers[0].header['Rv_min']
+    Rv_max    = headers[0].header['Rv_max']
+    rho2_min  = headers[0].header['rho2_min']
+    rho2_max  = headers[0].header['rho2_max']
+    z_min     = headers[0].header['z_min']
+    z_max     = headers[0].header['z_max']
+    ndots     = np.sum([headers[j].header['ndots'] for j in np.arange(nslices)])
+
+    try:
+        Rv_mean   = headers[0].header['Rv_mean']
+        rho2_mean = headers[0].header['rho2_mean']
+        z_mean    = headers[0].header['z_mean']
+    except:
+        L = np.loadtxt(f'/mnt/simulations/MICE/voids_MICE.dat').T
+        Rv, z, rho_1, rho_2, flag = L[1], L[4], L[8], L[9], L[11]
+        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= -1.)&(rho_1 < 1.))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= 2)
+        L = L[:,mvoids]
+        z_mean    = np.mean(L[4])
+        Rv_mean   = np.mean(L[1])
+        rho2_mean = np.mean(L[9])
 
 
     hdu = fits.Header()
     hdu.append(('N_VOIDS',int(Nvoids)))
     hdu.append(('Rv_min',np.round(Rv_min,2)))
     hdu.append(('Rv_max',np.round(Rv_max,2)))
-    hdu.append(('Rv_mean',np.round(Rv_max,4)))
+    hdu.append(('Rv_mean',np.round(Rv_mean,4)))
     hdu.append(('rho2_min',np.round(rho2_min,2)))
     hdu.append(('rho2_max',np.round(rho2_max,2)))
     hdu.append(('rho2_mean',np.round(rho2_mean,4)))

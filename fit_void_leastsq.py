@@ -98,9 +98,7 @@ def projected_density_contrast(data, *params, rmax=np.inf):
     #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
     anillo = projected_density([rvals], rho, *params, rmax=rmax)
-    print(rvals)
-    print([r for r in rvals])
-    # disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=[(r,)+params])[0] for r in rvals])
+    disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=(r,)+params)[0] for r in [rvals]])
 
     contrast = disco - anillo
     return contrast
@@ -277,6 +275,7 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
+    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits !')
 
     hdu = fits.Header()
     hdu.append(('Nvoids',header.header['N_VOIDS']))
@@ -297,6 +296,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-
     hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits',overwrite=True)
-    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{rho_str}_{out}.fits !')

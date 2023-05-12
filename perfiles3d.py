@@ -17,85 +17,59 @@
 
 #para sumar una sola vez vamos sumando los halos de galaxias centrales
 
+import sys
+sys.path.append('../lens_codes_v3.7')
+import time
+import numpy as np
+from astropy.io import fits
+from astropy.table import Table
+from astropy.cosmology import LambdaCDM
+from astropy.wcs import WCS
+from maria_func import *
+from fit_profiles_curvefit import *
+from astropy.stats import bootstrap
+from astropy.utils import NumpyRNGContext
+import astropy.units as u
+from astropy.coordinates import SkyCoord, Angle
+from multiprocessing import Pool, Process
+import argparse
+from astropy.constants import G,c,M_sun,pc
+from scipy import stats
+from models_profiles import Gamma
+
 def partial_profile(x,y,z,Rv,
                     RIN,ROUT,ndots,h):
 
-        '''
-        calcula el perfil de 1 solo void, tomando el centro del void y su redshift
-        RA0,DEC0 (float): posicion del centro del void
-        Z: redshift del void
-        RIN,ROUT: bordes del perfil
-        ndots: cantidad de puntos del perfil
-        h: cosmologia
-        addnoise(bool): agregar ruido (forma intrinseca) a las galaxias de fondo
-        devuelve la densidad proyectada (Sigma), el contraste(DSigma), la cant de galaxias por bin (Ninbin) 
-        y las totales (Ntot)'''
-        
+
         ndots = int(ndots)
 
-        Rv   = Rv/h *u.Mpc
+        Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         
-        DEGxMPC = cosmo.arcsec_per_kpc_proper(Z).to('deg/Mpc')
-        delta = (DEGxMPC*(ROUT*Rv))
-
-        pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
-        c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
-        c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
-
-        mask = (S.dec_gal < c2[0].dec.deg)&(S.dec_gal > c2[2].dec.deg)&(S.ra_gal < c2[1].ra.deg)&(
-                S.ra_gal > c2[3].ra.deg)&(S.z_cgal > (Z+0.1))
+        delta = ROUT*Rv    
         
-        # mask = (np.abs(S.ra_gal -RA0) < delta)& (np.abs(S.dec_gal-DEC0) < delta)&(S.z_cgal_v > (Z+0.1))
+        mask = (np.abs(x_halo - x_void) < delta) & (np.abs(y_halo - y_void) < delta) & (np.abs(z_halo - z_void) < delta)        
+
         catdata = S[mask]
 
-        del mask, delta
+        #sacamos las masas de los halos
+        M = 10**S.halo_mass_exponent
 
-        sigma_c = SigmaCrit(Z, catdata.z_cgal)
-        
-        rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
-                                  np.deg2rad(RA0), np.deg2rad(DEC0))
-                               
-        
-        e1     = catdata.gamma1
-        e2     = -1.*catdata.gamma2
 
-        # Add shape noise due to intrisic galaxy shapes        
-        if addnoise:
-            es1 = -1.*catdata.eps1
-            es2 = catdata.eps2
-            e1 += es1
-            e2 += es2
-        
-        #get tangential ellipticities 
-        et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c
-        #get cross ellipticities
-        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))*sigma_c
-               
-        #get convergence
-        k  = catdata.kappa*sigma_c
-
-        r = (np.rad2deg(rads)/DEGxMPC.value)/(Rv.value)
-        #r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
-
-        del catdata
-        del e1, e2, theta, sigma_c, rads
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
         dig = np.digitize(r,bines)
                 
-        SIGMAwsum    = np.empty(ndots)
-        DSIGMAwsum_T = np.empty(ndots)
-        DSIGMAwsum_X = np.empty(ndots)
-        N_inbin      = np.empty(ndots)
+        RHOsum  = np.empty(ndots)
+        N_inbin = np.empty(ndots)
+        V = np.empty(ndots) #vol de la cascara
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
 
-                SIGMAwsum[nbin]    = k[mbin].sum()
-                DSIGMAwsum_T[nbin] = et[mbin].sum()
-                DSIGMAwsum_X[nbin] = ex[mbin].sum()
+                SIGMAwsum[nbin]    = M[mbin].sum()
+                 
                 N_inbin[nbin]      = np.count_nonzero(mbin)
         
         output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot], dtype=object)
