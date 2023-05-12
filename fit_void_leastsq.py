@@ -301,7 +301,7 @@ if __name__ == '__main__':
     print(f'Using {ncores} cores')
     print(f'Model: {rho_str}')
 
-    fitear(sample,name)
+    # fitear(sample,name)
 
     if fitS & fitDS:
         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
