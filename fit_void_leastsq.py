@@ -14,10 +14,10 @@ import os
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-def clampitt(r,Rv,A3):
+def clampitt(r,Rv,A0,A3):
     '''Clampitt et al (2016); eq 12
        id = 0'''
-    A0 = 1-A3
+    # A0 = 1-A3
     if r<Rv:
         return A0-1+A3*(r/Rv)**3
     else:
@@ -73,7 +73,7 @@ def projected_density(data, *params, rmax=np.inf):
         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
     
     density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
-    density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+    # density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
 
     return density
 
