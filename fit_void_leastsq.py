@@ -285,7 +285,7 @@ if __name__ == '__main__':
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-    rho_dict = {'clampitt': (0,2), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
+    rho_dict = {'clampitt': (0,3), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
     nparams  = rho_dict.get(rho)[1]
     rho_str  = np.copy(rho)
     rho      = rho_dict.get(rho)[0]
