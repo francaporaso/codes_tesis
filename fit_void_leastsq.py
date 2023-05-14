@@ -135,120 +135,6 @@ def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
     return dsigma
 
-# def fitear(sample,name):
-
-#     if fitS & fitDS:
-#         raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
-
-#     variables = np.append(Rp,rho)
-#     var_wcores = np.append(variables,ncores)
-#     p0 = np.ones(nparams)
-    
-#     if fitS:
-#         covS   = covar.covS.reshape(60,60)
-        
-#         if usecov:
-#             out = f'S_cov'
-#             print(f'Fitting Sigma, using covariance matrix')
-#             f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-
-#             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-#             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-
-#         else:
-#             out = f'S_diag'
-
-#             print(f'Fitting Sigma, using covariance diagonal only')
-
-#             eS   = np.sqrt(np.diag(covS))
-#             f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-
-#             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-#             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-
-#     elif fitDS:#REVISAR
-#         covDSt = covar.covDSt.reshape(60,60)
-
-#         if usecov:
-#             out = f'DS_cov'
-
-#             print(f'Fitting Delta Sigma, using covariance matrix')
-
-#             f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-            
-#             table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-#             table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-#         else: 
-#             out = f'DS_diag'
-
-#             print(f'Fitting Delta Sigma, using covariance diagonal only')
-
-#             eDSt = np.sqrt(np.diag(covDSt))
-#             f_DS, fcov_DS = curve_fit(projected_density_contrast, variables, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-#             print('FUNCO 2!')
-            
-#             table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-#             table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-    
-#     else:
-#         covS   = covar.covS.reshape(60,60)
-#         covDSt = covar.covDSt.reshape(60,60)
-
-#         if usecov:
-#             out =f'full_cov'
-#             print(f'Fitting Sigma and Delta Sigma, using covariance matrix')
-
-#             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-#             # f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-            
-#             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-#                          fits.Column(name='f_DSt',format='D',array=f_DS)]
-            
-#             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-#                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-#         else:
-#             out =f'full_diag'
-#             print(f'Fitting Sigma, using covariance diagonal only')
-
-#             eS   = np.sqrt(np.diag(covS))
-#             eDSt = np.sqrt(np.diag(covDSt))
-#             f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-
-#             print(f'Fitting Delta Sigma, using covariance diagonal only')
-
-#             f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-
-#             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-#                          fits.Column(name='f_DSt',format='D',array=f_DS)]
-            
-#             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-#                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-#     print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits !')
-
-#     hdu = fits.Header()
-#     hdu.append(('Nvoids',header.header['N_VOIDS']))
-#     hdu.append(('Rv_min',header.header['RV_MIN']))
-#     hdu.append(('Rv_max',header.header['RV_MAX']))
-#     hdu.append(f'using {rho_str}')
-    
-
-#     tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-#     tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
-            
-#     primary_hdu = fits.PrimaryHDU(header=hdu)
-            
-#     hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
-    
-#     try:
-#         os.mkdir(f'../profiles/voids/{sample}/fit')
-#     except FileExistsError:
-#         pass
-
-#     hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits',overwrite=True)
-
 
 
 if __name__ == '__main__':
@@ -309,7 +195,18 @@ if __name__ == '__main__':
     variables = np.append(Rp,rho)
     var_wcores = np.append(variables,ncores)
     p0 = np.ones(nparams)
+    '''
+    para hamaus:
+        delta = -0.8
+        rv = 1
+        rs = .7
+        a = 2
+        b = 7
+    '''
     
+    if rho == 3:
+        p0 = np.array([-0.8,.7,1,2,7]) 
+
     if fitS:
         covS   = covar.covS.reshape(60,60)
         
