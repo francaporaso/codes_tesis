@@ -195,6 +195,7 @@ if __name__ == '__main__':
     variables = np.append(Rp,rho)
     var_wcores = np.append(variables,ncores)
     p0 = np.ones(nparams)
+    bounds = (-np.inf,np.inf)
     '''
     para hamaus:
         delta = -0.8
@@ -205,7 +206,8 @@ if __name__ == '__main__':
     '''
     
     if rho == 3:
-        p0 = np.array([-0.8,1.,1.2,2.,7.]) 
+        p0 = np.array([-0.8,1.,1.2,2.,7.])
+        bounds = (np.array([-1, 0, 0, -np.inf, -np.inf]), np.inf)
 
     if fitS:
         covS   = covar.covS.reshape(60,60)
@@ -213,7 +215,7 @@ if __name__ == '__main__':
         if usecov:
             out = f'S_cov'
             print(f'Fitting Sigma, using covariance matrix')
-            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0, bounds=bounds)
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
