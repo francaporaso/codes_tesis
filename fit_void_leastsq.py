@@ -205,7 +205,7 @@ if __name__ == '__main__':
     '''
     
     if rho == 3:
-        p0 = np.array([-0.8,.7,1,2,7]) 
+        p0 = np.array([-0.8,10,1.5,2.5,7]) 
 
     if fitS:
         covS   = covar.covS.reshape(60,60)
