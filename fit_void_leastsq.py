@@ -207,7 +207,7 @@ if __name__ == '__main__':
         b = 7
     '''
     
-    if rho == 3:
+    if rho_str == 'hamaus':
         p0 = np.array([-1.5, 2.5, 1, 3, 9])
         bounds = (np.array([-np.inf,-np.inf, 1, -np.inf, -np.inf]),np.array([np.inf,np.inf, 1, np.inf, np.inf]))
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
             print(f'Fitting Sigma, using covariance diagonal only')
 
             eS   = np.sqrt(np.diag(covS))
-            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0, bounds=bounds)
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
