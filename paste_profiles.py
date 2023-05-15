@@ -62,6 +62,7 @@ def paste(sample, name, ndts=60,nslices=10):
         rho2_mean = headers[0].header['rho2_mean']
         z_mean    = headers[0].header['z_mean']
     except:
+        print('Calculando valores medios')
         L = np.loadtxt(f'/mnt/simulations/MICE/voids_MICE.dat').T
         Rv, z, rho_1, rho_2, flag = L[1], L[4], L[8], L[9], L[11]
         mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= -1.)&(rho_1 < 1.))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= 2)

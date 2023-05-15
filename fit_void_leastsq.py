@@ -220,7 +220,7 @@ if __name__ == '__main__':
             table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
 
-        else:
+        else:   
             out = f'S_diag'
 
             print(f'Fitting Sigma, using covariance diagonal only')
