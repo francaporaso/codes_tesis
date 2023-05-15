@@ -142,6 +142,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
     parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
+    parser.add_argument('-out', action='store', dest='out',default='pru')
     parser.add_argument('-ncores', action='store', dest='ncores',default=10)
     parser.add_argument('-rmax', action='store', dest='rmax',default='inf')
     parser.add_argument('-fitS', action='store', dest='fitS',default=False)
@@ -153,6 +154,7 @@ if __name__ == '__main__':
     
     sample = args.sample
     name   = args.name
+    output   = args.out
     ncores = int(args.ncores)
     fitS   = bool(args.fitS)
     fitDS  = bool(args.fitDS)
@@ -207,7 +209,7 @@ if __name__ == '__main__':
     
     if rho == 3:
         p0 = np.array([-1.5, 2.5, 1, 3, 9])
-        # bounds = (np.array([-1, 0, 0, -np.inf, -np.inf]), np.inf)
+        bounds = (np.array([-np.inf,-np.inf, 1, -np.inf, -np.inf]),np.array([np.inf,np.inf, 1, np.inf, np.inf]))
 
     if fitS:
         covS   = covar.covS.reshape(60,60)
@@ -307,6 +309,8 @@ if __name__ == '__main__':
             
     hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
     
+    out = out+output
+
     try:
         os.mkdir(f'../profiles/voids/{sample}/fit')
     except FileExistsError:
