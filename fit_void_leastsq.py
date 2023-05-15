@@ -206,8 +206,8 @@ if __name__ == '__main__':
     '''
     
     if rho == 3:
-        p0 = np.array([-0.8,1.,1.2,2.,7.])
-        bounds = (np.array([-1, 0, 0, -np.inf, -np.inf]), np.inf)
+        p0 = np.array([-1.5, 2.5, 1, 3, 9])
+        # bounds = (np.array([-1, 0, 0, -np.inf, -np.inf]), np.inf)
 
     if fitS:
         covS   = covar.covS.reshape(60,60)
