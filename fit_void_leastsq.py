@@ -209,7 +209,7 @@ if __name__ == '__main__':
     
     if rho_str == 'hamaus':
         p0 = np.array([-1.5, 2.5, 1, 3, 9])
-        bounds = (np.array([-np.inf,-np.inf, 1, -np.inf, -np.inf]),np.array([np.inf,np.inf, 1, np.inf, np.inf]))
+        bounds = (np.array([-np.inf,-np.inf, 0.9, -np.inf, -np.inf]),np.array([np.inf,np.inf, 1.1, np.inf, np.inf]))
 
     if fitS:
         covS   = covar.covS.reshape(60,60)
