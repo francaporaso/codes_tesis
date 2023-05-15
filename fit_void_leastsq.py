@@ -293,7 +293,6 @@ if __name__ == '__main__':
             table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
                          fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
 
-    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits !')
 
     hdu = fits.Header()
     hdu.append(('Nvoids',header.header['N_VOIDS']))
@@ -317,3 +316,5 @@ if __name__ == '__main__':
         pass
 
     hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits',overwrite=True)
+    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits !')
+
