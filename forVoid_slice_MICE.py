@@ -126,7 +126,6 @@ def partial_profile(RA0,DEC0,Z,Rv,
         mask = (S.dec_gal < c2[0].dec.deg)&(S.dec_gal > c2[2].dec.deg)&(S.ra_gal < c2[1].ra.deg)&(
                 S.ra_gal > c2[3].ra.deg)&(S.z_cgal > (Z+0.1))
         
-        # mask = (np.abs(S.ra_gal -RA0) < delta)& (np.abs(S.dec_gal-DEC0) < delta)&(S.z_cgal_v > (Z+0.1))
         catdata = S[mask]
 
         del mask, delta

@@ -26,53 +26,57 @@ from astropy.table import Table
 from astropy.cosmology import LambdaCDM
 from astropy.wcs import WCS
 from maria_func import *
-from fit_profiles_curvefit import *
-from astropy.stats import bootstrap
-from astropy.utils import NumpyRNGContext
+# from fit_profiles_curvefit import *
+# from astropy.stats import bootstrap
+# from astropy.utils import NumpyRNGContext
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
-from scipy import stats
-from models_profiles import Gamma
+# from scipy import stats
+# from models_profiles import Gamma
 
-def partial_profile(x,y,z,Rv,
-                    RIN,ROUT,ndots,h):
+def partial_profile(x_void, y_void, z_void, Rv,
+                    RIN, ROUT, ndots, h):
 
 
         ndots = int(ndots)      
         Rv   = Rv/h
         cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
         
-        delta = ROUT*Rv    
+        delta = 2.*ROUT*Rv    
         
-        mask = (np.abs(x_halo - x_void) < delta) & (np.abs(y_halo - y_void) < delta) & (np.abs(z_halo - z_void) < delta)                
-        catdata = S[mask]       
-        #sacamos las masas de los halos
-        M = 10**S.halo_mass_exponent    
-        Ntot = len(catdata)             
-        bines = np.linspace(RIN,ROUT,num=ndots+1)
-        dig = np.digitize(r,bines)
+        mask = (np.abs(M.xhalo - x_void) < delta) & (np.abs(M.yhalo - y_void) < delta) & (np.abs(M.zhalo - z_void) < delta) & (M.flag_central == 0)
+        catdata = M[mask]
+
+        #masas de los halos
+        M_halo = 10**catdata.lmhalo   
+        
+        #distancia al centro de cada halo
+        r_halo = np.sqrt(np.square(x_void - catdata.xhalo) + np.square(y_void - catdata.yhalo) + np.square(z_void - catdata.zhalo)) 
+        
+        Ntot = len(catdata)
+        bines = np.linspace(RIN*Rv, ROUT*Rv, num=ndots+1)
+        dig = np.digitize(r_halo, bines)
                 
-        RHOsum  = np.empty(ndots)
+        Mshell  = np.empty(ndots)
         N_inbin = np.empty(ndots)
-        V = np.empty(ndots) #vol de la cascara
                                              
-        for nbin in range(ndots):
+        for nbin in np.arange(ndots):
                 mbin = dig == nbin+1                    
-                SIGMAwsum[nbin]    = M[mbin].sum()
-                 
-                N_inbin[nbin]      = np.count_nonzero(mbin)
+                
+                Mshell[nbin] = np.sum(M_halo[mbin])
+                N_inbin[nbin] = np.count_nonzero(mbin)
+
+        Vshell = np.array([(bines[j+1]**3-bines[j]**3)*4*np.pi/3 for j in np.arange(ndots)])
         
-        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot], dtype=object)
-        #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
-        
+        output = np.array([Mshell, Vshell, N_inbin, Ntot], dtype=object)        
         return output
 
 
 if __name__ == '__main__':
         folder = '/mnt/simulations/MICE/'
-        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data #catalogo de MICE
+        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data #propiedades de galaxias fuente
 
-        M =  fits.open('../cats/MICE/')
+        M =  fits.open('../cats/MICE/micecat2_halos.fits')[1].data #propiedades de halos
