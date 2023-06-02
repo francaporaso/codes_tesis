@@ -51,7 +51,7 @@ def partial_profile(x_void, y_void, z_void, Rv,
         catdata = M[mask]
 
         #masas de los halos
-        M_halo = 10**catdata.lmhalo   
+        M_halo = 10. **(catdata.lmhalo)
         
         #distancia al centro de cada halo
         r_halo = np.sqrt(np.square(x_void - catdata.xhalo) + np.square(y_void - catdata.yhalo) + np.square(z_void - catdata.zhalo)) 

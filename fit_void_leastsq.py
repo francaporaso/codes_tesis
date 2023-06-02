@@ -14,17 +14,17 @@ import os
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-def clampitt(r,Rv,A0,A3):
+def clampitt(r,A3,Rv):
     '''Clampitt et al (2016); eq 12
        id = 0'''
-    # A0 = 1-A3
+    A0 = 1-A3
     if r<Rv:
         return A0-1+A3*(r/Rv)**3
     else:
         return A0+A3-1
     # return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
 
-def krause(r,Rv,A3,A0):
+def krause(r,A3,A0,Rv):
     '''Krause et al (2012); eq 1 (see text)
        id = 1'''
     if r<Rv:
@@ -52,88 +52,159 @@ def hamaus(r, delta, rs, Rv, a, b):
     return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
 
 
-rho_id = {0: clampitt, 1: krause, 2: higuchi, 3: hamaus}
+### Densidades proyectadas para cada funcion
 
-def projected_density(data, *params, rmax=np.inf):
-    '''perfil de densidad proyectada dada la densidad 3D
-    rvals   (array) : puntos de r a evaluar el perfil
-    *params (float) : parametros de la funcion rho (los que se ajustan)
-    rho     (func)  : densidad 3D
-    rmax    (int)   : valor maximo de r para integrar
+def sigma_clampitt(r,A3,Rv):
+  
+  def integrand(z,R,A3,Rv):
+    return clampitt(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
+  
+  sigma = np.zeros_like(r)
+  for j,x in enumerate(r):
+    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,Rv))[0]
+  return sigma
+
+def sigma_krause(r,A3,A0,Rv):
+  
+  def integrand(z,R,A3,A0,Rv):
+    return krause(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
+  
+  sigma = np.zeros_like(r)
+  for j,x in enumerate(r):
+    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
+  return sigma
+
+def sigma_higuchi(r,A3,A0,Rv):
+   pass
+  
+#   def integrand(z,R,A3,A0,Rv):
+#     return higuchi(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
+  
+#   sigma = np.zeros_like(r)
+#   for j,x in enumerate(r):
+#     sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
+#   return sigma
+
+def sigma_hamaus(r,Rv,rs,delta,a,b):
+  
+  def integrand(z,R,Rv,rs,delta,a,b):
+    return hamaus(np.sqrt(np.square(z)+np.square(R)),Rv,rs,delta,a,b)
+  
+  sigma = np.zeros_like(r)
+  for j,x in enumerate(r):
+    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,Rv,rs,delta,a,b))[0]
+  return sigma
+
+
+### Contraste de densidades proyectadas para cada funcion
+
+def delta_sigma_clampitt(r,A3,Rv):
+
+  def integrand(x,A3,Rv):
+    return sigma_clampitt([x],A3,Rv)*x
+
+  anillo = sigma_clampitt(r,A3,Rv)
+  disco = np.zeros_like(r)
+  for j,p in enumerate(r):
+    disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
+
+  return disco - anillo
+
+def delta_sigma_hamaus(r,Rv,rs,delta,a,b):
+
+  def integrand(x,Rv,rs,delta,a,b):
+    return sigma_hamaus([x],Rv,rs,delta,a,b)*x
+
+  anillo = sigma_hamaus(r,Rv,rs,delta,a,b)
+  disco = np.zeros_like(r)
+  for j,p in enumerate(r):
+    disco[j] = 2./p**2 * quad(integrand, 0., p, args=(Rv,rs,delta,a,b))[0]
+
+  return disco - anillo
+
+
+# rho_id = {0: clampitt, 1: krause, 2: higuchi, 3: hamaus}
+
+# def projected_density(data, *params, rmax=np.inf):
+#     '''perfil de densidad proyectada dada la densidad 3D
+#     rvals   (array) : puntos de r a evaluar el perfil
+#     *params (float) : parametros de la funcion rho (los que se ajustan)
+#     rho     (func)  : densidad 3D
+#     rmax    (int)   : valor maximo de r para integrar
     
-    return
-    density  (float) : densidad proyectada en rvals'''
+#     return
+#     density  (float) : densidad proyectada en rvals'''
 
-    rvals, rho = data[:-1], data[-1]
-    if isinstance(rho,float):
-        rho = rho_id.get(rho)
+#     rvals, rho = data[:-1], data[-1]
+#     if isinstance(rho,float):
+#         rho = rho_id.get(rho)
         
     
-    def integrand(z, r, *params):
-        return rho(np.sqrt(np.square(r) + np.square(z)), *params)
+#     def integrand(z, r, *params):
+#         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
     
-    density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
-    # density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+#     density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+#     # density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
 
-    return density
+#     return density
 
 
-def projected_density_contrast(data, *params, rmax=np.inf):
+# def projected_density_contrast(data, *params, rmax=np.inf):
     
-    '''perfil de contraste de densidad proyectada dada la densidad 3D
-    rvals   (float) : punto de r a evaluar el perfil
-    *params (float) : parametros de la funcion rho (los que se ajustan)
-    rho     (func)  : densidad 3D
-    rmax    (int)   : valor maximo de r para integrar
+#     '''perfil de contraste de densidad proyectada dada la densidad 3D
+#     rvals   (float) : punto de r a evaluar el perfil
+#     *params (float) : parametros de la funcion rho (los que se ajustan)
+#     rho     (func)  : densidad 3D
+#     rmax    (int)   : valor maximo de r para integrar
     
-    contrast (float): contraste de densidad proy en rvals'''
+#     contrast (float): contraste de densidad proy en rvals'''
     
-    rvals, rho = data[:-1], data[-1]
-    # rho = rho_id.get(rho)
+#     rvals, rho = data[:-1], data[-1]
+#     # rho = rho_id.get(rho)
 
-    def integrand(x,*p): 
-        return x*projected_density([x], rho, *p, rmax=rmax)
+#     def integrand(x,*p): 
+#         return x*projected_density([x], rho, *p, rmax=rmax)
     
-    # def integrand(x,*p): 
-    #     return x*aux(x, *p, rho=rho, rmax=rmax)
+#     # def integrand(x,*p): 
+#     #     return x*aux(x, *p, rho=rho, rmax=rmax)
     
-    anillo = projected_density([rvals], rho, *params, rmax=rmax)
-    disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=(r,)+params)[0] for r in rvals])
+#     anillo = projected_density([rvals], rho, *params, rmax=rmax)
+#     disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=(r,)+params)[0] for r in rvals])
 
-    contrast = disco - anillo
-    return contrast
+#     contrast = disco - anillo
+#     return contrast
 
-def projected_density_contrast_unpack(kargs):
-    return projected_density_contrast(*kargs)
+# def projected_density_contrast_unpack(kargs):
+#     return projected_density_contrast(*kargs)
 
-def projected_density_contrast_parallel(data, *params, rmax=np.inf):
+# def projected_density_contrast_parallel(data, *params, rmax=np.inf):
 
-    rvals, rho, ncores = data[:-2], data[-2], int(data[-1])
-    rho = rho_id.get(rho)
-    partial = projected_density_contrast_unpack
+#     rvals, rho, ncores = data[:-2], data[-2], int(data[-1])
+#     rho = rho_id.get(rho)
+#     partial = projected_density_contrast_unpack
     
-    lbins = int(round(len(rvals)/float(ncores), 0))
-    slices = ((np.arange(lbins)+1)*ncores).astype(int)
-    slices = slices[(slices < len(rvals))]
-    Rsplit = np.split(rvals,slices)
+#     lbins = int(round(len(rvals)/float(ncores), 0))
+#     slices = ((np.arange(lbins)+1)*ncores).astype(int)
+#     slices = slices[(slices < len(rvals))]
+#     Rsplit = np.split(rvals,slices)
 
-    dsigma = np.zeros(len(Rsplit))
-    nparams = len(params)
+#     dsigma = np.zeros(len(Rsplit))
+#     nparams = len(params)
 
-    for j,r_j in enumerate(Rsplit):
+#     for j,r_j in enumerate(Rsplit):
 
-        rhos   = np.full_like(r_j,data[-2])
-        par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
-        entrada = np.append(np.array([r_j,rhos]), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
+#         rhos   = np.full_like(r_j,data[-2])
+#         par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
+#         entrada = np.append(np.array([r_j,rhos]), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
 
-        with Pool(processes=ncores) as pool:
-            salida = np.array(pool.map(partial,entrada))
-            pool.close()
-            pool.join()
+#         with Pool(processes=ncores) as pool:
+#             salida = np.array(pool.map(partial,entrada))
+#             pool.close()
+#             pool.join()
 
-        dsigma[j] = salida
+#         dsigma[j] = salida
 
-    return dsigma
+#     return dsigma
 
 
 
@@ -173,11 +244,23 @@ if __name__ == '__main__':
     higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
     hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-    rho_dict = {'clampitt': (0,3), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
+    rho_dict = {'clampitt': (0,2), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
     nparams  = rho_dict.get(rho)[1]
     rho_str  = np.copy(rho)
     rho      = rho_dict.get(rho)[0]
     
+    #asigna cual funcion usar para ajustar
+    if rho==0:
+       projected_density = sigma_clampitt
+       projected_density_contrast = delta_sigma_clampitt
+    elif rho==1:
+       projected_density = sigma_krause
+    elif rho==2:
+       projected_density = sigma_higuchi
+    else:
+       projected_density = sigma_hamaus
+       projected_density_contrast = delta_sigma_hamaus
+
 
     directory = f'../profiles/voids/{sample}/{name}.fits'
     header = fits.open(directory)[0]
@@ -241,7 +324,7 @@ if __name__ == '__main__':
 
             print(f'Fitting Delta Sigma, using covariance matrix')
 
-            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density_contrast, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
             
             table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
             table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
@@ -285,7 +368,7 @@ if __name__ == '__main__':
 
             print(f'Fitting Delta Sigma, using covariance diagonal only')
 
-            f_DS, fcov_DS = curve_fit(projected_density_contrast_parallel, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+            f_DS, fcov_DS = curve_fit(projected_density_contrast, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
 
             table_opt = [fits.Column(name='f_S',format='D',array=f_S),
                          fits.Column(name='f_DSt',format='D',array=f_DS)]
