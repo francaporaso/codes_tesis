@@ -55,349 +55,311 @@ def hamaus(r, delta, rs, Rv, a, b):
 ### Densidades proyectadas para cada funcion
 
 def sigma_clampitt(r,A3,Rv):
-  
-  def integrand(z,R,A3,Rv):
-    return clampitt(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
-  
-  sigma = np.zeros_like(r)
-  for j,x in enumerate(r):
-    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,Rv))[0]
-  return sigma
+    
+    def integrand(z,R,A3,Rv):
+        return clampitt(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
+
+    sigma = np.zeros_like(r)
+    for j,x in enumerate(r):
+        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,Rv))[0]
+    return sigma
 
 def sigma_krause(r,A3,A0,Rv):
+    
+    def integrand(z,R,A3,A0,Rv):
+        return krause(np.sqrt(np.square(z)+np.square(R)),A3,A0,Rv)
   
-  def integrand(z,R,A3,A0,Rv):
-    return krause(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
-  
-  sigma = np.zeros_like(r)
-  for j,x in enumerate(r):
-    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
-  return sigma
+    sigma = np.zeros_like(r)
+    for j,x in enumerate(r):
+        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
+    return sigma
 
 def sigma_higuchi(r,A3,A0,Rv):
-   pass
-  
-#   def integrand(z,R,A3,A0,Rv):
-#     return higuchi(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
-  
-#   sigma = np.zeros_like(r)
-#   for j,x in enumerate(r):
-#     sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
-#   return sigma
+    pass
 
-def sigma_hamaus(r,Rv,rs,delta,a,b):
+def sigma_hamaus(r,rs,delta,a,b):
+    Rv=1.
+    def integrand(z,R,rs,delta,a,b):
+        return hamaus(np.sqrt(np.square(z)+np.square(R)),Rv,rs,delta,a,b)
   
-  def integrand(z,R,Rv,rs,delta,a,b):
-    return hamaus(np.sqrt(np.square(z)+np.square(R)),Rv,rs,delta,a,b)
-  
-  sigma = np.zeros_like(r)
-  for j,x in enumerate(r):
-    sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,Rv,rs,delta,a,b))[0]
-  return sigma
+    sigma = np.zeros_like(r)
+    for j,x in enumerate(r):
+        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,a,b))[0]
+    return sigma
 
-
-### Contraste de densidades proyectadas para cada funcion
+# ----- o -----
 
 def delta_sigma_clampitt(r,A3,Rv):
+    def integrand(x,A3,Rv):
+        return sigma_clampitt([x],A3,Rv)*x
 
-  def integrand(x,A3,Rv):
-    return sigma_clampitt([x],A3,Rv)*x
+    anillo = sigma_clampitt(r,A3,Rv)
+    disco = np.zeros_like(r)
+    for j,p in enumerate(r):
+        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
 
-  anillo = sigma_clampitt(r,A3,Rv)
-  disco = np.zeros_like(r)
-  for j,p in enumerate(r):
-    disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
+    return disco - anillo
 
-  return disco - anillo
-
-def delta_sigma_hamaus(r,Rv,rs,delta,a,b):
-
-  def integrand(x,Rv,rs,delta,a,b):
-    return sigma_hamaus([x],Rv,rs,delta,a,b)*x
-
-  anillo = sigma_hamaus(r,Rv,rs,delta,a,b)
-  disco = np.zeros_like(r)
-  for j,p in enumerate(r):
-    disco[j] = 2./p**2 * quad(integrand, 0., p, args=(Rv,rs,delta,a,b))[0]
-
-  return disco - anillo
-
-
-# rho_id = {0: clampitt, 1: krause, 2: higuchi, 3: hamaus}
-
-# def projected_density(data, *params, rmax=np.inf):
-#     '''perfil de densidad proyectada dada la densidad 3D
-#     rvals   (array) : puntos de r a evaluar el perfil
-#     *params (float) : parametros de la funcion rho (los que se ajustan)
-#     rho     (func)  : densidad 3D
-#     rmax    (int)   : valor maximo de r para integrar
+def delta_sigma_krause(r,A3,A0,Rv):
     
-#     return
-#     density  (float) : densidad proyectada en rvals'''
+    def integrand(x):
+        return sigma_krause([x],A3,A0,Rv)*x
 
-#     rvals, rho = data[:-1], data[-1]
-#     if isinstance(rho,float):
-#         rho = rho_id.get(rho)
+    anillo = sigma_krause(r,A3,A0,Rv)
+    disco = np.zeros_like(r)
+    for j,p in enumerate(r):
+        disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
         
+    return disco - anillo
+
+def delta_sigma_higuchi():
+    pass
+
+def delta_sigma_hamaus(data,rs,delta,a,b):
     
-#     def integrand(z, r, *params):
-#         return rho(np.sqrt(np.square(r) + np.square(z)), *params)
+    #r, Rv = data[:-1], data[-1]
+    r = [data]
+    Rv = 1.
     
-#     density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
-#     # density = np.array([quad(integrand, -rmax, rmax, args=(r,)+params)[0] for r in rvals])
+    def integrand(x,rs,delta,a,b):
+        return sigma_hamaus([x],rs,delta,a,b)*x
 
-#     return density
+    anillo = sigma_hamaus(r,rs,delta,a,b)
+    disco = np.zeros_like(r)
+    for j,p in enumerate(r):
+        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,a,b))[0]
 
+    return disco-anillo
 
-# def projected_density_contrast(data, *params, rmax=np.inf):
+## ----- o -----
+
+def DSt_hamaus_unpack(kargs):
+    return delta_sigma_hamaus(*kargs)
+
+def DSt_hamaus_parallel(data,rs,delta,a,b):
     
-#     '''perfil de contraste de densidad proyectada dada la densidad 3D
-#     rvals   (float) : punto de r a evaluar el perfil
-#     *params (float) : parametros de la funcion rho (los que se ajustan)
-#     rho     (func)  : densidad 3D
-#     rmax    (int)   : valor maximo de r para integrar
+    r, ncores = data[:-1], int(data[-1])
+    partial = DSt_hamaus_unpack
     
-#     contrast (float): contraste de densidad proy en rvals'''
+    if ncores > len(r):
+        ncores = len(r)
     
-#     rvals, rho = data[:-1], data[-1]
-#     # rho = rho_id.get(rho)
+    lbins = int(round(len(r)/float(ncores), 0))
+    slices = ((np.arange(lbins)+1)*ncores).astype(int)
+    slices = slices[(slices < len(r))]
+    Rsplit = np.split(r,slices)
 
-#     def integrand(x,*p): 
-#         return x*projected_density([x], rho, *p, rmax=rmax)
-    
-#     # def integrand(x,*p): 
-#     #     return x*aux(x, *p, rho=rho, rmax=rmax)
-    
-#     anillo = projected_density([rvals], rho, *params, rmax=rmax)
-#     disco  = np.array([2./(np.square(r))*quad(integrand, 0., r, args=(r,)+params)[0] for r in rvals])
+    dsigma = np.zeros((len(Rsplit),ncores))
+    nparams = 5
 
-#     contrast = disco - anillo
-#     return contrast
+    for j,r_j in enumerate(Rsplit):
+        
+        num = len(r_j)
+        
+        rs_arr    = np.full_like(r_j,rs)
+        delta_arr = np.full_like(r_j,delta)
+        a_arr     = np.full_like(r_j,a)
+        b_arr     = np.full_like(r_j,b)
+        
+        entrada = np.array([r_j.T,rs_arr,delta_arr,a_arr,b_arr]).T
+                
+        with Pool(processes=num) as pool:
+            salida = np.array(pool.map(partial,entrada))
+            pool.close()
+            pool.join()
+        
+        dsigma[j] = salida.flatten()
 
-# def projected_density_contrast_unpack(kargs):
-#     return projected_density_contrast(*kargs)
-
-# def projected_density_contrast_parallel(data, *params, rmax=np.inf):
-
-#     rvals, rho, ncores = data[:-2], data[-2], int(data[-1])
-#     rho = rho_id.get(rho)
-#     partial = projected_density_contrast_unpack
-    
-#     lbins = int(round(len(rvals)/float(ncores), 0))
-#     slices = ((np.arange(lbins)+1)*ncores).astype(int)
-#     slices = slices[(slices < len(rvals))]
-#     Rsplit = np.split(rvals,slices)
-
-#     dsigma = np.zeros(len(Rsplit))
-#     nparams = len(params)
-
-#     for j,r_j in enumerate(Rsplit):
-
-#         rhos   = np.full_like(r_j,data[-2])
-#         par_a   = np.array([np.full_like(r_j,params[k]) for k in np.arange(nparams)])
-#         entrada = np.append(np.array([r_j,rhos]), np.array([par_a[k] for k in np.arange(nparams)]),axis=0).T
-
-#         with Pool(processes=ncores) as pool:
-#             salida = np.array(pool.map(partial,entrada))
-#             pool.close()
-#             pool.join()
-
-#         dsigma[j] = salida
-
-#     return dsigma
+    return dsigma.flatten()
 
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
-    parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
-    parser.add_argument('-out', action='store', dest='out',default='pru')
-    parser.add_argument('-ncores', action='store', dest='ncores',default=10)
-    parser.add_argument('-rmax', action='store', dest='rmax',default='inf')
-    parser.add_argument('-fitS', action='store', dest='fitS',default=False)
-    parser.add_argument('-fitDS', action='store', dest='fitDS',default=False)
-    parser.add_argument('-usecov', action='store', dest='usecov',default=False)
-    parser.add_argument('-rho', action='store', dest='rho',default='clampitt')
-    parser.add_argument('-p0', action='store', dest='p0',default=1)
-    args = parser.parse_args()
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
+  parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
+  parser.add_argument('-out', action='store', dest='out',default='pru')
+  parser.add_argument('-ncores', action='store', dest='ncores',default=10)
+  parser.add_argument('-rmax', action='store', dest='rmax',default='inf')
+  parser.add_argument('-fitS', action='store', dest='fitS',default=False)
+  parser.add_argument('-fitDS', action='store', dest='fitDS',default=False)
+  parser.add_argument('-usecov', action='store', dest='usecov',default=False)
+  parser.add_argument('-rho', action='store', dest='rho',default='clampitt')
+  parser.add_argument('-p0', action='store', dest='p0',default=1)
+  args = parser.parse_args()
+  
+  sample = args.sample
+  name   = args.name
+  output   = args.out
+  ncores = int(args.ncores)
+  fitS   = bool(args.fitS)
+  fitDS  = bool(args.fitDS)
+  usecov  = bool(args.usecov)
+  rho    = args.rho   
+  p0     = float(args.p0)
+  
+  if args.rmax == 'inf':
+      rmax = np.inf
+  else:
+      rmax = float(args.rmax)
+
+  '''rho:
+  clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
+  krause   -> Krause et al 2012 (como clampitt pero con compensacion) eq 1 pero leer texto
+  higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
+  hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
+
     
-    sample = args.sample
-    name   = args.name
-    output   = args.out
-    ncores = int(args.ncores)
-    fitS   = bool(args.fitS)
-    fitDS  = bool(args.fitDS)
-    usecov  = bool(args.usecov)
-    rho    = args.rho   
-    p0     = float(args.p0)
-    
-    if args.rmax == 'inf':
-        rmax = np.inf
-    else:
-        rmax = float(args.rmax)
-
-    '''rho:
-    clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
-    krause   -> Krause et al 2012 (como clampitt pero con compensacion) eq 1 pero leer texto
-    higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
-    hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
-
-    rho_dict = {'clampitt': (0,2), 'krause': (1,3), 'higuchi': (2,4), 'hamaus': (3,5)} #(id_func, nparams)
-    nparams  = rho_dict.get(rho)[1]
-    rho_str  = np.copy(rho)
-    rho      = rho_dict.get(rho)[0]
-    
-    #asigna cual funcion usar para ajustar
-    if rho==0:
-       projected_density = sigma_clampitt
-       projected_density_contrast = delta_sigma_clampitt
-    elif rho==1:
-       projected_density = sigma_krause
-    elif rho==2:
-       projected_density = sigma_higuchi
-    else:
-       projected_density = sigma_hamaus
-       projected_density_contrast = delta_sigma_hamaus
-
-
-    directory = f'../profiles/voids/{sample}/{name}.fits'
-    header = fits.open(directory)[0]
-    Rp     = fits.open(directory)[1].data.Rp
-    p      = fits.open(directory)[2].data
-    covar = fits.open(directory)[3].data
-
-    print(f'Fitting from {directory}')
-    print(f'Using {ncores} cores')
-    print(f'Model: {rho_str}')
-
-    # fitear(sample,name)
-
-    if fitS & fitDS:
-        raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
-
-    variables = np.append(Rp,rho)
-    var_wcores = np.append(variables,ncores)
-    p0 = np.ones(nparams)
-    bounds = (-np.inf,np.inf)
-    '''
-    para hamaus:
-        delta = -0.8
-        rv = 1
-        rs = .7
-        a = 2
-        b = 7
-    '''
-    
-    if rho_str == 'hamaus':
-        p0 = np.array([-1.5, 2.5, 1, 3, 9])
-        bounds = (np.array([-np.inf,-np.inf, 0.9, -np.inf, -np.inf]),np.array([np.inf,np.inf, 1.1, np.inf, np.inf]))
-
-    if fitS:
-        covS   = covar.covS.reshape(60,60)
-        
-        if usecov:
-            out = f'S_cov'
-            print(f'Fitting Sigma, using covariance matrix')
-            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0, bounds=bounds)
-
-            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-
-        else:   
-            out = f'S_diag'
-
-            print(f'Fitting Sigma, using covariance diagonal only')
-
-            eS   = np.sqrt(np.diag(covS))
-            f_S, fcov_S = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0, bounds=bounds)
-
-            table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-
-    elif fitDS:#REVISAR
-        covDSt = covar.covDSt.reshape(60,60)
-
-        if usecov:
-            out = f'DS_cov'
-
-            print(f'Fitting Delta Sigma, using covariance matrix')
-
-            f_DS, fcov_DS = curve_fit(projected_density_contrast, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-            
-            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-        else: 
-            out = f'DS_diag'
-
-            print(f'Fitting Delta Sigma, using covariance diagonal only')
-
-            eDSt = np.sqrt(np.diag(covDSt))
-            f_DS, fcov_DS = curve_fit(projected_density_contrast, variables, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-            print('FUNCO 2!')
-            
-            table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-            table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-    
-    else:
-        covS   = covar.covS.reshape(60,60)
-        covDSt = covar.covDSt.reshape(60,60)
-
-        if usecov:
-            out =f'full_cov'
-            print(f'Fitting Sigma and Delta Sigma, using covariance matrix')
-
-            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-            f_DS, fcov_DS = curve_fit(projected_density, variables, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-            
-            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-                         fits.Column(name='f_DSt',format='D',array=f_DS)]
-            
-            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-        else:
-            out =f'full_diag'
-            print(f'Fitting Sigma, using covariance diagonal only')
-
-            eS   = np.sqrt(np.diag(covS))
-            eDSt = np.sqrt(np.diag(covDSt))
-            f_S, fcov_S   = curve_fit(projected_density, variables, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-
-            print(f'Fitting Delta Sigma, using covariance diagonal only')
-
-            f_DS, fcov_DS = curve_fit(projected_density_contrast, var_wcores, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-
-            table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-                         fits.Column(name='f_DSt',format='D',array=f_DS)]
-            
-            table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-                         fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-
-
-    hdu = fits.Header()
-    hdu.append(('Nvoids',header.header['N_VOIDS']))
-    hdu.append(('Rv_min',header.header['RV_MIN']))
-    hdu.append(('Rv_max',header.header['RV_MAX']))
-    hdu.append(f'using {rho_str}')
-    
-
-    tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-    tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
-            
-    primary_hdu = fits.PrimaryHDU(header=hdu)
-            
-    hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
-    
-    out = out+output
-
-    try:
-        os.mkdir(f'../profiles/voids/{sample}/fit')
-    except FileExistsError:
-        pass
-
-    hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits',overwrite=True)
-    print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho_str}_{out}.fits !')
-
+  if rho=='clampitt':
+      projected_density = sigma_clampitt
+      projected_density_contrast = delta_sigma_clampitt
+      nparams = 2
+  elif rho=='krause':
+      projected_density = sigma_krause
+      projected_density_contrast = delta_sigma_krause
+      nparams = 3
+  elif rho=='higuchi':
+      projected_density = sigma_higuchi
+      projected_density_contrast = delta_sigma_higuchi
+      nparams = 4
+  elif rho=='hamaus':
+      projected_density = sigma_hamaus
+      projected_density_contrast = DSt_hamaus_parallel
+      nparams = 4
+  else:
+      raise TypeError(f'rho: "{rho}" no es ninguna de las funciones definidas.')
+      
+  directory = f'../profiles/voids/{sample}/{name}.fits'
+  header    = fits.open(directory)[0]
+  Rp        = fits.open(directory)[1].data.Rp
+  p         = fits.open(directory)[2].data
+  covar     = fits.open(directory)[3].data
+  
+  print(f'Fitting from {directory}')
+  print(f'Using {ncores} cores')
+  print(f'Model: {rho}')
+  
+  
+  if fitS & fitDS:
+      raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
+  
+  p0 = np.ones(nparams)
+  bounds = (-np.inf,np.inf)
+      
+  if rho == 'hamaus':
+      p0 = np.array([ 0.9, -0.9,  1.4,  4.])
+      var = np.append(Rp,ncores)
+      bounds = (np.array([0.,0., -np.inf, -np.inf, -np.inf]),np.array([np.inf,np.inf, np.inf, np.inf, np.inf]))
+  
+  
+  if fitS:
+      covS   = covar.covS.reshape(60,60)
+          
+      if usecov:
+          out = f'S_cov'
+          print(f'Fitting Sigma, using covariance matrix')
+          f_S, fcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+          
+          print(f'parametros ajustados: {f_S}')
+          print(f'errores: {np.diag(fcov_S)}')
+          table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
+  
+      else:   
+          out = f'S_diag'
+  
+          print(f'Fitting Sigma, using covariance diagonal only')
+  
+          eS   = np.sqrt(np.diag(covS))
+          f_S, fcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+  
+          print(f'parametros ajustados: {f_S}')
+          print(f'errores: {np.diag(fcov_S)}')
+          table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
+          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
+  
+  elif fitDS:
+      covDSt = covar.covDSt.reshape(60,60)
+  
+      if usecov:
+          out = f'DS_cov'
+  
+          print(f'Fitting Delta Sigma, using covariance matrix')
+  
+          f_DS, fcov_DS = curve_fit(projected_density_contrast, Rp, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+              
+          print(f'parametros ajustados: {f_FS}')
+          print(f'errores: {np.diag(fcov_DS)}')
+          table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+          table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+  
+      else: 
+          out = f'DS_diag'
+  
+          print(f'Fitting Delta Sigma, using covariance diagonal only')
+  
+          eDSt = np.sqrt(np.diag(covDSt))
+          f_DS, fcov_DS = curve_fit(projected_density_contrast, Rp, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+              
+          print(f'parametros ajustados: {f_DS}')
+          print(f'errores: {np.diag(fcov_DS)}')
+          table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
+          table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+      
+  else:
+      covS   = covar.covS.reshape(60,60)
+      covDSt = covar.covDSt.reshape(60,60)
+  
+      if usecov:
+          out =f'full_cov'
+          print(f'Fitting Sigma and Delta Sigma, using covariance matrix')
+  
+          f_S, fcov_S   = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
+          f_DS, fcov_DS = curve_fit(projected_density, Rp, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
+              
+          table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                      fits.Column(name='f_DSt',format='D',array=f_DS)]
+              
+          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+  
+      else:
+          out =f'full_diag'
+          print(f'Fitting Sigma, using covariance diagonal only')
+  
+          eS   = np.sqrt(np.diag(covS))
+          eDSt = np.sqrt(np.diag(covDSt))
+          f_S, fcov_S   = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
+  
+          print(f'Fitting Delta Sigma, using covariance diagonal only')
+  
+          f_DS, fcov_DS = curve_fit(projected_density_contrast, var, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
+  
+          table_opt = [fits.Column(name='f_S',format='D',array=f_S),
+                      fits.Column(name='f_DSt',format='D',array=f_DS)]
+              
+          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
+                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
+  
+  
+  hdu = fits.Header()
+  hdu.append(('Nvoids',header.header['N_VOIDS']))
+  hdu.append(('Rv_min',header.header['RV_MIN']))
+  hdu.append(('Rv_max',header.header['RV_MAX']))
+  hdu.append(f'using {rho}')
+  
+  tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
+  tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
+          
+  primary_hdu = fits.PrimaryHDU(header=hdu)
+          
+  hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
+  
+  out = out+output
+  try:
+      os.mkdir(f'../profiles/voids/{sample}/fit')
+  except FileExistsError:
+      pass
+  hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{name}_{rho}_{out}.fits',overwrite=True)
+  print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho}_{out}.fits !')
