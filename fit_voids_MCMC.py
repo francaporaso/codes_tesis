@@ -310,7 +310,7 @@ else:
     CovDS = CovDS.reshape(maskr.sum(),maskr.sum())
     iCds  =  np.linalg.inv(CovDS)
 
-    CovS  = covar.covS.reshape(len(p.Rp),len(p.Rp))[mr]
+    CovS  = covar.covS.reshape(len(Rp),len(Rp))[mr]
     CovS  = CovS.reshape(sum(maskr),sum(maskr))
     iCs   =  np.linalg.inv(CovS)
 
