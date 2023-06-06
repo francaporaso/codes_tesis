@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
 parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
 parser.add_argument('-out', action='store', dest='out',default='pru')
-parser.add_argument('-fitS', action='store', dest='fitS',default='False')
-parser.add_argument('-fitDS', action='store', dest='fitDS',default='False')
+parser.add_argument('-fitS', action='store', dest='fitS',default=False)
+parser.add_argument('-fitDS', action='store', dest='fitDS',default=False)
 parser.add_argument('-ncores', action='store', dest='ncores',default=32)
 parser.add_argument('-nit', action='store', dest='nit',default=50)
 parser.add_argument('-pos', action='store', dest='pos',default='uniform')
@@ -63,7 +63,7 @@ try:
 except FileExistsError:
     pass
 
-if fitS and fitDS:
+if fitS & fitDS:
     raise ValueError('No es compatible fitS y fitDS = True. Dejar sin especificar para ajustar ambos')
 
 # CLAMPITT

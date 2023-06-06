@@ -327,7 +327,7 @@ if __name__ == '__main__':
   
           f_DS, fcov_DS = curve_fit(projected_density_contrast, Rp, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
               
-          print(f'parametros ajustados: {f_FS}')
+          print(f'parametros ajustados: {f_DS}')
           print(f'errores: {np.diag(fcov_DS)}')
           table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
           table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
