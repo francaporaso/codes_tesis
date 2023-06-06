@@ -9,199 +9,421 @@ import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
 import os
-from fit_void_leastsq import parallel_DS, parallel_S
+from fit_void_leastsq import *
+
+# ARGUMENTOS
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
+parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
+parser.add_argument('-out', action='store', dest='out',default='pru')
+parser.add_argument('-fitS', action='store', dest='fitS',default='False')
+parser.add_argument('-fitDS', action='store', dest='fitDS',default='False')
+parser.add_argument('-ncores', action='store', dest='ncores',default=32)
+parser.add_argument('-nit', action='store', dest='nit',default=50)
+parser.add_argument('-pos', action='store', dest='pos',default='uniform')
+parser.add_argument('-rho', action='store', dest='rho',default='clampitt')
+parser.add_argument('-RIN', action='store', dest='RIN', default=0.01)
+parser.add_argument('-ROUT', action='store', dest='ROUT', default=3.01)
+args = parser.parse_args()
+
+sample = args.sample
+name   = args.name
+output = args.out
+fitS   = bool(args.fitS)
+fitDS  = bool(args.fitDS)
+ncores = int(args.ncores)
+nit    = int(args.nit)
+pos    = args.pos
+rho    = args.rho
+RIN    = float(args.RIN)
+ROUT   = float(args.ROUT)
+
+'''pos: distribucion de los walkers
+- uniform : distribucion uniforme
+- gaussian: distribucion gaussiana'''
+
+'''rho: 
+- clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
+- krause   -> Krause et al 2012 (como clampitt pero con compensacion) eq 1 pero leer texto
+- higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
+- hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
 
-def log_likelihoodDS(data, R, DS, iCds): 
-    Rv,A0,A3 = data
-    ds = parallel_DS(R,Rv,A0,A3)
-    return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.0
+directory = f'../profiles/voids/{sample}/{name}.fits'
+header    = fits.open(directory)[0]
+Rp        = fits.open(directory)[1].data.Rp
+p         = fits.open(directory)[2].data
+covar     = fits.open(directory)[3].data
 
-def log_probabilityDS(data, R, DS, eDS):
-    Rv,A0,A3 = data
+outfolder = f'../profiles/voids/{sample}/fit/'
+
+try:
+    os.mkdir(outfolder)
+except FileExistsError:
+    pass
+
+if fitS and fitDS:
+    raise ValueError('No es compatible fitS y fitDS = True. Dejar sin especificar para ajustar ambos')
+
+# CLAMPITT
+# ----- 0 ------
+
+def log_likelihoodDS_clampitt(data, R, DS, iCds):  
     
-    if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodDS(data, R, DS, eDS)    
+    A3, Rv = data
+    vars = R, ncores
+
+    ds = DSt_clampitt_parallel(vars,A3,Rv)
+
+    return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.
+
+def log_probabilityDS_clampitt(data, R, DS, eDS):
+    
+    A3, Rv = data
+    vars = R, ncores
+
+    if (-10. < A3 < 10.) and (0. < Rv < 3.):
+        return log_likelihoodDS_clampitt(data, R, DS, eDS)
     return -np.inf
 
-def log_likelihoodS(data, R, S, iCs): 
-    Rv,A0,A3 = data
-    s = parallel_S(R,Rv,A0,A3)
-    return -np.dot((s-S),np.dot(iCs,(s-S)))/2.0
-
-def log_probabilityS(data, R, S, eS):
-    Rv,A0,A3 = data
+def log_likelihoodS_clampitt(data, R, S, iCs): 
     
-    if (.5 < Rv < 1.5) and (-5 < A0 < 5) and (-5 < A3 < 5): #and 0.5 < pcc < 1. and 0.1 < tau < 0.5:
-        return log_likelihoodS(data, R, S, eS)    
+    A3, Rv = data
+    s = sigma_clampitt(R, A3, Rv)
+    
+    return -np.dot((s-S),np.dot(iCs,(s-S)))/2.
+
+def log_probabilityS_clampitt(data, R, S, eS):
+    
+    A3, Rv = data
+    if (-10. < A3 < 10.) and (0. < Rv < 3.):
+        return log_likelihoodS_clampitt(data, R, S, eS)
     return -np.inf
 
-# initializing
+# HAMAUS
+# ----- 0 -----
 
-#distribucion uniforme
-pos = np.array([np.random.uniform(.5,1.5,15),
-                np.random.uniform(-5,5,15),
-                np.random.uniform(-5,5,15)]).T
- 
-#distribucion gausiana
-#pos = np.array([np.random.normal(1.,0.5,15),
-#                np.random.normal(0.,0.5,15),
-#                np.random.normal(0.,0.5,15)]).T
+def log_likelihoodDS_hamaus(data, R, DS, iCds):  
+    
+    rs,delta,a,b = data
+    vars = R, ncores
+
+    ds = DSt_hamaus_parallel(vars,rs,delta,a,b)
+
+    return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.
+
+def log_probabilityDS_hamaus(data, R, DS, eDS):
+    
+    rs,delta,a,b = data
+    vars = R, ncores
+
+    if (0. < rs < 50.) and (-5. < delta < 5.) and (-10. < a < 10.) and (-10. < b < 10.):
+        return log_likelihoodDS_hamaus(data, R, DS, eDS)
+    return -np.inf
+
+def log_likelihoodS_hamaus(data, R, S, iCs): 
+    
+    rs,delta,a,b = data
+    s = sigma_hamaus(R,rs,delta,a,b)
+    
+    return -np.dot((s-S),np.dot(iCs,(s-S)))/2.
+
+def log_probabilityS_hamaus(data, R, S, eS):
+    
+    rs,delta,a,b = data
+
+    if (0. < rs < 50.) and (-5. < delta < 5.) and (-10. < a < 10.) and (-10. < b < 10.):
+        return log_likelihoodS_hamaus(data, R, S, eS)
+    return -np.inf
+
+
+# INICIALIZANDO
+# ----- 0 -----
+
+print(f'Fitting from {directory}')
+print(f'Using {ncores} cores')
+print(f'Model: {rho}')
+print(f'Distribucion: {pos}')
+
+
+if rho=='clampitt':
+    log_probability = log_probabilityDS_clampitt
+    if pos=='uniform':
+        pos = np.array([np.random.uniform(-10.,10.,15),
+                        np.random.uniform(0.,3.,15)]).T
+    elif pos=='gaussian':
+        pos = np.array([np.random.normal(1.,0.8,15),
+                        np.random.normal(1.,0.8,15)]).T
+elif rho=='krause':
+    raise ValueError(f'{rho} no implementado')
+elif rho=='higuchi':
+    raise ValueError(f'{rho} no implementado')
+elif rho=='hamaus':
+    log_probability = log_probabilityDS_hamaus
+    if pos=='uniform':
+        pos = np.array([np.random.uniform(0.,50.,15),
+                        np.random.uniform(-5.,5.,15),
+                        np.random.uniform(-10.,10.,15),
+                        np.random.uniform(-10.,10.,15)]).T
+    elif pos=='gaussian':
+        pos = np.array([np.random.normal(2.,0.8,15),
+                        np.random.normal(-1.,0.8,15),
+                        np.random.normal(3.,0.8,15),
+                        np.random.normal(5.,0.8,15)]).T
+else:
+    raise TypeError(f'rho: "{rho}" no es ninguna de las funciones definidas.')
 
 nwalkers, ndim = pos.shape
 
-# running emcee
-def fit_sigma(RIN,ROUT,nc):
+# RUNNING EMCEE
+# ----- 0 -----
 
-    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
-    p = profile[1].data
-    cov = profile[2].data
+maskr   = (Rp > RIN)&(Rp < ROUT)
+mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
 
-    maskr   = (p.Rp > (RIN))*(p.Rp < (ROUT))
-    mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
+p = p[maskr]
 
-    CovS  = cov.cov_S.reshape(len(p.Rp),len(p.Rp))[mr]
+t1 = time.time()
+
+if fitDS:
+
+    outname = f'DSt'
+
+    CovDS = covar.covDSt.reshape(len(Rp),len(Rp))[mr]
+    CovDS = CovDS.reshape(maskr.sum(),maskr.sum())
+    iCds  =  np.linalg.inv(CovDS)
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.DSigma_T, iCds))
+    print('Fitting Delta Sigma')
+    sampler.run_mcmc(pos, nit, progress=True)
+    print('TOTAL TIME FIT')    
+    print(f'{np.round((time.time()-t1)/60., 2)} min')
+
+    mcmc_out = sampler.get_chain(flat=True).T
+    if rho=='clampitt':
+
+        A3 = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
+        Rv = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
+
+        hdu = fits.Header()
+        hdu.append(('A3',np.round(A3[1],4)))
+        hdu.append(('eA3_min',np.round(np.diff(A3[0]),4)))
+        hdu.append(('eA3_max',np.round(np.diff(A3[1]),4)))
+        hdu.append(('Rv',np.round(Rv[1],4)))
+        hdu.append(('eRv_min',np.round(np.diff(Rv[0]),4)))
+        hdu.append(('eRv_max',np.round(np.diff(Rv[1]),4)))
+        
+        table_opt = np.array([fits.Column(name='A3',format='D',array=mcmc_out[0]),
+                              fits.Column(name='Rv',format='D',array=mcmc_out[1])])
+        
+    elif rho=='hamaus':
+        rs    = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
+        delta = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
+        a     = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
+        b     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+
+        hdu = fits.Header()
+        hdu.append(('rs',np.round(rs[1],4)))
+        hdu.append(('ers_min',np.round(np.diff(rs[0]),4)))
+        hdu.append(('ers_max',np.round(np.diff(rs[1]),4)))
+        hdu.append(('delta',np.round(delta[1],4)))
+        hdu.append(('edelta_min',np.round(np.diff(delta[0]),4)))
+        hdu.append(('edelta_max',np.round(np.diff(delta[1]),4)))
+        hdu.append(('a',np.round(a[1],4)))
+        hdu.append(('ea_min',np.round(np.diff(a[0]),4)))
+        hdu.append(('ea_max',np.round(np.diff(a[1]),4)))
+        hdu.append(('b',np.round(b[1],4)))
+        hdu.append(('eb_min',np.round(np.diff(b[0]),4)))
+        hdu.append(('eb_max',np.round(np.diff(b[1]),4)))
+
+        table_opt = np.array([fits.Column(name='rs',format='D',array=mcmc_out[0]),
+                              fits.Column(name='delta',format='D',array=mcmc_out[1]),
+                              fits.Column(name='alpha',format='D',array=mcmc_out[2]),
+                              fits.Column(name='beta',format='D',array=mcmc_out[3])])
+    else:
+        raise ValueError(f'{rho} No implementado')
+
+elif fitS:
+
+    outname = f'S'
+
+    CovS = covar.covS.reshape(len(p.Rp),len(p.Rp))[mr]
+    CovS = CovS.reshape(sum(maskr),sum(maskr))
+    iCs  =  np.linalg.inv(CovS)
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.Sigma, iCs))
+    print('Fitting Sigma')
+    sampler.run_mcmc(pos, nit, progress=True)
+    print('TOTAL TIME FIT')
+    print(f'{np.round((time.time()-t1)/60., 2)} min')
+
+    mcmc_out = sampler.get_chain(flat=True).T
+    if rho=='clampitt':
+        A3 = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
+        Rv = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
+
+        hdu = fits.Header()
+        hdu.append(('A3',np.round(A3[1],4)))
+        hdu.append(('eA3_min',np.round(np.diff(A3[0]),4)))
+        hdu.append(('eA3_max',np.round(np.diff(A3[1]),4)))
+        hdu.append(('Rv',np.round(Rv[1],4)))
+        hdu.append(('eRv_min',np.round(np.diff(Rv[0]),4)))
+        hdu.append(('eRv_max',np.round(np.diff(Rv[1]),4)))
+
+        table_opt = np.array([fits.Column(name='A3',format='D',array=mcmc_out[0]),
+                              fits.Column(name='Rv',format='D',array=mcmc_out[1])])
+        
+    elif rho=='hamaus':
+        rs    = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
+        delta = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
+        a     = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
+        b     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+
+        hdu = fits.Header()
+        hdu.append(('rs',np.round(rs[1],4)))
+        hdu.append(('ers_min',np.round(np.diff(rs[0]),4)))
+        hdu.append(('ers_max',np.round(np.diff(rs[1]),4)))
+        hdu.append(('delta',np.round(delta[1],4)))
+        hdu.append(('edelta_min',np.round(np.diff(delta[0]),4)))
+        hdu.append(('edelta_max',np.round(np.diff(delta[1]),4)))
+        hdu.append(('a',np.round(a[1],4)))
+        hdu.append(('ea_min',np.round(np.diff(a[0]),4)))
+        hdu.append(('ea_max',np.round(np.diff(a[1]),4)))
+        hdu.append(('b',np.round(b[1],4)))
+        hdu.append(('eb_min',np.round(np.diff(b[0]),4)))
+        hdu.append(('eb_max',np.round(np.diff(b[1]),4)))
+
+        table_opt = np.array([fits.Column(name='rs',format='D',array=mcmc_out[0]),
+                              fits.Column(name='delta',format='D',array=mcmc_out[1]),
+                              fits.Column(name='alpha',format='D',array=mcmc_out[2]),
+                              fits.Column(name='beta',format='D',array=mcmc_out[3])])
+    else:
+        raise ValueError(f'{rho} No implementado')
+
+else:
+
+    outname = f'full'
+
+    
+    CovDS = covar.covDSt.reshape(len(Rp),len(Rp))[mr]
+    CovDS = CovDS.reshape(maskr.sum(),maskr.sum())
+    iCds  =  np.linalg.inv(CovDS)
+
+    CovS  = covar.covS.reshape(len(p.Rp),len(p.Rp))[mr]
     CovS  = CovS.reshape(sum(maskr),sum(maskr))
     iCs   =  np.linalg.inv(CovS)
 
-    p  = p[maskr]
+    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.DSigma_T, iCds))
+    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.Sigma, iCs))
 
-    t1 = time.time()
-
-    #Sigma
-    print('Fitting Sigma')
-    samplerS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityS, args=(p.Rp,p.Sigma,iCs))
-    samplerS.run_mcmc(pos, nit, progress=True)
-
-    mcmc_outS = samplerS.get_chain(flat=True).T
-
-    RvS = np.nanpercentile(mcmc_outS[0][1500:], [16, 50, 84])
-    A0S = np.nanpercentile(mcmc_outS[1][1500:], [16, 50, 84])
-    A3S = np.nanpercentile(mcmc_outS[2][1500:], [16, 50, 84])
-
-    tableS = [fits.Column(name='RvS', format='D', array=mcmc_outS[0]),
-              fits.Column(name='A0S', format='D', array=mcmc_outS[1]),
-              fits.Column(name='A3S', format='D', array=mcmc_outS[2])]
-    
-    tbhduS = fits.BinTableHDU.from_columns(fits.ColDefs(tableS))
-
-    h = fits.Header()
-    h.append('S')
-    h.append(('Rv',np.round(RvS[1],4)))
-    h.append(('eRv_min',np.round(np.diff(RvS)[0],4)))
-    h.append(('eRv_max',np.round(np.diff(RvS)[1],4)))
-    h.append(('A0',np.round(A0S[1],4)))
-    h.append(('eA0_min',np.round(np.diff(A0S)[0],4)))
-    h.append(('eA0_max',np.round(np.diff(A0S)[1],4)))
-    h.append(('A3',np.round(A3S[1],4)))
-    h.append(('eA3_min',np.round(np.diff(A3S)[0],4)))
-    h.append(('eA3_max',np.round(np.diff(A3S)[1],4)))
-    
-    primary_hdu = fits.PrimaryHDU(header=h)
-
-    hdul = fits.HDUList([primary_hdu, tbhduS])
-    hdul.writeto(folder+outfile+f'S.fits',overwrite=True)
-
-    print('SAVED FILE SIGMA')
-
-def fit_Dsigma(RIN,ROUT,nc):
-
-    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
-    p = profile[1].data
-    cov = profile[2].data
-
-    maskr   = (p.Rp > (RIN))*(p.Rp < (ROUT))
-    mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
-    
-    CovDS  = cov.cov_DSt.reshape(len(p.Rp),len(p.Rp))[mr]
-    CovDS  = CovDS.reshape(sum(maskr),sum(maskr))
-    iCds   =  np.linalg.inv(CovDS)
-
-    p  = p[maskr]
-
-    t1 = time.time()
-
-    #Delta Sigma
-    print('Fitting DSigmaT')
-    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probabilityDS, args=(p.Rp,p.DSigmaT,iCds))
+    print('Fitting Delta Sigma')
     samplerDS.run_mcmc(pos, nit, progress=True)
+    print('TIME FIT DELTA SIGMA')
+    print(f'{np.round((time.time()-t1)/60., 2)} min')
+    print('Fitting Sigma')
+    t2 = time.time()    
+    samplerS.run_mcmc(pos, nit, progress=True)
+    print('TIME FIT SIGMA')
+    print(f'{np.round((t2-t1)/60., 2)} min')
+
+    print('TOTAL TIME FIT')
+    print(f'{np.round((time.time()-t1)/60., 2)} min')
 
     mcmc_outDS = samplerDS.get_chain(flat=True).T
+    mcmc_outS  = samplerS.get_chain(flat=True).T
 
-    RvDS = np.nanpercentile(mcmc_outDS[0][1500:], [16, 50, 84])
-    A0DS = np.nanpercentile(mcmc_outDS[1][1500:], [16, 50, 84])
-    A3DS = np.nanpercentile(mcmc_outDS[2][1500:], [16, 50, 84])
-    
-    tableDS = [fits.Column(name='RvDS', format='D', array=mcmc_outDS[0]),
-               fits.Column(name='A0DS', format='D', array=mcmc_outDS[1]),
-               fits.Column(name='A3DS', format='D', array=mcmc_outDS[2])]
+    if rho=='clampitt':
+        A3_DS = np.percentile(mcmc_outDS[0][1500:], [16, 50, 84])
+        Rv_DS = np.percentile(mcmc_outDS[1][1500:], [16, 50, 84])
 
-    tbhduDS = fits.BinTableHDU.from_columns(fits.ColDefs(tableDS))
+        A3_S = np.percentile(mcmc_outS[0][1500:], [16, 50, 84])
+        Rv_S = np.percentile(mcmc_outS[1][1500:], [16, 50, 84])
 
-    h = fits.Header()
-    h.append('DS')
-    h.append(('Rv',np.round(RvDS[1],4)))
-    h.append(('eRv_min',np.round(np.diff(RvDS)[0],4)))
-    h.append(('eRv_max',np.round(np.diff(RvDS)[1],4)))
-    h.append(('A0',np.round(A0DS[1],4)))
-    h.append(('eA0_min',np.round(np.diff(A0DS)[0],4)))
-    h.append(('eA0_max',np.round(np.diff(A0DS)[1],4)))
-    h.append(('A3',np.round(A3DS[1],4)))
-    h.append(('eA3_min',np.round(np.diff(A3DS)[0],4)))
-    h.append(('eA3_max',np.round(np.diff(A3DS)[1],4)))
+        hdu = fits.Header()
+        hdu.append(('A3_DS',np.round(A3_DS[1],4)))
+        hdu.append(('eA3_DS_min',np.round(np.diff(A3_DS[0]),4)))
+        hdu.append(('eA3_DS_max',np.round(np.diff(A3_DS[1]),4)))
+        hdu.append(('Rv_DS',np.round(Rv_DS[1],4)))
+        hdu.append(('eRv_DS_min',np.round(np.diff(Rv_DS[0]),4)))
+        hdu.append(('eRv_DS_max',np.round(np.diff(Rv_DS[1]),4)))
 
-    primary_hdu = fits.PrimaryHDU(header=h)
-
-    hdul = fits.HDUList([primary_hdu, tbhduDS])
-    hdul.writeto(folder+outfile+f'DS.fits',overwrite=True)
-
-    print('SAVED FILE DELTA SIGMA')
+        hdu.append(('A3_S',np.round(A3_S[1],4)))
+        hdu.append(('eA3_S_min',np.round(np.diff(A3_S[0]),4)))
+        hdu.append(('eA3_S_max',np.round(np.diff(A3_S[1]),4)))
+        hdu.append(('Rv_S',np.round(Rv_S[1],4)))
+        hdu.append(('eRv_S_min',np.round(np.diff(Rv_S[0]),4)))
+        hdu.append(('eRv_S_max',np.round(np.diff(Rv_S[1]),4)))
 
 
-if __name__ == '__main__':
+        table_opt = np.array([fits.Column(name='A3_DS',format='D',array=mcmc_outDS[0]),
+                              fits.Column(name='A3_S',format='D',array=mcmc_outS[0]),
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-fS', action='store', dest='fS',default='False')
-    parser.add_argument('-fDS', action='store', dest='fDS',default='False')
-    parser.add_argument('-ncores', action='store', dest='ncores',default=32)
-    parser.add_argument('-nit', action='store', dest='nit',default=50)
-    args = parser.parse_args()
+                              fits.Column(name='Rv_DS',format='D',array=mcmc_outDS[1]),
+                              fits.Column(name='Rv_S',format='D',array=mcmc_outS[1])])
+        
+    elif rho=='hamaus':
+        rs_DS    = np.percentile(mcmc_outDS[0][1500:], [16, 50, 84])
+        delta_DS = np.percentile(mcmc_outDS[1][1500:], [16, 50, 84])
+        a_DS     = np.percentile(mcmc_outDS[2][1500:], [16, 50, 84])
+        b_DS     = np.percentile(mcmc_outDS[3][1500:], [16, 50, 84])
 
-    if args.fS == 'True':
-        fS = True
+        rs_S    = np.percentile(mcmc_outS[0][1500:], [16, 50, 84])
+        delta_S = np.percentile(mcmc_outS[1][1500:], [16, 50, 84])
+        a_S     = np.percentile(mcmc_outS[2][1500:], [16, 50, 84])
+        b_S     = np.percentile(mcmc_outS[3][1500:], [16, 50, 84])
+
+        hdu = fits.Header()
+        hdu.append(('rs_DS',np.round(rs_DS[1],4)))
+        hdu.append(('ers_DS_min',np.round(np.diff(rs_DS[0]),4)))
+        hdu.append(('ers_DS_max',np.round(np.diff(rs_DS[1]),4)))
+        hdu.append(('delta_DS',np.round(delta_DS[1],4)))
+        hdu.append(('edelta_DS_min',np.round(np.diff(delta_DS[0]),4)))
+        hdu.append(('edelta_DS_max',np.round(np.diff(delta_DS[1]),4)))
+        hdu.append(('a_DS',np.round(a_DS[1],4)))
+        hdu.append(('ea_DS_min',np.round(np.diff(a_DS[0]),4)))
+        hdu.append(('ea_DS_max',np.round(np.diff(a_DS[1]),4)))
+        hdu.append(('b_DS',np.round(b_DS[1],4)))
+        hdu.append(('eb_DS_min',np.round(np.diff(b_DS[0]),4)))
+        hdu.append(('eb_DS_max',np.round(np.diff(b_DS[1]),4)))
+        
+        hdu.append(('rs_S',np.round(rs_S[1],4)))
+        hdu.append(('ers_S_min',np.round(np.diff(rs_S[0]),4)))
+        hdu.append(('ers_S_max',np.round(np.diff(rs_S[1]),4)))
+        hdu.append(('delta_S',np.round(delta_S[1],4)))
+        hdu.append(('edelta_S_min',np.round(np.diff(delta_S[0]),4)))
+        hdu.append(('edelta_S_max',np.round(np.diff(delta_S[1]),4)))
+        hdu.append(('a_S',np.round(a_S[1],4)))
+        hdu.append(('ea_S_min',np.round(np.diff(a_S[0]),4)))
+        hdu.append(('ea_S_max',np.round(np.diff(a_S[1]),4)))
+        hdu.append(('b_S',np.round(b_S[1],4)))
+        hdu.append(('eb_S_min',np.round(np.diff(b_S[0]),4)))
+        hdu.append(('eb_S_max',np.round(np.diff(b_S[1]),4)))
+
+        table_opt = np.array([fits.Column(name='rs_DS',format='D',array=mcmc_outDS[0]),
+                              fits.Column(name='delta_DS',format='D',array=mcmc_outDS[1]),
+                              fits.Column(name='alpha_DS',format='D',array=mcmc_outDS[2]),
+                              fits.Column(name='beta_DS',format='D',array=mcmc_outDS[3]),
+
+                              fits.Column(name='rs_S',format='D',array=mcmc_outS[0]),
+                              fits.Column(name='delta_S',format='D',array=mcmc_outS[1]),
+                              fits.Column(name='alpha_S',format='D',array=mcmc_outS[2]),
+                              fits.Column(name='beta_S',format='D',array=mcmc_outS[3])])
     else:
-        fS = False
+        raise ValueError(f'{rho} No implementado')
 
-    if args.fDS == 'True':
-        fDS = True
-    else:
-        fDS = False
 
-    nc = int(args.ncores)
-    nit = int(args.nit)
-    
-    profile = fits.open('../profiles/voids/Rv_15-18/Rv1518.fits')
-    p = profile[1].data
-    cov = profile[2].data
+hdu = fits.Header()
+hdu.append(f'using {rho}')
 
-    Rv_min, Rv_max = profile[0].header['RV_MIN'], profile[0].header['RV_MAX']
+tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
+tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
+        
+primary_hdu = fits.PrimaryHDU(header=hdu)
+        
+hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
 
-    #ncores = 128
-    RIN,ROUT = 0.005, 3.
-    #nit = 500
+outfile = f'{outfolder}mcmc_{name}_{rho}_{pos}_{outname}.fits'
 
-    try:
-        os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/fitting')
-    except FileExistsError:
-        pass
+hdul.writeto(outfile, overwrite=True)
 
-    folder = f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/fitting/'
-    outfile = f'fit_2_MCMC_Rv{int(Rv_min)}{int(Rv_max)}'
-
-    if fS:
-        fit_sigma(RIN,ROUT,nc)
-    elif fDS:
-        fit_Dsigma(RIN,ROUT,nc)
-    else:
-        fit_sigma(RIN,ROUT,nc)
-        fit_Dsigma(RIN,ROUT,nc)
