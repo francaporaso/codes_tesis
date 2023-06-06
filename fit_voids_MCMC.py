@@ -182,7 +182,7 @@ nwalkers, ndim = pos.shape
 maskr   = (Rp > RIN)&(Rp < ROUT)
 mr = np.meshgrid(maskr,maskr)[1]*np.meshgrid(maskr,maskr)[0]
 
-p = p[maskr]
+# p = p[maskr]
 
 t1 = time.time()
 
