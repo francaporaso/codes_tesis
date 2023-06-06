@@ -133,6 +133,44 @@ def delta_sigma_hamaus(data,rs,delta,a,b):
 
 ## ----- o -----
 
+def DSt_clampitt_unpack(kargs):
+    return delta_sigma_clampitt(*kargs)
+
+def DSt_clampitt_parallel(data,A3,Rv):
+    
+    r, ncores = data[:-1], int(data[-1])
+    partial = DSt_clampitt_unpack
+    
+    if ncores > len(r):
+        ncores = len(r)
+    
+    lbins = int(round(len(r)/float(ncores), 0))
+    slices = ((np.arange(lbins)+1)*ncores).astype(int)
+    slices = slices[(slices < len(r))]
+    Rsplit = np.split(r,slices)
+
+    dsigma = np.zeros((len(Rsplit),ncores))
+    nparams = 2
+
+    for j,r_j in enumerate(Rsplit):
+        
+        num = len(r_j)
+        
+        A3_arr    = np.full_like(r_j,A3)
+        Rv_arr = np.full_like(r_j,Rv)
+        
+        entrada = np.array([r_j.T,A3_arr, Rv_arr]).T
+                
+        with Pool(processes=num) as pool:
+            salida = np.array(pool.map(partial,entrada))
+            pool.close()
+            pool.join()
+        
+        dsigma[j] = salida.flatten()
+
+    return dsigma.flatten()
+
+
 def DSt_hamaus_unpack(kargs):
     return delta_sigma_hamaus(*kargs)
 
