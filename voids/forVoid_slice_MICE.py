@@ -1,7 +1,7 @@
 '''for small cuts in radial bins, to be used with a forVoid_paste to unify profiles'''
 
 import sys
-sys.path.append('../lens_codes_v3.7')
+sys.path.append('home/fcaporaso/lens_codes_v3.7/')
 import time
 import numpy as np
 from astropy.io import fits

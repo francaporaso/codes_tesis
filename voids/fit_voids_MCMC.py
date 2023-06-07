@@ -9,7 +9,7 @@ import argparse
 from astropy.constants import G,c,M_sun,pc
 import emcee
 import os
-from fit_void_leastsq import *
+from voids.fit_void_leastsq import *
 
 # ARGUMENTOS
 
