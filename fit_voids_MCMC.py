@@ -107,7 +107,7 @@ def log_probabilityS_clampitt(data, R, S, eS):
 def log_likelihoodDS_hamaus(data, R, DS, iCds):  
     
     rs,delta,a,b = data
-    vars = R, ncores
+    vars = np.append(R, ncores)
 
     ds = DSt_hamaus_parallel(vars,rs,delta,a,b)
 
@@ -116,7 +116,7 @@ def log_likelihoodDS_hamaus(data, R, DS, iCds):
 def log_probabilityDS_hamaus(data, R, DS, eDS):
     
     rs,delta,a,b = data
-    vars = R, ncores
+    vars = np.append(R, ncores)
 
     if (0. < rs < 50.) and (-5. < delta < 5.) and (-10. < a < 10.) and (-10. < b < 10.):
         return log_likelihoodDS_hamaus(data, R, DS, eDS)
@@ -148,7 +148,8 @@ print(f'Distribucion: {pos}')
 
 
 if rho=='clampitt':
-    log_probability = log_probabilityDS_clampitt
+    log_probability_DS = log_probabilityDS_clampitt
+    log_probability_S  = log_probabilityS_clampitt
     if pos=='uniform':
         pos = np.array([np.random.uniform(-10.,10.,15),
                         np.random.uniform(0.,3.,15)]).T
@@ -160,7 +161,8 @@ elif rho=='krause':
 elif rho=='higuchi':
     raise ValueError(f'{rho} no implementado')
 elif rho=='hamaus':
-    log_probability = log_probabilityDS_hamaus
+    log_probability_DS = log_probabilityDS_hamaus
+    log_probability_S  = log_probabilityS_hamaus
     if pos=='uniform':
         pos = np.array([np.random.uniform(0.,50.,15),
                         np.random.uniform(-5.,5.,15),
@@ -194,7 +196,7 @@ if fitDS:
     CovDS = CovDS.reshape(maskr.sum(),maskr.sum())
     iCds  =  np.linalg.inv(CovDS)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.DSigma_T, iCds))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(Rp, p.DSigma_T, iCds))
     print('Fitting Delta Sigma')
     sampler.run_mcmc(pos, nit, progress=True)
     print('TOTAL TIME FIT')    
@@ -252,7 +254,7 @@ elif fitS:
     CovS = CovS.reshape(sum(maskr),sum(maskr))
     iCs  =  np.linalg.inv(CovS)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.Sigma, iCs))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(Rp, p.Sigma, iCs))
     print('Fitting Sigma')
     sampler.run_mcmc(pos, nit, progress=True)
     print('TOTAL TIME FIT')
@@ -314,8 +316,8 @@ else:
     CovS  = CovS.reshape(sum(maskr),sum(maskr))
     iCs   =  np.linalg.inv(CovS)
 
-    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.DSigma_T, iCds))
-    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp, p.Sigma, iCs))
+    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(Rp, p.DSigma_T, iCds))
+    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(Rp, p.Sigma, iCs))
 
     print('Fitting Delta Sigma')
     samplerDS.run_mcmc(pos, nit, progress=True)
