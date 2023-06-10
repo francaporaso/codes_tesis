@@ -46,7 +46,7 @@ def higuchi(r,R1,R2,rho1,rho2):
     else:
         return rho2-1
 
-def hamaus(r, delta, rs, Rv, a, b):
+def hamaus(r, rs, delta, Rv, a, b):
     '''Hamaus et al (2014); eq 2
        id = 3'''
     return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
@@ -80,7 +80,7 @@ def sigma_higuchi(r,A3,A0,Rv):
 def sigma_hamaus(r,rs,delta,a,b):
     Rv=1.
     def integrand(z,R,rs,delta,a,b):
-        return hamaus(np.sqrt(np.square(z)+np.square(R)),Rv,rs,delta,a,b)
+        return hamaus(np.sqrt(np.square(z)+np.square(R)),rs,delta,Rv,a,b)
   
     sigma = np.zeros_like(r)
     for j,x in enumerate(r):
@@ -119,7 +119,7 @@ def delta_sigma_hamaus(data,rs,delta,a,b):
     
     #r, Rv = data[:-1], data[-1]
     r = [data]
-    Rv = 1.
+    # Rv = 1.
     
     def integrand(x,rs,delta,a,b):
         return sigma_hamaus([x],rs,delta,a,b)*x
