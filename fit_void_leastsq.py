@@ -188,7 +188,7 @@ def DSt_hamaus_parallel(data,rs,delta,a,b):
     Rsplit = np.split(r,slices)
 
     dsigma = np.zeros((len(Rsplit),ncores))
-    nparams = 5
+    dsigma = np.split(dsigma,slices)
 
     for j,r_j in enumerate(Rsplit):
         
@@ -206,9 +206,11 @@ def DSt_hamaus_parallel(data,rs,delta,a,b):
             pool.close()
             pool.join()
         
-        dsigma[j] = salida.flatten()
+        dsigma[j] = salida
+    
+    dsigma = np.asarray(dsigma).flatten()
 
-    return dsigma.flatten()
+    return dsigma
 
 
 
