@@ -67,7 +67,7 @@ ROUT   = float(args.ROUT)
 directory = f'../profiles/voids/{sample}/{name}.fits'
 header    = fits.open(directory)[0]
 Rp        = fits.open(directory)[1].data.Rp
-p         = fits.open(directory)[2].data.reshape(101,60)
+p         = fits.open(directory)[2].data
 covar     = fits.open(directory)[3].data
 
 outfolder = f'../profiles/voids/{sample}/fit/'
@@ -212,7 +212,7 @@ if fitDS:
     CovDS = CovDS.reshape(maskr.sum(),maskr.sum())
     iCds  =  np.linalg.inv(CovDS)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(variables, p.DSigma_T, iCds))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(variables, p.DSigma_T.reshape(101,60)[0], iCds))
 
     print('Fitting Delta Sigma')
     sampler.run_mcmc(pos, nit, progress=True)
@@ -271,7 +271,7 @@ elif fitS:
     CovS = CovS.reshape(sum(maskr),sum(maskr))
     iCs  =  np.linalg.inv(CovS)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma, iCs))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma.reshape(101,60)[0], iCs))
     print('Fitting Sigma')
     sampler.run_mcmc(pos, nit, progress=True)
     print('TOTAL TIME FIT')
@@ -333,8 +333,8 @@ else:
     CovS  = CovS.reshape(sum(maskr),sum(maskr))
     iCs   =  np.linalg.inv(CovS)
 
-    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(variables, p.DSigma_T, iCds))
-    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma, iCs))
+    samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(variables, p.DSigma_T.reshape(101,60)[0], iCds))
+    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma.reshape(101,60)[0], iCs))
 
     print('Fitting Delta Sigma')
     samplerDS.run_mcmc(pos, nit, progress=True)
