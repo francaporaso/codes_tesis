@@ -131,7 +131,7 @@ def log_probabilityDS_hamaus(data, R, DS, eDS):
     
     rs,delta,Rv,a,b = data
 
-    if (0. < rs < 50.) and (-5. < delta < 5.) and (.5 < Rv < 2.) and (0. < a < 10.) and (0. < b < 10.):
+    if (0. < rs < 50.) and (-10. < delta < 0.) and (.5 < Rv < 2.) and (0. < a < 10.) and (0. < b < 10.) and (a < b):
         return log_likelihoodDS_hamaus(data, R, DS, eDS)
     return -np.inf
 
@@ -146,7 +146,7 @@ def log_probabilityS_hamaus(data, R, S, eS):
     
     rs,delta,Rv,a,b = data
 
-    if (0. < rs < 50.) and (-5. < delta < 5.) and (.5 < Rv < 2.)  and (0. < a < 10.) and (0. < b < 10.):
+    if (0. < rs < 50.) and (-10. < delta < 0.) and (.5 < Rv < 2.)  and (0. < a < 10.) and (0. < b < 10.) and (a < b):
         return log_likelihoodS_hamaus(data, R, S, eS)
     return -np.inf
 
@@ -155,7 +155,7 @@ def log_probabilityS_hamaus(data, R, S, eS):
 # ----- 0 -----
 
 print(f'Fitting from {directory}')
-print(f'Using {ncores} cores')
+print(f'Using {ncores} cores') #esta mal usa hasta la cantidad de puntos que hay
 print(f'Model: {rho}')
 print(f'Distribucion: {pos}')
 
@@ -166,7 +166,7 @@ if rho=='clampitt':
     variables = Rp
     if pos=='uniform':
         pos = np.array([np.random.uniform(-10.,10.,15),     #A3
-                        np.random.uniform(0.,3.,15)]).T     #Rv
+                        np.random.uniform(0.5,2.,15)]).T     #Rv
     elif pos=='gaussian':
         pos = np.array([np.random.normal(1.,0.8,15),
                         np.random.normal(1.,0.8,15)]).T
@@ -180,13 +180,13 @@ elif rho=='hamaus':
     variables = np.append(Rp,ncores)
     if pos=='uniform':
         pos = np.array([np.random.uniform(0.,50.,15),       #rs
-                        np.random.uniform(-5.,5.,15),       #delta
+                        np.random.uniform(-5.,0.,15),       #delta
                         np.random.uniform(0.5,2.,15),       #Rv
                         np.random.uniform(0.,10.,15),       #alpha
                         np.random.uniform(0.,10.,15)]).T    #beta
     elif pos=='gaussian':
         pos = np.array([np.random.normal(2.,0.8,15),        #rs
-                        np.random.normal(-1.,0.8,15),       #delta
+                        np.random.normal(-1.5,0.8,15),       #delta
                         np.random.normal(1.,0.6,15),       #Rv
                         np.random.normal(3.,0.8,15),        #alpha
                         np.random.normal(5.,0.8,15)]).T     #beta
@@ -277,7 +277,7 @@ elif fitS:
     CovS = CovS.reshape(sum(maskr),sum(maskr))
     iCs  =  np.linalg.inv(CovS)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma.reshape(101,60)[0], iCs))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(Rp, p.Sigma.reshape(101,60)[0], iCs))
     print('Fitting Sigma')
     sampler.run_mcmc(pos, nit, progress=True)
     print('TOTAL TIME FIT')
