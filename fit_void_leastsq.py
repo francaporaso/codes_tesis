@@ -149,8 +149,8 @@ def DSt_clampitt_parallel(data,A3,Rv):
     slices = slices[(slices < len(r))]
     Rsplit = np.split(r,slices)
 
-    dsigma = np.zeros((len(Rsplit),ncores))
-    nparams = 2
+    dsigma = np.zeros_like(r)
+    dsigma = np.array_split(dsigma,slices)
 
     for j,r_j in enumerate(Rsplit):
         
@@ -166,9 +166,11 @@ def DSt_clampitt_parallel(data,A3,Rv):
             pool.close()
             pool.join()
         
-        dsigma[j] = salida.flatten()
+        dsigma[j] = salida
 
-    return dsigma.flatten()
+    dsigma = np.concatenate(dsigma,axis=0).flatten()
+
+    return dsigma
 
 
 def DSt_hamaus_unpack(kargs):

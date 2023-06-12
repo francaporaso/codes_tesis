@@ -121,16 +121,15 @@ def log_probabilityS_clampitt(data, R, S, eS):
 def log_likelihoodDS_hamaus(data, R, DS, iCds):  
     
     rs,delta,a,b = data
-    variables = np.append(R, ncores)
+    # variables = np.append(R, ncores)
 
-    ds = DSt_hamaus_parallel(variables,rs,delta,a,b)
+    ds = DSt_hamaus_parallel(R,rs,delta,a,b)
 
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.
 
 def log_probabilityDS_hamaus(data, R, DS, eDS):
     
     rs,delta,a,b = data
-    variables = np.append(R, ncores)
 
     if (0. < rs < 50.) and (-5. < delta < 5.) and (0. < a < 10.) and (0. < b < 10.):
         return log_likelihoodDS_hamaus(data, R, DS, eDS)
