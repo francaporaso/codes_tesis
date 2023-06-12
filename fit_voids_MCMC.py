@@ -120,33 +120,33 @@ def log_probabilityS_clampitt(data, R, S, eS):
 
 def log_likelihoodDS_hamaus(data, R, DS, iCds):  
     
-    rs,delta,a,b = data
+    rs,delta,Rv,a,b = data
     # variables = np.append(R, ncores)
 
-    ds = DSt_hamaus_parallel(R,rs,delta,a,b)
+    ds = DSt_hamaus_parallel(R,rs,delta,Rv,a,b)
 
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.
 
 def log_probabilityDS_hamaus(data, R, DS, eDS):
     
-    rs,delta,a,b = data
+    rs,delta,Rv,a,b = data
 
-    if (0. < rs < 50.) and (-5. < delta < 5.) and (0. < a < 10.) and (0. < b < 10.):
+    if (0. < rs < 50.) and (-5. < delta < 5.) and (.5 < Rv < 2.) and (0. < a < 10.) and (0. < b < 10.):
         return log_likelihoodDS_hamaus(data, R, DS, eDS)
     return -np.inf
 
 def log_likelihoodS_hamaus(data, R, S, iCs): 
     
-    rs,delta,a,b = data
-    s = sigma_hamaus(R,rs,delta,a,b)
+    rs,delta,Rv,a,b = data
+    s = sigma_hamaus(R,rs,delta,Rv,a,b)
     
     return -np.dot((s-S),np.dot(iCs,(s-S)))/2.
 
 def log_probabilityS_hamaus(data, R, S, eS):
     
-    rs,delta,a,b = data
+    rs,delta,Rv,a,b = data
 
-    if (0. < rs < 50.) and (-5. < delta < 5.) and (0. < a < 10.) and (0. < b < 10.):
+    if (0. < rs < 50.) and (-5. < delta < 5.) and (.5 < Rv < 2.)  and (0. < a < 10.) and (0. < b < 10.):
         return log_likelihoodS_hamaus(data, R, S, eS)
     return -np.inf
 
@@ -181,11 +181,13 @@ elif rho=='hamaus':
     if pos=='uniform':
         pos = np.array([np.random.uniform(0.,50.,15),       #rs
                         np.random.uniform(-5.,5.,15),       #delta
+                        np.random.uniform(0.5,2.,15),       #Rv
                         np.random.uniform(0.,10.,15),       #alpha
                         np.random.uniform(0.,10.,15)]).T    #beta
     elif pos=='gaussian':
         pos = np.array([np.random.normal(2.,0.8,15),        #rs
                         np.random.normal(-1.,0.8,15),       #delta
+                        np.random.normal(1.,0.6,15),       #Rv
                         np.random.normal(3.,0.8,15),        #alpha
                         np.random.normal(5.,0.8,15)]).T     #beta
 else:
@@ -238,8 +240,9 @@ if fitDS:
     elif rho=='hamaus':
         rs    = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
         delta = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
-        a     = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
-        b     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+        Rv    = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
+        a     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+        b     = np.percentile(mcmc_out[4][1500:], [16, 50, 84])
 
         hdu = fits.Header()
         hdu.append(('rs',np.round(rs[1],4)))
@@ -248,6 +251,9 @@ if fitDS:
         hdu.append(('delta',np.round(delta[1],4)))
         hdu.append(('edelta_min',np.round(np.diff(delta[0]),4)))
         hdu.append(('edelta_max',np.round(np.diff(delta[1]),4)))
+        hdu.append(('Rv',np.round(Rv[1],4)))
+        hdu.append(('eRv_min',np.round(np.diff(Rv[0]),4)))
+        hdu.append(('eRv_max',np.round(np.diff(Rv[1]),4)))
         hdu.append(('a',np.round(a[1],4)))
         hdu.append(('ea_min',np.round(np.diff(a[0]),4)))
         hdu.append(('ea_max',np.round(np.diff(a[1]),4)))
@@ -257,8 +263,9 @@ if fitDS:
 
         table_opt = np.array([fits.Column(name='rs',format='D',array=mcmc_out[0]),
                               fits.Column(name='delta',format='D',array=mcmc_out[1]),
-                              fits.Column(name='alpha',format='D',array=mcmc_out[2]),
-                              fits.Column(name='beta',format='D',array=mcmc_out[3])])
+                              fits.Column(name='Rv',format='D',array=mcmc_out[2]),
+                              fits.Column(name='alpha',format='D',array=mcmc_out[3]),
+                              fits.Column(name='beta',format='D',array=mcmc_out[4])])
     else:
         raise ValueError(f'{rho} No implementado')
 
@@ -295,8 +302,9 @@ elif fitS:
     elif rho=='hamaus':
         rs    = np.percentile(mcmc_out[0][1500:], [16, 50, 84])
         delta = np.percentile(mcmc_out[1][1500:], [16, 50, 84])
-        a     = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
-        b     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+        Rv    = np.percentile(mcmc_out[2][1500:], [16, 50, 84])
+        a     = np.percentile(mcmc_out[3][1500:], [16, 50, 84])
+        b     = np.percentile(mcmc_out[4][1500:], [16, 50, 84])
 
         hdu = fits.Header()
         hdu.append(('rs',np.round(rs[1],4)))
@@ -305,6 +313,9 @@ elif fitS:
         hdu.append(('delta',np.round(delta[1],4)))
         hdu.append(('edelta_min',np.round(np.diff(delta[0]),4)))
         hdu.append(('edelta_max',np.round(np.diff(delta[1]),4)))
+        hdu.append(('Rv',np.round(Rv[1],4)))
+        hdu.append(('eRv_min',np.round(np.diff(Rv[0]),4)))
+        hdu.append(('eRv_max',np.round(np.diff(Rv[1]),4)))
         hdu.append(('a',np.round(a[1],4)))
         hdu.append(('ea_min',np.round(np.diff(a[0]),4)))
         hdu.append(('ea_max',np.round(np.diff(a[1]),4)))
@@ -314,8 +325,9 @@ elif fitS:
 
         table_opt = np.array([fits.Column(name='rs',format='D',array=mcmc_out[0]),
                               fits.Column(name='delta',format='D',array=mcmc_out[1]),
-                              fits.Column(name='alpha',format='D',array=mcmc_out[2]),
-                              fits.Column(name='beta',format='D',array=mcmc_out[3])])
+                              fits.Column(name='Rv',format='D',array=mcmc_out[2]),
+                              fits.Column(name='alpha',format='D',array=mcmc_out[3]),
+                              fits.Column(name='beta',format='D',array=mcmc_out[4])])
     else:
         raise ValueError(f'{rho} No implementado')
 
@@ -383,13 +395,15 @@ else:
     elif rho=='hamaus':
         rs_DS    = np.percentile(mcmc_outDS[0][1500:], [16, 50, 84])
         delta_DS = np.percentile(mcmc_outDS[1][1500:], [16, 50, 84])
-        a_DS     = np.percentile(mcmc_outDS[2][1500:], [16, 50, 84])
-        b_DS     = np.percentile(mcmc_outDS[3][1500:], [16, 50, 84])
+        Rv_DS    = np.percentile(mcmc_outDS[2][1500:], [16, 50, 84])
+        a_DS     = np.percentile(mcmc_outDS[3][1500:], [16, 50, 84])
+        b_DS     = np.percentile(mcmc_outDS[4][1500:], [16, 50, 84])
 
         rs_S    = np.percentile(mcmc_outS[0][1500:], [16, 50, 84])
         delta_S = np.percentile(mcmc_outS[1][1500:], [16, 50, 84])
-        a_S     = np.percentile(mcmc_outS[2][1500:], [16, 50, 84])
-        b_S     = np.percentile(mcmc_outS[3][1500:], [16, 50, 84])
+        Rv_S    = np.percentile(mcmc_outS[2][1500:], [16, 50, 84])
+        a_S     = np.percentile(mcmc_outS[3][1500:], [16, 50, 84])
+        b_S     = np.percentile(mcmc_outS[4][1500:], [16, 50, 84])
 
         hdu = fits.Header()
         hdu.append(('rs_DS',np.round(rs_DS[1],4)))
@@ -398,6 +412,9 @@ else:
         hdu.append(('delta_DS',np.round(delta_DS[1],4)))
         hdu.append(('edelta_DS_min',np.round(np.diff(delta_DS[0]),4)))
         hdu.append(('edelta_DS_max',np.round(np.diff(delta_DS[1]),4)))
+        hdu.append(('Rv_DS',np.round(Rv_DS[1],4)))
+        hdu.append(('eRv_DS_min',np.round(np.diff(Rv_DS[0]),4)))
+        hdu.append(('eRv_DS_max',np.round(np.diff(Rv_DS[1]),4)))
         hdu.append(('a_DS',np.round(a_DS[1],4)))
         hdu.append(('ea_DS_min',np.round(np.diff(a_DS[0]),4)))
         hdu.append(('ea_DS_max',np.round(np.diff(a_DS[1]),4)))
@@ -410,7 +427,10 @@ else:
         hdu.append(('ers_S_max',np.round(np.diff(rs_S[1]),4)))
         hdu.append(('delta_S',np.round(delta_S[1],4)))
         hdu.append(('edelta_S_min',np.round(np.diff(delta_S[0]),4)))
-        hdu.append(('edelta_S_max',np.round(np.diff(delta_S[1]),4)))
+        hdu.append(('edelta_S_max',np.round(np.diff(delta_S[1]),4)))        
+        hdu.append(('Rv_S',np.round(Rv_S[1],4)))
+        hdu.append(('eRv_S_min',np.round(np.diff(Rv_S[0]),4)))
+        hdu.append(('eRv_S_max',np.round(np.diff(Rv_S[1]),4)))
         hdu.append(('a_S',np.round(a_S[1],4)))
         hdu.append(('ea_S_min',np.round(np.diff(a_S[0]),4)))
         hdu.append(('ea_S_max',np.round(np.diff(a_S[1]),4)))
@@ -420,13 +440,15 @@ else:
 
         table_opt = np.array([fits.Column(name='rs_DS',format='D',array=mcmc_outDS[0]),
                               fits.Column(name='delta_DS',format='D',array=mcmc_outDS[1]),
-                              fits.Column(name='alpha_DS',format='D',array=mcmc_outDS[2]),
-                              fits.Column(name='beta_DS',format='D',array=mcmc_outDS[3]),
+                              fits.Column(name='Rv_DS',format='D',array=mcmc_outDS[2]),
+                              fits.Column(name='alpha_DS',format='D',array=mcmc_outDS[3]),
+                              fits.Column(name='beta_DS',format='D',array=mcmc_outDS[4]),
 
                               fits.Column(name='rs_S',format='D',array=mcmc_outS[0]),
                               fits.Column(name='delta_S',format='D',array=mcmc_outS[1]),
-                              fits.Column(name='alpha_S',format='D',array=mcmc_outS[2]),
-                              fits.Column(name='beta_S',format='D',array=mcmc_outS[3])])
+                              fits.Column(name='Rv_S',format='D',array=mcmc_outS[2]),
+                              fits.Column(name='alpha_S',format='D',array=mcmc_outS[3]),
+                              fits.Column(name='beta_S',format='D',array=mcmc_outS[4])])
     else:
         raise ValueError(f'{rho} No implementado')
 

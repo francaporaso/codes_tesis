@@ -77,14 +77,24 @@ def sigma_krause(r,A3,A0,Rv):
 def sigma_higuchi(r,A3,A0,Rv):
     pass
 
-def sigma_hamaus(r,rs,delta,a,b):
-    Rv=1.
-    def integrand(z,R,rs,delta,a,b):
+# def sigma_hamaus(r,rs,delta,a,b):
+#     Rv=1.
+#     def integrand(z,R,rs,delta,a,b):
+#         return hamaus(np.sqrt(np.square(z)+np.square(R)),rs,delta,Rv,a,b)
+  
+#     sigma = np.zeros_like(r)
+#     for j,x in enumerate(r):
+#         sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,a,b))[0]
+#     return sigma
+
+def sigma_hamaus(r,rs,delta,Rv,a,b):
+    
+    def integrand(z,R,rs,delta,Rv,a,b):
         return hamaus(np.sqrt(np.square(z)+np.square(R)),rs,delta,Rv,a,b)
   
     sigma = np.zeros_like(r)
     for j,x in enumerate(r):
-        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,a,b))[0]
+        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,Rv,a,b))[0]
     return sigma
 
 # ----- o -----
@@ -115,19 +125,19 @@ def delta_sigma_krause(r,A3,A0,Rv):
 def delta_sigma_higuchi():
     pass
 
-def delta_sigma_hamaus(data,rs,delta,a,b):
+def delta_sigma_hamaus(data,rs,delta,Rv,a,b):
     
     #r, Rv = data[:-1], data[-1]
     r = [data]
     # Rv = 1.
     
-    def integrand(x,rs,delta,a,b):
-        return sigma_hamaus([x],rs,delta,a,b)*x
+    def integrand(x,rs,delta,Rv,a,b):
+        return sigma_hamaus([x],rs,delta,Rv,a,b)*x
 
-    anillo = sigma_hamaus(r,rs,delta,a,b)
+    anillo = sigma_hamaus(r,rs,delta,Rv,a,b)
     disco = np.zeros_like(r)
     for j,p in enumerate(r):
-        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,a,b))[0]
+        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,Rv,a,b))[0]
 
     return disco-anillo
 
@@ -176,7 +186,7 @@ def DSt_clampitt_parallel(data,A3,Rv):
 def DSt_hamaus_unpack(kargs):
     return delta_sigma_hamaus(*kargs)
 
-def DSt_hamaus_parallel(data,rs,delta,a,b):
+def DSt_hamaus_parallel(data,rs,delta,Rv,a,b):
     
     r, ncores = data[:-1], int(data[-1])
     partial = DSt_hamaus_unpack
@@ -198,10 +208,11 @@ def DSt_hamaus_parallel(data,rs,delta,a,b):
         
         rs_arr    = np.full_like(r_j,rs)
         delta_arr = np.full_like(r_j,delta)
+        Rv_arr = np.full_like(r_j,Rv)
         a_arr     = np.full_like(r_j,a)
         b_arr     = np.full_like(r_j,b)
         
-        entrada = np.array([r_j.T,rs_arr,delta_arr,a_arr,b_arr]).T
+        entrada = np.array([r_j.T,rs_arr,delta_arr,Rv_arr,a_arr,b_arr]).T
                 
         with Pool(processes=num) as pool:
             salida = np.array(pool.map(partial,entrada))
@@ -288,7 +299,9 @@ if __name__ == '__main__':
   
   p0 = np.ones(nparams)
   bounds = (-np.inf,np.inf)
-      
+
+
+#### REVISAR! CAMBIE LA CANTIDAD DE PARAMETROS!!! (AGREGUE DE VUELTA RV)
   if rho == 'hamaus':
       p0 = np.array([ 0.9, -0.9,  1.4,  4.])
       var = np.append(Rp,ncores)
