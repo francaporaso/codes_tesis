@@ -48,7 +48,9 @@ def higuchi(r,R1,R2,rho1,rho2):
 
 def hamaus(r, rs, delta, Rv, a, b):
     '''Hamaus et al (2014); eq 2
-       id = 3'''
+       id = 3
+       
+       delta < 0 siempre!'''
     return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
 
 
