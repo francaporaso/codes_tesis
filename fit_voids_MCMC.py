@@ -273,7 +273,7 @@ elif fitS:
 
     outname = f'S'
 
-    CovS = covar.covS.reshape(len(p.Rp),len(p.Rp))[mr]
+    CovS = covar.covS.reshape(len(Rp),len(Rp))[mr]
     CovS = CovS.reshape(sum(maskr),sum(maskr))
     iCs  =  np.linalg.inv(CovS)
 
@@ -345,7 +345,7 @@ else:
     iCs   =  np.linalg.inv(CovS)
 
     samplerDS = emcee.EnsembleSampler(nwalkers, ndim, log_probability_DS, args=(variables, p.DSigma_T.reshape(101,60)[0], iCds))
-    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(variables, p.Sigma.reshape(101,60)[0], iCs))
+    samplerS  = emcee.EnsembleSampler(nwalkers, ndim, log_probability_S, args=(Rp, p.Sigma.reshape(101,60)[0], iCs))
 
     print('Fitting Delta Sigma')
     samplerDS.run_mcmc(pos, nit, progress=True)
