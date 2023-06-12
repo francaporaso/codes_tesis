@@ -355,7 +355,7 @@ else:
     t2 = time.time()    
     samplerS.run_mcmc(pos, nit, progress=True)
     print('TIME FIT SIGMA')
-    print(f'{np.round((t2-t1)/60., 2)} min')
+    print(f'{np.round((time.time()-t2)/60., 2)} min')
 
     print('TOTAL TIME FIT')
     print(f'{np.round((time.time()-t1)/60., 2)} min')
