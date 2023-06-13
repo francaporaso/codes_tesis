@@ -151,6 +151,7 @@ def log_probabilityS_hamaus(data, R, S, eS):
         try:
             l = log_likelihoodS_hamaus(data, R, S, eS)
         except:
+            print('hubo un error calculando la probabilidad (quiza un NaN), devolviendo -inf)')
             return -np.inf
         return l
     return -np.inf
