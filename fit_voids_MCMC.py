@@ -53,6 +53,7 @@ rho    = args.rho
 RIN    = float(args.RIN)
 ROUT   = float(args.ROUT)
 
+pos_name = pos
 '''pos: distribucion de los walkers
 - uniform : distribucion uniforme
 - gaussian: distribucion gaussiana'''
@@ -457,13 +458,12 @@ hdu = fits.Header()
 hdu.append(f'using {rho}')
 
 tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
         
 primary_hdu = fits.PrimaryHDU(header=hdu)
         
-hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
+hdul = fits.HDUList([primary_hdu, tbhdu_pro])
 
-outfile = f'{outfolder}mcmc_{name}_{rho}_{pos}_{outname}.fits'
+outfile = f'{outfolder}mcmc_{name}_{rho}_{pos_name}_{outname}.fits'
 
 hdul.writeto(outfile, overwrite=True)
 
