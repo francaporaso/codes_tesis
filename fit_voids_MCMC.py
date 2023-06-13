@@ -470,5 +470,7 @@ hdul = fits.HDUList([primary_hdu, tbhdu_pro])
 
 outfile = f'{outfolder}mcmc_{name}_{rho}_{pos_name}_{outname}.fits'
 
+print(f'SAVING FIT IN {outfile}')
+
 hdul.writeto(outfile, overwrite=True)
 
