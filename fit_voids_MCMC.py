@@ -148,7 +148,11 @@ def log_probabilityS_hamaus(data, R, S, eS):
     rs,delta,Rv,a,b = data
 
     if (0. < rs < 50.) and (-10. < delta < 0.) and (.5 < Rv < 2.)  and (0. < a < 10.) and (0. < b < 10.) and (a < b):
-        return log_likelihoodS_hamaus(data, R, S, eS)
+        try:
+            l = log_likelihoodS_hamaus(data, R, S, eS)
+        except:
+            return -np.inf
+        return l
     return -np.inf
 
 
