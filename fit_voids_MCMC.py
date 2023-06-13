@@ -154,7 +154,6 @@ def log_probabilityS_hamaus(data, R, S, eS):
         except:
             print('hubo un error calculando la probabilidad (quiza un NaN), devolviendo -inf)')
             return -np.inf
-        
     return -np.inf
 
 
@@ -460,7 +459,7 @@ else:
         raise ValueError(f'{rho} No implementado')
 
 
-hdu = fits.Header()
+
 hdu.append(f'using {rho}')
 
 tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
