@@ -87,16 +87,14 @@ if fitS & fitDS:
 def log_likelihoodDS_clampitt(data, R, DS, iCds):  
     
     A3, Rv = data
-    variables = R, ncores
 
-    ds = DSt_clampitt_parallel(variables,A3,Rv)
+    ds = DSt_clampitt_parallel(R,A3,Rv)
 
     return -np.dot((ds-DS),np.dot(iCds,(ds-DS)))/2.
 
 def log_probabilityDS_clampitt(data, R, DS, eDS):
     
     A3, Rv = data
-    variables = R, ncores
 
     if (-10. < A3 < 10.) and (0. < Rv < 3.):
         return log_likelihoodDS_clampitt(data, R, DS, eDS)
@@ -122,7 +120,6 @@ def log_probabilityS_clampitt(data, R, S, eS):
 def log_likelihoodDS_hamaus(data, R, DS, iCds):  
     
     rs,delta,Rv,a,b = data
-    # variables = np.append(R, ncores)
 
     ds = DSt_hamaus_parallel(R,rs,delta,Rv,a,b)
 
@@ -170,7 +167,7 @@ print(f'Distribucion: {pos}')
 if rho=='clampitt':
     log_probability_DS = log_probabilityDS_clampitt
     log_probability_S  = log_probabilityS_clampitt
-    variables = Rp
+    variables = np.append(Rp,ncores)
     if pos=='uniform':
         pos = np.array([np.random.uniform(-10.,10.,15),     #A3
                         np.random.uniform(0.5,2.,15)]).T     #Rv
@@ -469,7 +466,7 @@ primary_hdu = fits.PrimaryHDU(header=hdu)
         
 hdul = fits.HDUList([primary_hdu, tbhdu_pro])
 
-outfile = f'{outfolder}mcmc_{name}_{rho}_{pos_name}_{outname}.fits'
+outfile = f'{outfolder}mcmc_{name}_{rho}_{pos_name}_{outname}_n{nit}.fits'
 
 print(f'SAVING FIT IN {outfile}')
 
