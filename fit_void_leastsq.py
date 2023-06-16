@@ -101,10 +101,10 @@ def sigma_hamaus(r,rs,delta,Rv,a,b):
 
 # ----- o -----
 
-def delta_sigma_clampitt(r,A3,Rv):
+def delta_sigma_clampitt(data,A3,Rv):
 
     r = [data]
-    
+
     def integrand(x,A3,Rv):
         return sigma_clampitt([x],A3,Rv)*x
 
