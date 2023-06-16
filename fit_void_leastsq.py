@@ -102,6 +102,9 @@ def sigma_hamaus(r,rs,delta,Rv,a,b):
 # ----- o -----
 
 def delta_sigma_clampitt(r,A3,Rv):
+
+    r = [data]
+    
     def integrand(x,A3,Rv):
         return sigma_clampitt([x],A3,Rv)*x
 
@@ -168,7 +171,7 @@ def DSt_clampitt_parallel(data,A3,Rv):
         
         num = len(r_j)
         
-        A3_arr    = np.full_like(r_j,A3)
+        A3_arr = np.full_like(r_j,A3)
         Rv_arr = np.full_like(r_j,Rv)
         
         entrada = np.array([r_j.T,A3_arr, Rv_arr]).T
@@ -210,7 +213,7 @@ def DSt_hamaus_parallel(data,rs,delta,Rv,a,b):
         
         rs_arr    = np.full_like(r_j,rs)
         delta_arr = np.full_like(r_j,delta)
-        Rv_arr = np.full_like(r_j,Rv)
+        Rv_arr    = np.full_like(r_j,Rv)
         a_arr     = np.full_like(r_j,a)
         b_arr     = np.full_like(r_j,b)
         
