@@ -18,10 +18,11 @@ def clampitt(r,A3,Rv):
     '''Clampitt et al (2016); eq 12
        id = 0'''
     A0 = 1-A3
-    if r<Rv:
-        return A0-1+A3*(r/Rv)**3
-    else:
-        return A0+A3-1
+
+    mask = (r >= Rv)
+    out  = np.full_like(r, A0-1 + A3*(r/Rv)**3.)
+    out[mask] = A0+A3-1
+    return out
     # return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
 
 def krause(r,A3,A0,Rv):
