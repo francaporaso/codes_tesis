@@ -22,8 +22,8 @@ def clampitt(r,A3,Rv):
         return A0+A3-1
     else:
         return A0-1 + A3*(r/Rv)**3
-    # return np.piecewise(r,[r<Rv],[lambda r: A0-1+A3*(r/Rv)**3,A0+A3-1]) 
-
+    
+    
 def krause(r,A3,A0,Rv):
     '''Krause et al (2012); eq 1 (see text)
        id = 1'''
