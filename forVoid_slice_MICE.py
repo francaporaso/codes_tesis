@@ -8,7 +8,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from astropy.cosmology import LambdaCDM
-# from astropy.wcs import WCS
+from astropy.wcs import WCS
 # from fit_profiles_curvefit import *
 # from astropy.stats import bootstrap
 # from astropy.utils import NumpyRNGContext
