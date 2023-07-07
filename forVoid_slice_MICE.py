@@ -8,17 +8,17 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from astropy.cosmology import LambdaCDM
-from astropy.wcs import WCS
-from fit_profiles_curvefit import *
-from astropy.stats import bootstrap
-from astropy.utils import NumpyRNGContext
+# from astropy.wcs import WCS
+# from fit_profiles_curvefit import *
+# from astropy.stats import bootstrap
+# from astropy.utils import NumpyRNGContext
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from multiprocessing import Pool, Process
 import argparse
 from astropy.constants import G,c,M_sun,pc
 from scipy import stats
-from models_profiles import Gamma
+# from models_profiles import Gamma
 # For map
 wcs = WCS(naxis=2)
 wcs.wcs.crpix = [0., 0.]
