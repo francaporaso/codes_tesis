@@ -2,13 +2,13 @@
 
 import sys
 sys.path.append('home/fcaporaso/lens_codes_v3.7/')
+from maria_func import *
 import time
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from astropy.cosmology import LambdaCDM
 from astropy.wcs import WCS
-from maria_func import *
 from fit_profiles_curvefit import *
 from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
