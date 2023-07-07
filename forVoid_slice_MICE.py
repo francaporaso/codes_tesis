@@ -111,7 +111,7 @@ def SigmaCrit2(zl, zs, h=1.):
     ds  = cosmo.angular_diameter_distance(zs).value              # dad de la fuente [Mpc]
     dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value     # dad entre fuente y lente [Mpc]
 
-    return 2.*ds*(al**3)*(cvel**2)/(3.*dls*dl*cosmo.H0*cosmo.Om0)
+    return 2.*ds*(al**3)*(cvel**2)/(3.*dls*dl*cosmo.H0.value*cosmo.Om0.value)
 
 def partial_map():
         pass
