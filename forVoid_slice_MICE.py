@@ -73,6 +73,7 @@ def div_area(a, b, num=50):
         raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
     return r
 
+
 def SigmaCrit(zl, zs, h=1.):
     '''Calcula el Sigma_critico dados los redshifts. 
     Debe ser usada con astropy.cosmology y con astropy.constants
@@ -92,6 +93,24 @@ def SigmaCrit(zl, zs, h=1.):
     BETA_array = dls / ds
 
     return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
+
+def SigmaCrit2(zl, zs, h=1.):
+    '''Calcula el Sigma_critico dados los redshifts, segun Higuchi et al 2013 (ec 4). 
+    Debe ser usada con astropy.cosmology y con astropy.constants
+    
+    zl:   (float) redshift de la lente (lens)
+    zs:   (float) redshift de la fuente (source)
+    h :   (float) H0 = 100.*h
+    '''
+
+    cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
+
+    al  = cosmo.scale_factor(zl)                                 # factor de escala [adim]
+    dl  = cosmo.angular_diameter_distance(zl).value              # dad de la lente [Mpc]
+    ds  = cosmo.angular_diameter_distance(zs).value              # dad de la fuente [Mpc]
+    dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value     # dad entre fuente y lente [Mpc]
+
+    return 2.*ds*(al**3)*(cvel**2)/(3.*dls*dl*cosmo.H0*cosmo.Om0)
 
 def partial_map():
         pass
@@ -130,7 +149,8 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         del mask, delta
 
-        sigma_c = SigmaCrit(Z, catdata.z_cgal)
+        # sigma_c = SigmaCrit(Z, catdata.z_cgal)
+        sigma_c = SigmaCrit2(Z, catdata.z_cgal)   # Higuchi et al 2013 (ec 4)
         
         rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
