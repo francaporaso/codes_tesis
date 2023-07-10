@@ -87,7 +87,7 @@ def SigmaCrit(zl, zs, h=1.):
     cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
 
     dl  = cosmo.angular_diameter_distance(zl).value
-    Dl = dl*1.e6*pc #en Mpc
+    Dl = dl*1.e6*pc #en m
     ds  = cosmo.angular_diameter_distance(zs).value              #dist ang diam de la fuente
     dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value      #dist ang diam entre fuente y lente
                 
@@ -106,14 +106,17 @@ def SigmaCrit2(zl, zs, h=1.):
 
     cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
 
-    al  = cosmo.scale_factor(zl)                                 # factor de escala [adim]
-    dl  = cosmo.angular_diameter_distance(zl).value              # dad de la lente [Mpc]
-    ds  = cosmo.angular_diameter_distance(zs).value              # dad de la fuente [Mpc]
-    dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value     # dad entre fuente y lente [Mpc]
+    al  = cosmo.scale_factor(zl)                           # factor de escala [adim]
+    Dl  = cosmo.angular_diameter_distance(zl)              # dad de la lente [Mpc]
+    Ds  = cosmo.angular_diameter_distance(zs)              # dad de la fuente [Mpc]
+    Dls = cosmo.angular_diameter_distance_z1z2(zl, zs)     # dad entre fuente y lente [Mpc]
 
-    light_speed = c.to('km/s').value
+    H0 = cosmo.H0
+    Om0 = cosmo.Om0
+    
+    S = ((3. * H0**2 * Om0)/(2. * c**2 * al**3) * (Dl * Dls)/Ds).to('1/Mpc').value
 
-    return 2.*ds*(al**3)*(light_speed**2)/(3.*dls*dl*cosmo.H0.value*cosmo.Om0)
+    return S
 
 def partial_map():
         pass
