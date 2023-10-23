@@ -71,7 +71,7 @@ def step_densidad(xv, yv, zv, rv_j,
         Ninbin[cascara] = np.sum(mk)
         rin += step
 
-    return np.array([MASAsum, Ninbin, nhalos])
+    return np.array([MASAsum, Ninbin, nhalos], dtype=object)
 
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
@@ -126,7 +126,9 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
 
     densidad = masa/vol
 
-    output = np.array([masa, densidad, vol, Nbin, np.full_like(Nbin,nh)])
+    densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
+
+    output = np.array([masa, densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
 
     return output
 
@@ -176,7 +178,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'nh'])
+    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'Nvoids', 'densidad media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
