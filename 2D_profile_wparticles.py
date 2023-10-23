@@ -139,7 +139,7 @@ def comoving2ecuatiorial(xc_rc, yc_rc, zc_rc, h=1.):
         dec_rc = np.rad2deg(np.arcsin(zc_rc/np.sqrt(xc_rc**2 + yc_rc**2 + zc_rc**2)))
         D = np.sqrt(xc_rc**2 + yc_rc**2 + zc_rc**2)
 
-        z = z_at_value(cosmo.comoving_distance, D)
+        z = z_at_value(cosmo.comoving_distance, D*u.Mpc)
 
         return ra_rc, dec_rc, z
 
