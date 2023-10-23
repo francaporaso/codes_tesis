@@ -178,7 +178,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'Nvoids', 'densidad media'])
+    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
