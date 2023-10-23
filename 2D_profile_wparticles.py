@@ -86,7 +86,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
 
         mask = (dec_h < c2[0].dec.deg)&(dec_h > c2[2].dec.deg)&(ra_h < c2[1].ra.deg)&(
-                ra_h > c2[3].ra.deg)&(np.abs(z_h - Z) <= delta_z)
+                ra_h > c2[3].ra.deg)&(np.abs(z_h - Z) <= 0.1)
         
         catdata = S[mask]
 
