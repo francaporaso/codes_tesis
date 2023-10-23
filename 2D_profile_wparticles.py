@@ -77,7 +77,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
         DEGxMPC = cosmo.arcsec_per_kpc_proper(Z).to('deg/Mpc')
         delta = (DEGxMPC*(ROUT*Rv))
 
-        dec_h, ra_h, z_h = comoving2ecuatiorial(S.xhalo, S.yhalo, S.zhalo)
+        dec_h, ra_h, z_h = comoving2ecuatorial(S.xhalo, S.yhalo, S.zhalo)
 
         delta_z = z_at_value(cosmo.comoving_distance, Rv*ROUT) # caja cortada en redshift
 
@@ -92,7 +92,7 @@ def partial_profile(RA0,DEC0,Z,Rv,
 
         del mask, delta, delta_z
 
-        dec_h, ra_h, z_h = comoving2ecuatiorial(catdata.xhalo, catdata.yhalo, catdata.zhalo)
+        dec_h, ra_h, z_h = comoving2ecuatorial(catdata.xhalo, catdata.yhalo, catdata.zhalo)
 
         rads, theta, *_ = eq2p2(np.deg2rad(ra_h), np.deg2rad(dec_h),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
@@ -127,7 +127,7 @@ def partial_profile_unpack(minput):
 	return partial_profile(*minput)
 
 
-def comoving2ecuatiorial(xc_rc, yc_rc, zc_rc, h=1.):
+def comoving2ecuatorial(xc_rc, yc_rc, zc_rc, h=1.):
         '''
         transforma de coordenadas cartesianas comoviles a coord esfericas ecuatoriales
         '''
@@ -208,7 +208,7 @@ def main(lcat, sample='pru', output_file=None,
         flag  = L[11]
 
         mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
-                 (rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
+                  (rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
         Nvoids = np.count_nonzero(mvoids)
