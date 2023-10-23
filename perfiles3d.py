@@ -22,12 +22,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
+import argparse
+
 
 h=1
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
-def step_densidad(j, xv, yv, zv, rv_j, M_halos,
-                  NBINS=10,RMIN=0.01,RMAX=3.):
+
+def step_densidad(xv, yv, zv, rv_j,
+              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12.):
     '''calcula la masa en funcion de la distancia al centro para 1 void
     
     j (int): # void
@@ -42,7 +45,8 @@ def step_densidad(j, xv, yv, zv, rv_j, M_halos,
     delta = RMAX*rv_j  # tamaño de un lado de la caja centrada en el void
 
     #seleccionamos los halos dentro de la caja
-    mask_j = (np.abs(M_halos.xhalo-xv)<=delta) & (np.abs(M_halos.yhalo-yv)<=delta) & (np.abs(M_halos.zhalo-zv)<=delta)
+    mask_j = ((np.abs(M_halos.xhalo-xv)<=delta)&(np.abs(M_halos.yhalo-yv)<=delta)&(np.abs(M_halos.zhalo-zv)<=delta)&(
+               M_halos.lmhalo >= LOGM))
     halos_vj = M_halos[mask_j]
     
     xh = halos_vj.xhalo
@@ -55,21 +59,22 @@ def step_densidad(j, xv, yv, zv, rv_j, M_halos,
     #calculamos el perfil M(r)
     step = (RMAX-RMIN)*rv_j/NBINS # en Mpc
     rin = RMIN*rv_j               # en Mpc
-    densidad_void = np.zeros(NBINS)  # en M_sun/ Mpc^3
-    nhalos = 0
+    MASAsum = np.zeros(NBINS)  # en M_sun/ Mpc^3
+    Ninbin  = np.zeros(NBINS)  # en M_sun/ Mpc^3
+    nhalos = len(halos_vj)
 
     for cascara in range(NBINS):
         
         mk = (r_halos_v > rin)&(r_halos_v <= rin+step)    
-        # r[cascara] = rin + step/2
-        v = 4*np.pi*(rin*step*(rin+step) + 3*step**3)
-        densidad_void[cascara] = np.sum(mhalo[mk])/v
+        
+        MASAsum[cascara] = np.sum(mhalo[mk])
+        Ninbin[cascara] = np.sum(mk)
         rin += step
-        nhalos += np.sum(mk)
 
-    return densidad_void, nhalos
+    return np.array([MASAsum, Ninbin, nhalos])
 
-def perfil_rho(NBINS, RMIN, RMAX,
+
+def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
               lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/'):
     
@@ -77,58 +82,108 @@ def perfil_rho(NBINS, RMIN, RMAX,
     L = np.loadtxt(folder+lcat).T
     
     Rv    = L[1]
-    ra    = L[2]
-    dec   = L[3]
     z     = L[4]
     rho_1 = L[8] #Sobredensidad integrada a un radio de void 
     rho_2 = L[9] #Sobredensidad integrada máxima entre 2 y 3 radios de void 
     flag  = L[11]
 
-    MASKvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)
+    MASKvoids = ((Rv >= Rv_min)&(Rv < Rv_max)&(z >= z_min)&(z < z_max)&(rho_1 >= rho1_min)&(rho_1 < rho1_max)&(
+                  rho_2 >= rho2_min)&(rho_2 < rho2_max)&(flag >= FLAG))
+    
     L = L[:,MASKvoids]
     
-    del ra, dec, z, rho_1, rho_2, flag
+    del z, rho_1, rho_2, flag
     
     # radio medio del ensemble
     rv_mean = np.mean(L[1])
     
-    #rango de dist comovil en el corte de redshift
-    xi_min = cosmo.comoving_distance(z_min).value
-    xi_max = cosmo.comoving_distance(z_max).value
-    
-    
-    ## cargamos el catalogo de halos MICE y seleccionamos los halos segun el rango del stacking
-    M_halos = fits.open('../cats/MICE/micecat2_halos.fits')[1].data
-    ## dist comovil a los halos de MICE
-    x_halo = M_halos.xhalo
-    y_halo = M_halos.yhalo
-    z_halo = M_halos.zhalo
-    r_halo = np.sqrt(x_halo**2+y_halo**2+z_halo**2)
+    bines = np.linspace(RMIN,RMAX,NBINS+1)
+    R = bines[:-1] + 0.5*np.diff(bines)
 
-    mask_halos = (r_halo >= xi_min-50)&(r_halo <= xi_max+50) #seleccionamos los halos en el rango de redshift +/- 50 Mpc
-
-    M_halos = M_halos[mask_halos]
-    
     #calculamos los perfiles de cada void
     Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
-    # masa = np.zeros((Nvoids, NBINS))
-    # vol  = np.zeros((Nvoids, NBINS))
-    densidad  = np.zeros((Nvoids, NBINS))
+    MASAsum = np.zeros((Nvoids, NBINS))
+    Ninbin  = np.zeros((Nvoids, NBINS))
     nh = 0
 
     for j in np.arange(Nvoids):
-        xv = L[5][j]
-        yv = L[6][j]
-        zv = L[7][j]
+        xv   = L[5][j]
+        yv   = L[6][j]
+        zv   = L[7][j]
         rv_j = L[1][j]
 
-        densidad[j] , nhalos = step_densidad(j=j, xv=xv, yv=yv, zv=xv, rv_j=rv_j, M_halos=M_halos, NBINS=NBINS,RMIN=RMIN,RMAX=RMAX)
+        MASAsum[j] , Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX)
         nh += nhalos 
 
     # realizamos el stacking de masa
     print(f'# halos: {nh}')
+
+    masa = np.sum(MASAsum, axis=0)
+    Nbin = np.sum(Ninbin, axis=0)
+
+    vol = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
+
+    densidad = masa/vol
+
+    output = np.array([masa, densidad, vol, Nbin, np.full_like(Nbin,nh)])
+
+    return output
+
+
+
+if __name__=='__main__':
     
-    densidad = np.sum(densidad, axis=0)/nh
-    
-    return densidad, rv_mean
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-sample', action='store', dest='sample',default='pru')
+    parser.add_argument('-Rv_min', action='store', dest='Rv_min', default=12.)
+    parser.add_argument('-Rv_max', action='store', dest='Rv_max', default=15.)
+    parser.add_argument('-rho1_min', action='store', dest='rho1_min', default=-1.)
+    parser.add_argument('-rho1_max', action='store', dest='rho1_max', default=1.)
+    parser.add_argument('-rho2_min', action='store', dest='rho2_min', default=-1.)
+    parser.add_argument('-rho2_max', action='store', dest='rho2_max', default=100.)
+    parser.add_argument('-FLAG', action='store', dest='FLAG', default=2.)
+    parser.add_argument('-z_min', action='store', dest='z_min', default=0.2)
+    parser.add_argument('-z_max', action='store', dest='z_max', default=0.3)
+    parser.add_argument('-LOGM', action='store', dest='LOGM', default=12.)
+    parser.add_argument('-RMIN', action='store', dest='RMIN', default=0.05)
+    parser.add_argument('-RMAX', action='store', dest='RMAX', default=4.)
+    parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
+    args = parser.parse_args()
+
+    sample   = args.sample
+    Rv_min   = float(args.Rv_min)
+    Rv_max   = float(args.Rv_max) 
+    rho1_min = float(args.rho1_min)
+    rho1_max = float(args.rho1_max) 
+    rho2_min = float(args.rho2_min)
+    rho2_max = float(args.rho2_max) 
+    FLAG     = float(args.FLAG) 
+    z_min    = float(args.z_min) 
+    z_max    = float(args.z_max) 
+    LOGM     = float(args.LOGM) 
+    RMIN     = float(args.RMIN)
+    RMAX     = float(args.RMAX)
+    NBINS    = int(args.NBINS)
+
+
+    M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
+
+    resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
+                Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
+                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, FLAG=FLAG)
+
+
+    import csv
+
+    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'nh'])
+    data = resultado.T
+
+    with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+
+        # write the header
+        writer.writerow(header)
+
+        # write multiple rows
+        writer.writerows(data)
