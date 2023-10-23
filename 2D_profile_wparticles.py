@@ -1,4 +1,4 @@
-'''for small cuts in radial bins, to be used with a forVoid_paste to unify profiles'''
+'''calcula el perfil proyectado en el plano del cielo utilizando la pocision y masa de las particulas en el box seleccionado'''
 
 import sys
 import os
@@ -8,7 +8,7 @@ import time
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from astropy.cosmology import LambdaCDM
+from astropy.cosmology import LambdaCDM, z_at_value
 from astropy.wcs import WCS
 # from fit_profiles_curvefit import *
 # from astropy.stats import bootstrap
@@ -55,63 +55,18 @@ domap      = False
 addnoise   = False
 '''
 
-def div_area(a, b, num=50):
-    '''a(float): radio interno
-       b(float): radio externo
-       num(int): numero de anillos de igual area
-       
-       returns
-       r(1d-array): radios de los num+1 anillos, con el último elemento igual a b'''
-    num = int(num)
-    r = np.zeros(num+1)
-    r[0] = a
-    A = np.pi * (b**2 - a**2)
-    
-    for k in np.arange(1,num+1):
-        r[k] = np.round(np.sqrt(k*A/(num*np.pi) + a**2),2)
-        
-    if r[-1] != b:
-        raise ValueError(f'No se calcularon los radios de forma correcta, el ultimo radio es {r[-1]} != {b}')
-    return r
-
-
-def SigmaCrit(zl, zs, h=1.):
-    '''Calcula el Sigma_critico dados los redshifts. 
-    Debe ser usada con astropy.cosmology y con astropy.constants
-    
-    zl:   (float) redshift de la lente (lens)
-    zs:   (float) redshift de la fuente (source)
-    h :   (float) H0 = 100.*h
-    '''
-
-    cosmo = LambdaCDM(H0=100*h, Om0=0.3, Ode0=0.7)
-
-    dl  = cosmo.angular_diameter_distance(zl).value
-    Dl = dl*1.e6*pc #en m
-    ds  = cosmo.angular_diameter_distance(zs).value              #dist ang diam de la fuente
-    dls = cosmo.angular_diameter_distance_z1z2(zl, zs).value      #dist ang diam entre fuente y lente
-                
-    BETA_array = dls / ds
-
-    return (((cvel**2.0)/(4.0*np.pi*G*Dl))*(1./BETA_array))*(pc**2/Msun)
-
-
-def partial_map():
-        pass
-
 def partial_profile(RA0,DEC0,Z,Rv,
-                    RIN,ROUT,ndots,h,
-                    addnoise):
+                    RIN,ROUT,ndots,h=1.,
+                    addnoise=False):
 
         '''
-        calcula el perfil de 1 solo void, tomando el centro del void y su redshift
         RA0,DEC0 (float): posicion del centro del void
         Z: redshift del void
         RIN,ROUT: bordes del perfil
         ndots: cantidad de puntos del perfil
         h: cosmologia
         addnoise(bool): agregar ruido (forma intrinseca) a las galaxias de fondo
-        devuelve la densidad proyectada (Sigma), el contraste(DSigma), la cant de galaxias por bin (Ninbin) 
+        devuelve la MASA tot por anillo, la cant de galaxias por bin (Ninbin) 
         y las totales (Ntot)'''
         
         ndots = int(ndots)
@@ -122,74 +77,73 @@ def partial_profile(RA0,DEC0,Z,Rv,
         DEGxMPC = cosmo.arcsec_per_kpc_proper(Z).to('deg/Mpc')
         delta = (DEGxMPC*(ROUT*Rv))
 
+        dec_h, ra_h, z_h = comoving2ecuatiorial(S.xhalo, S.yhalo, S.zhalo)
+
+        delta_z = z_at_value(cosmo.comoving_distance, Rv*ROUT) # caja cortada en redshift
+
         pos_angles = 0*u.deg, 90*u.deg, 180*u.deg, 270*u.deg
         c1 = SkyCoord(RA0*u.deg, DEC0*u.deg)
         c2 = np.array([c1.directional_offset_by(pos_angle, delta) for pos_angle in pos_angles])
 
-        mask = (S.dec_gal < c2[0].dec.deg)&(S.dec_gal > c2[2].dec.deg)&(S.ra_gal < c2[1].ra.deg)&(
-                S.ra_gal > c2[3].ra.deg)&(S.z_cgal > (Z+0.1))
+        mask = (dec_h < c2[0].dec.deg)&(dec_h > c2[2].dec.deg)&(ra_h < c2[1].ra.deg)&(
+                ra_h > c2[3].ra.deg)&(np.abs(z_h - Z) <= delta_z)
         
         catdata = S[mask]
 
-        del mask, delta
+        del mask, delta, delta_z
 
-        # sigma_c = SigmaCrit(Z, catdata.z_cgal)
-        sigma_c = SigmaCrit(Z, catdata.z_cgal)   # Higuchi et al 2013 (ec 4)
-        
-        rads, theta, *_ = eq2p2(np.deg2rad(catdata.ra_gal), np.deg2rad(catdata.dec_gal),
+        dec_h, ra_h, z_h = comoving2ecuatiorial(catdata.xhalo, catdata.yhalo, catdata.zhalo)
+
+        rads, theta, *_ = eq2p2(np.deg2rad(ra_h), np.deg2rad(dec_h),
                                   np.deg2rad(RA0), np.deg2rad(DEC0))
-                               
+                                       
         
-        e1     = catdata.gamma1
-        e2     = -1.*catdata.gamma2
-
-        # Add shape noise due to intrisic galaxy shapes        
-        if addnoise:
-            es1 = -1.*catdata.eps1
-            es2 = catdata.eps2
-            e1 += es1
-            e2 += es2
-        
-        #get tangential ellipticities 
-        et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c
-        #get cross ellipticities
-        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))*sigma_c
-               
-        #get convergence
-        k  = catdata.kappa*sigma_c
+        # sacamos masas de las particulas
+        mhalo = 10 **(catdata.lmhalo)
 
         r = (np.rad2deg(rads)/DEGxMPC.value)/(Rv.value)
-        #r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
         Ntot = len(catdata)        
 
         del catdata
-        del e1, e2, theta, sigma_c, rads
+        del theta, rads
 
         bines = np.linspace(RIN,ROUT,num=ndots+1)
-        dig = np.digitize(r,bines)
+        dig   = np.digitize(r,bines)
                 
-        SIGMAwsum    = np.empty(ndots)
-        DSIGMAwsum_T = np.empty(ndots)
-        DSIGMAwsum_X = np.empty(ndots)
-        N_inbin      = np.empty(ndots)
+        MASAsum = np.ones(ndots)
+        N_inbin = np.ones(ndots)
                                              
         for nbin in range(ndots):
                 mbin = dig == nbin+1              
 
-                SIGMAwsum[nbin]    = k[mbin].sum()
-                DSIGMAwsum_T[nbin] = et[mbin].sum()
-                DSIGMAwsum_X[nbin] = ex[mbin].sum()
-                N_inbin[nbin]      = np.count_nonzero(mbin)
+                MASAsum[nbin] = mhalo[mbin].sum()
+                N_inbin[nbin] = np.count_nonzero(mbin)
         
-        output = np.array([SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot], dtype=object)
-        #output = (SIGMAwsum, DSIGMAwsum_T, DSIGMAwsum_X, N_inbin, Ntot)
+        output = np.array([MASAsum, N_inbin, Ntot], dtype=object)
         
         return output
 
 def partial_profile_unpack(minput):
 	return partial_profile(*minput)
 
-        
+
+def comoving2ecuatiorial(xc_rc, yc_rc, zc_rc, h=1.):
+        '''
+        transforma de coordenadas cartesianas comoviles a coord esfericas ecuatoriales
+        '''
+
+        cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
+
+        ra_rc = np.rad2deg(np.arctan(xc_rc/yc_rc))
+        ra_rc[yc_rc==0] = 90.
+        dec_rc = np.rad2deg(np.arcsin(zc_rc/np.sqrt(xc_rc**2 + yc_rc**2 + zc_rc**2)))
+        D = np.sqrt(xc_rc**2 + yc_rc**2 + zc_rc**2)
+
+        z = z_at_value(cosmo.comoving_distance, D)
+
+        return ra_rc, dec_rc, z
+
+
 def main(lcat, sample='pru', output_file=None,
          Rv_min=0., Rv_max=50.,
          rho1_min=-1., rho1_max=0.,
@@ -197,8 +151,7 @@ def main(lcat, sample='pru', output_file=None,
          z_min = 0.1, z_max = 1.0,
          domap = False, RIN = .05, ROUT =5.,
          ndots= 40, ncores=10, 
-         idlist= None, hcosmo=1.0, 
-         addnoise = False, FLAG = 2.):
+         hcosmo=1.0, addnoise = False, FLAG = 2.):
 
         '''
         
@@ -237,18 +190,7 @@ def main(lcat, sample='pru', output_file=None,
         print(f'{z_min}    <=  Z   < {z_max}')
         print(f'{rho1_min}  <= rho1 < {rho1_max}')
         print(f'{rho2_min}  <= rho2 < {rho2_max}')
-        
-        if idlist:
-                print('From id list '+idlist)
-        # else:
-                # print(lM_min,' <= log(M) < ',lM_max)
-                # print(z_min,' <= z < ',z_max)
-                # print(q_min,' <= q < ',q_max)
-                # print(rs_min,' <= rs < ',rs_max)
-                #print(R5s_min,' <= R5s < ',R5s_max)
-                # print('resNFW_S < ',resNFW_max)
-                # print('h ',hcosmo)
-                # print('misalign '+str(misalign))
+
         
         if addnoise:
             print('ADDING SHAPE NOISE')
@@ -265,12 +207,8 @@ def main(lcat, sample='pru', output_file=None,
         rho_2 = L[9] #Sobredensidad integrada máxima entre 2 y 3 radios de void 
         flag  = L[11]
 
-        if idlist:
-                ides = np.loadtxt(idlist).astype(int)
-                mvoids = np.in1d(L[0],ides)
-        else:                
-                mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
-                         (rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
+        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&(
+                 (rho_1 >= rho1_min)&(rho_1 < rho1_max))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= FLAG)        
         # SELECT RELAXED HALOS
                 
         Nvoids = np.count_nonzero(mvoids)
@@ -288,6 +226,7 @@ def main(lcat, sample='pru', output_file=None,
         rho2mean = np.mean(L[9])
 
         # Define K masks   
+        
         ncen = 100
         
         kmask    = np.zeros((ncen+1,len(ra)))
@@ -311,9 +250,9 @@ def main(lcat, sample='pru', output_file=None,
         
         ind_rand0 = np.arange(Nvoids)
         np.random.shuffle(ind_rand0)
-        
-        
-                                
+
+
+
         # SPLIT LENSING CAT
         
         lbins = int(round(Nvoids/float(ncores), 0))
@@ -321,45 +260,34 @@ def main(lcat, sample='pru', output_file=None,
         slices = slices[(slices < Nvoids)]
         Lsplit = np.split(L.T,slices)
         Ksplit = np.split(kmask.T,slices)
-        
+
         del L
 
-        if domap:
-                print('Sin mapa')           
-
-        else:
-
-            print(f'Profile has {ndots} bins')
-            print(f'from {RIN} Rv to {ROUT} Rv')
-            try:
-                os.mkdir('../profiles')
-            except FileExistsError:
-                pass
-            
-            if not output_file:
-                output_file = f'../profiles/voids/'
-
-            # Defining radial bins
-            bines = np.linspace(RIN,ROUT,num=ndots+1)
-            R = (bines[:-1] + np.diff(bines)*0.5)
-
-            # WHERE THE SUMS ARE GOING TO BE SAVED
-            
-            Ninbin = np.zeros((ncen+1,ndots))
-            
-            SIGMAwsum    = np.zeros((ncen+1,ndots)) 
-            DSIGMAwsum_T = np.zeros((ncen+1,ndots)) 
-            DSIGMAwsum_X = np.zeros((ncen+1,ndots))
-                            
-            # FUNCTION TO RUN IN PARALLEL
-            partial = partial_profile_unpack
-            
-
+        print(f'Profile has {ndots} bins')
+        print(f'from {RIN} Rv to {ROUT} Rv')
+        
+        try:
+            os.mkdir('../profiles')
+        except FileExistsError:
+            pass
+        
+        if not output_file:
+            output_file = f'../profiles/voids/'
+        
+        # Defining radial bins
+        bines = np.linspace(RIN,ROUT,num=ndots+1)
+        R = (bines[:-1] + np.diff(bines)*0.5)
+        # WHERE THE SUMS ARE GOING TO BE SAVED
+        
+        Ninbin = np.zeros((ncen+1,ndots))
+        MASAsum    = np.zeros((ncen+1,ndots)) 
+                                
+        # FUNCTION TO RUN IN PARALLEL
+        partial = partial_profile_unpack
+        
         print(f'Saved in ../{output_file+sample}.fits')
 
-
         LARGO = len(Lsplit)
-
         tslice = np.array([])
         
         for l, Lsplit_l in enumerate(Lsplit):
@@ -402,12 +330,10 @@ def main(lcat, sample='pru', output_file=None,
                         else:
 
                             km      = np.tile(Ksplit[l][j],(ndots,1)).T
-                            Ninbin += np.tile(profilesums[3],(ncen+1,1))*km
+                            Ninbin += np.tile(profilesums[1],(ncen+1,1))*km
                                                 
-                            SIGMAwsum    += np.tile(profilesums[0],(ncen+1,1))*km
-                            DSIGMAwsum_T += np.tile(profilesums[1],(ncen+1,1))*km
-                            DSIGMAwsum_X += np.tile(profilesums[2],(ncen+1,1))*km
-
+                            MASAsum    += np.tile(profilesums[0],(ncen+1,1))*km
+                            
                 Ntot   = np.array([profilesums[-1] for profilesums in salida])
 
                 t2 = time.time()
@@ -441,25 +367,16 @@ def main(lcat, sample='pru', output_file=None,
         h.append(('Rp_min',np.round(RIN,4)))
         h.append(('Rp_max',np.round(ROUT,4)))
         h.append(('ndots',np.round(ndots,4)))
-
-
-        if domap:
-                print('Sin mapa')         
         
-        else:
-                # COMPUTING PROFILE        
-                Ninbin[DSIGMAwsum_T == 0] = 1.
-                        
-                Sigma     = (SIGMAwsum/Ninbin)
-                DSigma_T  = (DSIGMAwsum_T/Ninbin)
-                DSigma_X  = (DSIGMAwsum_X/Ninbin)
+        
+        # COMPUTING PROFILE        
+        Ninbin[MASAsum == 0] = 1.
                 
-            
-                table_p = [fits.Column(name='Rp', format='E', array=R),
-                           fits.Column(name='Sigma',    format='E', array=Sigma.flatten()),
-                           fits.Column(name='DSigma_T', format='E', array=DSigma_T.flatten()),
-                           fits.Column(name='DSigma_X', format='E', array=DSigma_X.flatten()),
-                           fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())]
+        MASA     = MASAsum/Ninbin        
+        
+        table_p = np.array([fits.Column(name='Rp', format='E', array=R),
+                            fits.Column(name='MASA',    format='E', array=MASA.flatten()),
+                            fits.Column(name='Ninbin', format='E', array=Ninbin.flatten())])
 
         tbhdu_p = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
         
@@ -476,48 +393,6 @@ def main(lcat, sample='pru', output_file=None,
         print(f'Partial time: {np.round((tfin-tini)/60. , 3)} mins')
         
 
-def run_in_parts(RIN,ROUT, nslices,
-                lcat, sample='pru',output_file=None, Rv_min=0.,Rv_max=50., rho1_min=-1.,rho1_max=0., 
-                rho2_min=-1.,rho2_max=100., z_min = 0.1, z_max = 1.0,domap=False, ndots= 40, ncores=10,
-                idlist=None, hcosmo=1.0, addnoise=False, FLAG = 2.):
-        '''calcula los RIN, ROUT que toma main para los dif cortes de R y corre el programa
-        
-        RIN, ROUT: radios interno y externo del profile
-        nslices(int): cantidad de cortes
-        
-        '''
-        cuts = np.round(np.linspace(RIN,ROUT,num=nslices+1),2)
-        
-        try:
-                os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}')
-        except FileExistsError:
-                pass
-
-        if not output_file:
-                output_file = f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/'
-        
-        tslice = np.zeros(nslices)
-
-        #orden inverso: calcula del corte mas externo al mas interno
-        #cuts = cuts[::-1]
-        for j in np.arange(nslices):
-                RIN, ROUT = cuts[j], cuts[j+1]
-                #ROUT, RIN = cuts[j], cuts[j+1]
-                t1 = time.time()
-
-                print(f'RUN {j+1} out of {nslices} slices')
-                #print(f'RUNNING FOR RIN={RIN}, ROUT={ROUT}')
-
-                main(lcat, sample+f'rbin_{j}',output_file=output_file, Rv_min=Rv_min, Rv_max=Rv_max, rho1_min=rho1_min, 
-                    rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, z_min=z_min, z_max=z_max, domap=domap,
-                    RIN=RIN, ROUT=ROUT, ndots=ndots//nslices, ncores=ncores, idlist=idlist, hcosmo=hcosmo, addnoise=addnoise, FLAG=FLAG)
-
-                t2 = time.time()
-                tslice[j] = (t2-t1)/60.     
-                #print('TIME SLICE')
-                #print(f'{np.round(tslice[j],2)} min')
-                print('Estimated remaining time for run in parts')
-                print(f'{np.round(np.mean(tslice[:j+1])*(nslices-(j+1)),2)} min')
 
 if __name__=='__main__':
         
@@ -576,7 +451,7 @@ if __name__=='__main__':
             addnoise = False
 
         folder = '/mnt/simulations/MICE/'
-        S      = fits.open(folder+'MICE_sources_HSN_withextra.fits')[1].data
+        S      = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
         
         if nback < 30.:
             nselec = int(nback*5157*3600.)
@@ -589,9 +464,13 @@ if __name__=='__main__':
 
         tin = time.time()
 
-        run_in_parts(RIN,ROUT, nslices,
-                lcat, sample, Rv_min=Rv_min, Rv_max=Rv_max, rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min,
-                rho2_max=rho2_max, z_min=z_min, z_max=z_max, ndots=ndots, ncores=ncores, hcosmo=hcosmo, FLAG=FLAG)
+        main(lcat, sample='pru2D', output_file=None, Rv_min=Rv_min, Rv_max=Rv_max,
+                rho1_min=rho1_min, rho1_max=rho1_max,
+                rho2_min=rho2_min, rho2_max=rho2_max,
+                z_min=z_min, z_max=z_max,
+                domap=False, RIN=RIN, ROUT=ROUT,
+                ndots=ndots, ncores=ncores, 
+                hcosmo=hcosmo, addnoise=False, FLAG=2.)
 
         tfin = time.time()
 
