@@ -23,6 +23,8 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 import argparse
+from astropy.stats import bootstrap
+from astropy.utils import NumpyRNGContext
 
 
 h=1
@@ -42,10 +44,8 @@ def step_densidad(xv, yv, zv, rv_j,
     RMIN,RMAX (float): radio minimo y maximo donde calcular el perfil'''
     
     
-    delta = RMAX*rv_j  # tamaño de un lado de la caja centrada en el void
-
     #seleccionamos los halos dentro de la caja
-    mask_j = ((np.abs(M_halos.xhalo-xv)<=delta)&(np.abs(M_halos.yhalo-yv)<=delta)&(np.abs(M_halos.zhalo-zv)<=delta)&(
+    mask_j = ((np.abs(M_halos.xhalo-xv)<=RMAX*rv_j)&(np.abs(M_halos.yhalo-yv)<=RMAX*rv_j)&(np.abs(M_halos.zhalo-zv)<=RMAX*rv_j)&(
                M_halos.lmhalo >= LOGM))
     halos_vj = M_halos[mask_j]
     
@@ -54,11 +54,11 @@ def step_densidad(xv, yv, zv, rv_j,
     zh = halos_vj.zhalo
     mhalo = 10**(halos_vj.lmhalo)
     
-    r_halos_v = np.sqrt((xh-xv)**2+(yh-yv)**2+(zh-zv)**2) # distancia radial del centro del void a los halos
+    r_halos_v = np.sqrt((xh-xv)**2+(yh-yv)**2+(zh-zv)**2)/rv_j # distancia radial del centro del void a los halos en unidades reducidas
     
     #calculamos el perfil M(r)
-    step = (RMAX-RMIN)*rv_j/NBINS # en Mpc
-    rin = RMIN*rv_j               # en Mpc
+    step = (RMAX-RMIN)/NBINS # en Mpc
+    rin = RMIN               # en Mpc
     MASAsum = np.zeros(NBINS)  # en M_sun/ Mpc^3
     Ninbin  = np.zeros(NBINS)  # en M_sun/ Mpc^3
     nhalos = len(halos_vj)
@@ -76,7 +76,7 @@ def step_densidad(xv, yv, zv, rv_j,
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
-              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/'):
+              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100):
     
     ## cargamos el catalogo de voids identificados
     L = np.loadtxt(folder+lcat).T
@@ -125,12 +125,29 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     vol = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
 
     densidad = masa/vol
-
     densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
 
-    output = np.array([masa, densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
+    # with NumpyRNGContext(1):
+    #     bootresult = bootstrap(np.arange(Nvoids), nboot)
+    # index = bootresult.astype(int)
+
+    boot_densidad = boot(densidad, Nvoids, NBINS, nboot=nboot)
+
+
+    output = np.array([masa, densidad, boot_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
 
     return output
+
+def boot(MASAsum,Nvoids,ndots,nboot=100):
+
+    A = np.random.uniform(0,Nvoids,(nboot, Nvoids)).astype(np.int32)
+
+    boot = np.sum(MASAsum[A], axis=1)/Nvoids
+
+    std = np.std(boot, axis=0)
+
+    return std
+
 
 
 
@@ -151,6 +168,7 @@ if __name__=='__main__':
     parser.add_argument('-RMIN', action='store', dest='RMIN', default=0.05)
     parser.add_argument('-RMAX', action='store', dest='RMAX', default=4.)
     parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
+    parser.add_argument('-NBOOT', action='store', dest='NBOOT', default=100)
     args = parser.parse_args()
 
     sample   = args.sample
@@ -167,18 +185,19 @@ if __name__=='__main__':
     RMIN     = float(args.RMIN)
     RMAX     = float(args.RMAX)
     NBINS    = int(args.NBINS)
+    NBOOT    = int(args.NBOOT)
 
 
     M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
 
     resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                 Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
-                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, FLAG=FLAG)
+                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, FLAG=FLAG, nboot=NBOOT)
 
 
     import csv
 
-    header = np.array(['masa', 'densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
+    header = np.array(['masa', 'densidad', 'boot_densidad','vol', 'Nbin', 'Nvoids', 'densidad_media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
