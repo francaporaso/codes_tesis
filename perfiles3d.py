@@ -127,14 +127,12 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     densidad = masa/vol
     densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
 
-    # with NumpyRNGContext(1):
-    #     bootresult = bootstrap(np.arange(Nvoids), nboot)
-    # index = bootresult.astype(int)
+    boot_masa = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
 
-    boot_densidad = boot(densidad, Nvoids, NBINS, nboot=nboot)
+    std_densidad = np.abs(np.std(boot_masa, axis=0)/vol)
 
 
-    output = np.array([masa, densidad, boot_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
+    output = np.array([masa, boot_masa, densidad, std_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
 
     return output
 
@@ -146,7 +144,7 @@ def boot(MASAsum,Nvoids,ndots,nboot=100):
 
     std = np.std(boot, axis=0)
 
-    return std
+    return boot
 
 
 
@@ -197,7 +195,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa', 'densidad', 'boot_densidad','vol', 'Nbin', 'Nvoids', 'densidad_media'])
+    header = np.array(['masa', 'boot_masa', 'densidad', 'std_densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
