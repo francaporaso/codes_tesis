@@ -113,7 +113,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         zv   = L[7][j]
         rv_j = L[1][j]
 
-        MASAsum[j] , Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX)
+        MASAsum[j] , Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM)
         nh += nhalos 
 
     # realizamos el stacking de masa
