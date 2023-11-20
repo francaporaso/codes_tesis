@@ -132,7 +132,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     std_densidad = np.abs(np.std(boot_masa, axis=0)/vol)
 
 
-    output = np.array([masa, boot_masa, densidad, std_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
+    output = np.array([masa, densidad, std_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
 
     return output
 
@@ -195,7 +195,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa', 'boot_masa', 'densidad', 'std_densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
+    header = np.array(['masa', 'densidad', 'std_densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
