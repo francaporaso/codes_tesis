@@ -110,7 +110,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
 
     boot_masa = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
-    boot_den  = boot(den_int, Nvoids, NBINS, nboot=nboot)
+    boot_den  = boot(den_int_sum, Nvoids, NBINS, nboot=nboot)
 
     std_den = np.abs(np.std(boot_den, axis=0))
 
@@ -118,11 +118,11 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
 
     return output
 
-def boot(MASAsum,Nvoids,ndots,nboot=100):
+def boot(perfil,Nvoids,ndots,nboot=100):
 
     A = np.random.uniform(0,Nvoids,(nboot, Nvoids)).astype(np.int32)
 
-    boot = np.sum(MASAsum[A], axis=1)/Nvoids
+    boot = np.sum(perfil[A], axis=1)/Nvoids
 
     std = np.std(boot, axis=0)
 
