@@ -202,7 +202,7 @@ if __name__=='__main__':
     header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol', 'Nbin', 'Nvoids', 'den_media'])
     data = resultado.T
 
-    with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
+    with open(f'/home/fcaporaso/tests/perfiles_3d/perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
 
         # write the header
