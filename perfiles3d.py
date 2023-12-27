@@ -71,7 +71,13 @@ def step_densidad(xv, yv, zv, rv_j,
         Ninbin[cascara] = np.sum(mk)
         rin += step
 
-    return np.array([MASAsum, Ninbin, nhalos], dtype=object)
+    MASAacum = np.zeros(NBINS)
+    MASAacum[0] = MASAsum[0]
+    
+    for i in range(1,NBINS):
+        MASAacum[i] = MASAacum[i-1] + MASAsum[i]
+
+    return np.array([MASAsum, MASAacum, Ninbin, nhalos], dtype=object)
 
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
@@ -103,8 +109,9 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     #calculamos los perfiles de cada void
     Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
-    MASAsum = np.zeros((Nvoids, NBINS))
-    Ninbin  = np.zeros((Nvoids, NBINS))
+    MASAsum  = np.zeros((Nvoids, NBINS))
+    MASAacum = np.zeros((Nvoids, NBINS))
+    Ninbin   = np.zeros((Nvoids, NBINS))
     nh = 0
 
     for j in np.arange(Nvoids):
@@ -113,26 +120,25 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         zv   = L[7][j]
         rv_j = L[1][j]
 
-        MASAsum[j] , Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM)
+        MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM)
         nh += nhalos 
 
-    # realizamos el stacking de masa
+    # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
 
-    masa = np.sum(MASAsum, axis=0)
+    masa_dif = np.sum(MASAsum, axis=0)
     Nbin = np.sum(Ninbin, axis=0)
-
     vol = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
+    densidad_media = np.sum(masa_dif)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
+    boot_masa_dif = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
+    std_masa_dif = np.abs(np.std(boot_masa_dif, axis=0))
 
-    densidad = masa/vol
-    densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
+    # calculo de densidad acumulada
+    masa_int = np.sum(MASAacum, axis=0)
+    boot_masa_int = boot(MASAacum, Nvoids, NBINS, nboot=nboot)
+    std_masa_int = np.abs(np.std(boot_masa_int, axis=0))
 
-    boot_masa = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
-
-    std_densidad = np.abs(np.std(boot_masa, axis=0)/vol)
-
-
-    output = np.array([masa, densidad, std_densidad, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
+    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
 
     return output
 
@@ -145,8 +151,6 @@ def boot(MASAsum,Nvoids,ndots,nboot=100):
     std = np.std(boot, axis=0)
 
     return boot
-
-
 
 
 if __name__=='__main__':
@@ -195,7 +199,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa', 'densidad', 'std_densidad', 'vol', 'Nbin', 'Nvoids', 'densidad_media'])
+    header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol', 'Nbin', 'Nvoids', 'den_media'])
     data = resultado.T
 
     with open(f'perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:

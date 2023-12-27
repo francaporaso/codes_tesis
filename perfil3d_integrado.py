@@ -13,18 +13,16 @@ cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
 def step_densidad(xv, yv, zv, rv_j,
               NBINS=10,RMIN=0.01,RMAX=3., LOGM=12.):
-    '''calcula la masa en funcion de la distancia al centro para 1 void
-    
-    j (int): # void
+    '''
     xv,yv,zv (float): posicion comovil del void en Mpc
     rv_j (float): radio del void en Mpc
-    M_halos (array): catalogo de halos de MICE
     z (float): redshift del centro
     NBINS (int): cantidad de puntos a calcular del perfil
-    RMIN,RMAX (float): radio minimo y maximo donde calcular el perfil'''
+    RMIN,RMAX (float): radio minimo y maximo donde calcular el perfil
+    LOGM (float): cota min del log de la masa
+    '''
     
-    
-    #seleccionamos los halos dentro de la caja
+    #halos dentro de la caja de lado 2*RMAX*rv y masa mayor a 10**LOGM
     mask_j = ((np.abs(M_halos.xhalo-xv)<=RMAX*rv_j)&(np.abs(M_halos.yhalo-yv)<=RMAX*rv_j)&(np.abs(M_halos.zhalo-zv)<=RMAX*rv_j)&(
                M_halos.lmhalo >= LOGM))
     halos_vj = M_halos[mask_j]
@@ -34,27 +32,27 @@ def step_densidad(xv, yv, zv, rv_j,
     zh = halos_vj.zhalo
     mhalo = 10**(halos_vj.lmhalo)
     
-    r_halos_v = np.sqrt((xh-xv)**2+(yh-yv)**2+(zh-zv)**2)/rv_j # distancia radial del centro del void a los halos en unidades reducidas
+    rh = np.sqrt((xh-xv)**2+(yh-yv)**2+(zh-zv)**2)/rv_j # distancia radial del centro del void a los halos en unidades reducidas
     
-    #calculamos el perfil M(r)
-    step = (RMAX-RMIN)/NBINS # en Mpc
-    rin = (RMIN+step)               # en Mpc
-    MASAsum = np.zeros(NBINS)  # en M_sun
+    #perfil
+    step    = (RMAX-RMIN)/NBINS  
+    rin     = (RMIN+step)         
+    masa    = np.zeros(NBINS) 
     den_int = np.zeros(NBINS)
-    Ninbin  = np.zeros(NBINS)  # en M_sun/ Mpc^3
-    nhalos = len(halos_vj)
+    Ninbin  = np.zeros(NBINS) 
+    nhalos  = len(halos_vj)
 
     for cascara in range(NBINS):
         
-        mk = (r_halos_v <= rin)    
+        mk = (rh <= rin) & (rh >= RMIN)
         
-        MASAsum[cascara] = np.sum(mhalo[mk])
+        masa[cascara] = np.sum(mhalo[mk])
         v = (4*np.pi/3)*(rin**3-RMIN**3)
-        den_int[cascara] = MASAsum[cascara]/v
+        den_int[cascara] = np.sum(mhalo[mk])/v
         Ninbin[cascara] = np.sum(mk)
         rin += step
 
-    return np.array([MASAsum, den_int, Ninbin, nhalos], dtype=object)
+    return np.array([masa, den_int, Ninbin, nhalos], dtype=object)
 
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
@@ -105,7 +103,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
 
     masa = np.sum(MASAsum, axis=0)/Nvoids
     den_int = np.sum(den_int_sum, axis=0)/Nvoids
-    Nbin = np.sum(Ninbin, axis=0)/Nvoids
+    Nbin = np.sum(Ninbin, axis=0)
 
     densidad_media = np.sum(masa)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
 
