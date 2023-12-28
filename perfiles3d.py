@@ -71,11 +71,7 @@ def step_densidad(xv, yv, zv, rv_j,
         Ninbin[cascara] = np.sum(mk)
         rin += step
 
-    MASAacum = np.zeros(NBINS)
-    MASAacum[0] = MASAsum[0]
-    
-    for i in range(1,NBINS):
-        MASAacum[i] = MASAacum[i-1] + MASAsum[i]
+    MASAacum = np.cumsum(MASAsum)
 
     return np.array([MASAsum, MASAacum, Ninbin, nhalos], dtype=object)
 
@@ -131,29 +127,30 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     vol_dif   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
     den_media = np.sum(masa_dif)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
     
-    boot_masa_dif = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
-    std_masa_dif  = np.abs(np.std(boot_masa_dif, axis=0))
+    std_masa_dif = boot(MASAsum, nboot=nboot)
 
     # calculo de densidad acumulada
     masa_int = np.sum(MASAacum, axis=0)
     vol_acum = np.cumsum(vol_dif)
     
-    boot_masa_int = boot(MASAacum, Nvoids, NBINS, nboot=nboot)
-    std_masa_int  = np.abs(np.std(boot_masa_int, axis=0))
+    std_masa_int = boot(MASAacum, nboot=nboot)
 
     output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, den_media)])
 
     return output
 
-def boot(MASAsum,Nvoids,ndots,nboot=100):
+def boot(poblacion, nboot=100):
+    size,ndots = poblacion.shape
+    
+    index = np.arange(size)
+    with NumpyRNGContext(1):
+        bootresult = bootstrap(index, nboot)
+    INDEX=bootresult.astype(int)
 
-    A = np.random.uniform(0,Nvoids,(nboot, Nvoids)).astype(np.int32)
+    std = np.std(poblacion[INDEX].sum(axis=1), axis=0)
 
-    boot = np.sum(MASAsum[A], axis=1)/Nvoids
+    return std
 
-    std = np.std(boot, axis=0)
-
-    return boot
 
 
 if __name__=='__main__':
