@@ -25,6 +25,8 @@ from astropy.cosmology import LambdaCDM
 import argparse
 from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
+from astropy.io import fits
+import os
 
 
 h=1
@@ -135,7 +137,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     
     std_masa_int = boot(MASAacum, nboot=nboot)
 
-    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, den_media)])
+    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, Nvoids, den_media], type=object)
 
     return output
 
@@ -196,17 +198,58 @@ if __name__=='__main__':
                 Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                 rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, FLAG=FLAG, nboot=NBOOT)
 
+    bines = np.linspace(RMIN,RMAX,num=NBINS+1)
+    r = (bines[:-1] + np.diff(bines)*0.5)
 
-    import csv
+    h = fits.Header()
+    h.append(('N_VOIDS',int(resultado[7])))
+    h.append(('Rv_min',np.round(Rv_min,2)))
+    h.append(('Rv_max',np.round(Rv_max,2)))
+    h.append(('rho1_min',np.round(rho1_min,2)))
+    h.append(('rho1_max',np.round(rho1_max,2)))
+    h.append(('rho2_min',np.round(rho2_min,2)))
+    h.append(('rho2_max',np.round(rho2_max,2)))
+    h.append(('z_min',np.round(z_min,2)))
+    h.append(('z_max',np.round(z_max,2)))
+    h.append(('den_media', resultado[8]))
 
-    header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol_dif', 'vol_acum', 'Nbin', 'Nvoids', 'den_media'])
-    data = resultado.T
+    table_p = [ fits.Column(name='r', format='E', array=r),
+                fits.Column(name='masa_dif', format='E', array=resultado[0]),
+                fits.Column(name='masa_int', format='E', array=resultado[1]),
+                fits.Column(name='std_masa_dif', format='E', array=resultado[2]),
+                fits.Column(name='std_masa_int', format='E', array=resultado[3]),
+                fits.Column(name='vol_dif', format='E', array=resultado[4]),
+                fits.Column(name='vol_int', format='E', array=resultado[5]),
+                fits.Column(name='Nbin', format='E', array=resultado[6])]   
 
-    with open(f'/home/fcaporaso/tests/perfiles_3d/perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
-        writer = csv.writer(f)
+    tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
+    primary_hdu = fits.PrimaryHDU(header=h)
+    hdul = fits.HDUList([primary_hdu, tbhdu])
 
-        # write the header
-        writer.writerow(header)
+    try:
+        os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/3D')
+    except FileExistsError:
+        pass
 
-        # write multiple rows
-        writer.writerows(data)
+    output_folder = f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/3D/'
+
+    hdul.writeto(f'{output_folder+sample}.fits',overwrite=True)
+
+    print(f'Archivo guardado en: {output_folder+sample}.fits !')
+    print(f'Terminado!')
+    # import csv
+
+    # header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol_dif', 'vol_acum', 'Nbin', 'Nvoids', 'den_media'])
+    # data = resultado.T
+
+    # with open(f'/home/fcaporaso/tests/perfiles_3d/perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
+    #     writer = csv.writer(f)
+
+    #     # write the header
+    #     writer.writerow(header)
+
+    #     # write multiple rows
+    #     writer.writerows(data)
+
+
+
