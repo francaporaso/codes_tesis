@@ -126,19 +126,22 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
 
-    masa_dif = np.sum(MASAsum, axis=0)
-    Nbin = np.sum(Ninbin, axis=0)
-    vol = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
-    densidad_media = np.sum(masa_dif)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
+    masa_dif  = np.sum(MASAsum, axis=0)
+    Nbin      = np.sum(Ninbin, axis=0)
+    vol_dif   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
+    den_media = np.sum(masa_dif)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
+    
     boot_masa_dif = boot(MASAsum, Nvoids, NBINS, nboot=nboot)
-    std_masa_dif = np.abs(np.std(boot_masa_dif, axis=0))
+    std_masa_dif  = np.abs(np.std(boot_masa_dif, axis=0))
 
     # calculo de densidad acumulada
     masa_int = np.sum(MASAacum, axis=0)
+    vol_acum = np.cumsum(vol_dif)
+    
     boot_masa_int = boot(MASAacum, Nvoids, NBINS, nboot=nboot)
-    std_masa_int = np.abs(np.std(boot_masa_int, axis=0))
+    std_masa_int  = np.abs(np.std(boot_masa_int, axis=0))
 
-    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, densidad_media)])
+    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, np.full_like(Nbin,Nvoids), np.full_like(Nbin, den_media)])
 
     return output
 
@@ -199,7 +202,7 @@ if __name__=='__main__':
 
     import csv
 
-    header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol', 'Nbin', 'Nvoids', 'den_media'])
+    header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol_dif', 'vol_acum', 'Nbin', 'Nvoids', 'den_media'])
     data = resultado.T
 
     with open(f'/home/fcaporaso/tests/perfiles_3d/perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
