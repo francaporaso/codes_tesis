@@ -137,7 +137,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     
     std_masa_int = boot(MASAacum, nboot=nboot)
 
-    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, Nvoids, den_media], type=object)
+    output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, Nvoids, den_media], dtype=object)
 
     return output
 
