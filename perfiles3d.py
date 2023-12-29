@@ -80,7 +80,7 @@ def step_densidad(xv, yv, zv, rv_j,
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
-              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100):
+              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, interpolar=False):
     
     ## cargamos el catalogo de voids identificados
     L = np.loadtxt(folder+lcat).T
@@ -112,6 +112,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     Ninbin   = np.zeros((Nvoids, NBINS))
     nh = 0
 
+    print('Calculando perfiles...')
     for j in np.arange(Nvoids):
         xv   = L[5][j]
         yv   = L[6][j]
@@ -138,6 +139,26 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     std_masa_int = boot(MASAacum, nboot=nboot)
 
     output = np.array([masa_dif, masa_int, std_masa_dif, std_masa_int, vol_dif, vol_acum, Nbin, Nvoids, den_media], dtype=object)
+
+    if interpolar:
+        print('Interpolando...')
+
+        poly_m_d = np.zeros((Nvoids,NBINS))
+        poly_m_i = np.zeros((Nvoids,NBINS))
+    
+        for j in range(Nvoids):
+            p_d = np.poly1d(np.polyfit(R,MASAsum[j],4))
+            poly_m_d[j] = p_d(R)
+        
+            p_i = np.poly1d(np.polyfit(R,MASAacum[j],4))
+            poly_m_i[j] = p_i(R)
+        
+        std_poly_m_d = boot(poly_m_d, nboot)
+        std_poly_m_i = boot(poly_m_i, nboot)
+
+        output_poly = np.array([poly_m_d, poly_m_i, std_poly_m_d, std_poly_m_i])
+
+        return output, output_poly
 
     return output
 
@@ -173,6 +194,7 @@ if __name__=='__main__':
     parser.add_argument('-RMAX', action='store', dest='RMAX', default=4.)
     parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
     parser.add_argument('-NBOOT', action='store', dest='NBOOT', default=100)
+    parser.add_argument('-INTP', action='store', dest='INTP', default=False)
     args = parser.parse_args()
 
     sample   = args.sample
@@ -190,13 +212,23 @@ if __name__=='__main__':
     RMAX     = float(args.RMAX)
     NBINS    = int(args.NBINS)
     NBOOT    = int(args.NBOOT)
+    INTP     = bool(args.INTP)
 
 
     M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
 
-    resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
-                Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
-                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max, FLAG=FLAG, nboot=NBOOT)
+    if INTP:
+        print('Calculando con interpolación...')
+        print('Puede demorar unos segundos más...')
+        resultado, res_poly = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
+                                        Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
+                                        rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
+                                        FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
+    else:
+        resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
+                               Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
+                               rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
+                               FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
 
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     r = (bines[:-1] + np.diff(bines)*0.5)
@@ -223,8 +255,22 @@ if __name__=='__main__':
                 fits.Column(name='Nbin', format='E', array=resultado[6])]   
 
     tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
+
+    if INTP:
+        table_poly = [fits.Column(name='poly_mdif', format='E', array=res_poly[0]),
+                      fits.Column(name='poly_mint', format='E', array=res_poly[1]),
+                      fits.Column(name='std_poly_mdif', format='E', array=res_poly[2]),
+                      fits.Column(name='std_poly_mint', format='E', array=res_poly[3])]
+        
+        tbhdu_poly = fits.BinTableHDU.from_columns(fits.ColDefs(table_poly))
+
     primary_hdu = fits.PrimaryHDU(header=h)
-    hdul = fits.HDUList([primary_hdu, tbhdu])
+    
+    if INTP:
+        hdul = fits.HDUList([primary_hdu, tbhdu, tbhdu_poly])
+    else:
+        hdul = fits.HDUList([primary_hdu, tbhdu])
+
 
     try:
         os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/3D')
@@ -237,19 +283,6 @@ if __name__=='__main__':
 
     print(f'Archivo guardado en: {output_folder+sample}.fits !')
     print(f'Terminado!')
-    # import csv
-
-    # header = np.array(['masa_dif', 'masa_int', 'std_masa_dif', 'std_masa_int', 'vol_dif', 'vol_acum', 'Nbin', 'Nvoids', 'den_media'])
-    # data = resultado.T
-
-    # with open(f'/home/fcaporaso/tests/perfiles_3d/perfil3d_{sample}.csv', 'w', encoding='UTF8', newline='') as f:
-    #     writer = csv.writer(f)
-
-    #     # write the header
-    #     writer.writerow(header)
-
-    #     # write multiple rows
-    #     writer.writerows(data)
 
 
 
