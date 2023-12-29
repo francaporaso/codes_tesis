@@ -152,11 +152,14 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         
             p_i = np.poly1d(np.polyfit(R,MASAacum[j],4))
             poly_m_i[j] = p_i(R)
+
+        poly_mdif = np.sum(poly_m_d, axis=0)
+        poly_mint = np.sum(poly_m_i, axis=0)
         
         std_poly_m_d = boot(poly_m_d, nboot)
         std_poly_m_i = boot(poly_m_i, nboot)
 
-        output_poly = np.array([poly_m_d, poly_m_i, std_poly_m_d, std_poly_m_i])
+        output_poly = np.array([poly_mdif, poly_mint, std_poly_m_d, std_poly_m_i])
 
         return output, output_poly
 
@@ -189,9 +192,9 @@ if __name__=='__main__':
     parser.add_argument('-FLAG', action='store', dest='FLAG', default=2.)
     parser.add_argument('-z_min', action='store', dest='z_min', default=0.2)
     parser.add_argument('-z_max', action='store', dest='z_max', default=0.3)
-    parser.add_argument('-LOGM', action='store', dest='LOGM', default=12.)
+    parser.add_argument('-LOGM', action='store', dest='LOGM', default=10.)
     parser.add_argument('-RMIN', action='store', dest='RMIN', default=0.05)
-    parser.add_argument('-RMAX', action='store', dest='RMAX', default=4.)
+    parser.add_argument('-RMAX', action='store', dest='RMAX', default=3.)
     parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
     parser.add_argument('-NBOOT', action='store', dest='NBOOT', default=100)
     parser.add_argument('-INTP', action='store', dest='INTP', default=False)
