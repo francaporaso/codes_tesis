@@ -80,10 +80,8 @@ def step_densidad(xv, yv, zv, rv_j,
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
-              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, interpolar=False):
+              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, interpolar=False, M_halos=None):
     
-    M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
-
     ## cargamos el catalogo de voids identificados
     L = np.loadtxt(folder+lcat).T
     

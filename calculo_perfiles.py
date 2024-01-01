@@ -47,12 +47,12 @@ for rvm,rvM in zip(rv_min,rv_max):
                 resultado, res_poly = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                                 Rv_min=rvm, Rv_max=rvM, z_min=zm, z_max=zM,
                                                 rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2m, rho2_max=rho2M,
-                                                FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
+                                                FLAG=FLAG, nboot=NBOOT, interpolar=INTP,M_halos=M_halos)
             else:
                 resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                        Rv_min=rvm, Rv_max=rvM, z_min=zm, z_max=zM,
                                        rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2m, rho2_max=rho2M,
-                                       FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
+                                       FLAG=FLAG, nboot=NBOOT, interpolar=INTP,M_halos=M_halos)
 
 
             h = fits.Header()
@@ -100,6 +100,11 @@ for rvm,rvM in zip(rv_min,rv_max):
                 pass
             
             output_folder = f'../profiles/voids/Rv_{int(rvm)}-{int(rvM)}/3D/'
+
+            if zM==0.4:
+                sample = f'3d_{t}_lowz'
+            else:
+                sample = f'3d_{t}_highz'
 
             hdul.writeto(f'{output_folder+sample}.fits',overwrite=True)
 
