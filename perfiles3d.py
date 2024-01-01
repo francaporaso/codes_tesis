@@ -34,7 +34,7 @@ cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
 
 def step_densidad(xv, yv, zv, rv_j,
-              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12.):
+              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12., M_halos=None):
     '''calcula la masa en funcion de la distancia al centro para 1 void
     
     j (int): # void
@@ -121,7 +121,8 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         zv   = L[7][j]
         rv_j = L[1][j]
 
-        MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM)
+        MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX,
+                                                                    LOGM=LOGM, M_halos=M_halos)
         nh += nhalos 
 
     # realizamos el stacking de masa y calculo de densidad
