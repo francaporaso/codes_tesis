@@ -237,7 +237,7 @@ if __name__=='__main__':
     r = (bines[:-1] + np.diff(bines)*0.5)
 
     h = fits.Header()
-    h.append(('N_VOIDS',int(resultado[7])))
+    h.append(('Nvoids',int(resultado[7])))
     h.append(('Rv_min',np.round(Rv_min,2)))
     h.append(('Rv_max',np.round(Rv_max,2)))
     h.append(('rho1_min',np.round(rho1_min,2)))
