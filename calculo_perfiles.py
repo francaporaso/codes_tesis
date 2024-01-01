@@ -102,9 +102,9 @@ for rvm,rvM in zip(rv_min,rv_max):
             output_folder = f'../profiles/voids/Rv_{int(rvm)}-{int(rvM)}/3D/'
 
             if zM==0.4:
-                sample = f'3d_{t}_lowz'
-            else:
                 sample = f'3d_{t}_highz'
+            else:
+                sample = f'3d_{t}_lowz'
 
             hdul.writeto(f'{output_folder+sample}.fits',overwrite=True)
 
