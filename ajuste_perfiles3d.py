@@ -60,6 +60,8 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
 
     except RuntimeError:
         print(f'El perfil {f} no ajustó para la funcion {func_dif.__name__}')
+        a_dif = np.ones_like(p0)
+        cov_dif = np.ones_like((p0,p0))
 
     try:    
         a_int, cov_int = curve_fit(f=func_int, xdata=xdata, ydata=yint, sigma=eint,
@@ -67,22 +69,24 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
         
     except RuntimeError:
         print(f'El perfil {f} no ajustó para la función {func_int.__name__}')    
+        a_dif = np.ones_like(p0)
+        cov_dif = np.ones_like((p0,p0))
 
-        h = fits.Header()
-        h.append(('orden', orden))
-        params = [fits.Column(name='param_dif', format='E', array=a_dif),
-                 fits.Column(name='param_int', format='E', array=a_int)]
-    
-        covs = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
-                fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
-    
-        tbhdu1 = fits.BinTableHDU.from_columns(fits.ColDefs(params))
-        tbhdu2 = fits.BinTableHDU.from_columns(fits.ColDefs(covs))
-        primary_hdu = fits.PrimaryHDU(header=h)
-        hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
-    
-        output = f'{d}/fit_{func_dif.__name__}_{f}.fits'
-        hdul.writeto(output,overwrite=True)
+    h = fits.Header()
+    h.append(('orden', orden))
+    params = [fits.Column(name='param_dif', format='E', array=a_dif),
+             fits.Column(name='param_int', format='E', array=a_int)]
+
+    covs = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
+            fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
+
+    tbhdu1 = fits.BinTableHDU.from_columns(fits.ColDefs(params))
+    tbhdu2 = fits.BinTableHDU.from_columns(fits.ColDefs(covs))
+    primary_hdu = fits.PrimaryHDU(header=h)
+    hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
+
+    output = f'{d}/fit_{func_dif.__name__}_{f}.fits'
+    hdul.writeto(output,overwrite=True)
 
 ##
 f1 = np.array([hamaus, clampitt, higuchi])
