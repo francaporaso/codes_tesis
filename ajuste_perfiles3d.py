@@ -52,7 +52,7 @@ def int_higuchi(r,Rv,R2,dc,d2):
 
 ## funcion de ajuste
 
-def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f):
+def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d):
     
     a_dif, cov_dif = curve_fit(f=func_dif, xdata=xdata, ydata=ydif, sigma=edif,
                                 p0=p0, bounds=b)
@@ -117,4 +117,4 @@ for radio in radios:
 
         for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
             ajuste(f_dif,f_int,xdata=p.r, ydif=den_dif,edif=e_den_dif, yint=den_int, eint=e_den_int,
-                   p0=p, b=v, orden=o, f=f)
+                   p0=p, b=v, orden=o, f=f, d=d)
