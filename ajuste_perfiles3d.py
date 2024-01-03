@@ -85,7 +85,7 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     primary_hdu = fits.PrimaryHDU(header=h)
     hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
 
-    output = f'{d}/fit_{func_dif.__name__}_{f}.fits'
+    output = f'{d}/fit_{func_dif.__name__}_{f}'
     hdul.writeto(output,overwrite=True)
 
 ##
