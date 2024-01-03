@@ -95,10 +95,10 @@ f2 = np.array([int_hamaus, int_clampitt, int_higuchi])
 ## p0 de cada func
 p0 = np.array([[0.5,0.5,-0.5,3.,7.],
                [0.5,0.5,-0.5,0.1],   
-               [0.5,0.5,-0.5,0.1]])   
+               [0.5,0.5,-0.5,0.1]], dtype=object)   
 b = np.array([([0.,0.,-1.,1.,1.],[3.,3.,10,50,500]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.]),
-              ([0.,0.,-1,-1.],[3.,3.,10.,100.])])
+              ([0.,0.,-1,-1.],[3.,3.,10.,100.])], dtype=object)
 orden = np.array(['rs, rv, dc, a, b', 
                   'Rv,R2,dc,d2',
                   'Rv,R2,dc,d2'])
@@ -113,7 +113,9 @@ file = np.array([f'3d_{t}_{z}.fits' for t in tipos for z in redshift])
 
 for radio in radios:
     d = f'/home/fcaporaso/profiles/voids/Rv_{radio}/3D'
-
+    print('----')
+    print(f'Ajustando para los radios {radio}')
+    print('----')
     for f in file:
         print(f'Ajustando perfil {f}')
 
