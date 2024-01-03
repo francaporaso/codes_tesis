@@ -69,8 +69,8 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
         
     except RuntimeError:
         print(f'El perfil {f} no ajustó para la función {func_int.__name__}')    
-        a_dif = np.ones_like(p0)
-        cov_dif = np.ones_like((p0,p0))
+        a_int = np.ones_like(p0)
+        cov_int = np.ones_like((p0,p0))
 
     h = fits.Header()
     h.append(('orden', orden))
