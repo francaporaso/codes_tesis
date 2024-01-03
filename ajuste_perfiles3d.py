@@ -115,6 +115,7 @@ for radio in radios:
         den_int = p.masa_int/(p.vol_int*h['den_media']) - 1
         e_den_int = p.std_masa_int/(p.vol_int*h['den_media'])
 
+        xdata = p.r
         for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
-            ajuste(f_dif,f_int,xdata=p['r'], ydif=den_dif,edif=e_den_dif, yint=den_int, eint=e_den_int,
+            ajuste(f_dif,f_int,xdata=xdata, ydif=den_dif,edif=e_den_dif, yint=den_int, eint=e_den_int,
                    p0=p, b=v, orden=o, f=f, d=d)
