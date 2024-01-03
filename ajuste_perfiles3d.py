@@ -130,6 +130,6 @@ for radio in radios:
 
         xdata = p.r
         for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
-            print('usando {f_dif.__name__}')
+            print(f'usando {f_dif.__name__}')
             ajuste(f_dif,f_int,xdata=xdata, ydif=den_dif,edif=e_den_dif, yint=den_int, eint=e_den_int,
                    p0=p, b=v, orden=o, f=f, d=d)
