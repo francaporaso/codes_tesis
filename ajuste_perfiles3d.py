@@ -104,7 +104,8 @@ orden = np.array(['rs, rv, dc, a, b',
                   'Rv,R2,dc,d2'])
 
 ## leyendo datos
-radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
+# radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
+radios = np.array(['9-12', '12-15', '15-18', '18-50'])
 
 tipos = np.array(['Total', 'S', 'R'])
 redshift = np.array(['lowz', 'highz'])
