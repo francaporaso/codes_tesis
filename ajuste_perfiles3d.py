@@ -54,28 +54,35 @@ def int_higuchi(r,Rv,R2,dc,d2):
 
 def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d):
     
-    a_dif, cov_dif = curve_fit(f=func_dif, xdata=xdata, ydata=ydif, sigma=edif,
+    try:
+        a_dif, cov_dif = curve_fit(f=func_dif, xdata=xdata, ydata=ydif, sigma=edif,
                                 p0=p0, bounds=b)
-    
-    a_int, cov_int = curve_fit(f=func_int, xdata=xdata, ydata=yint, sigma=eint,
-                                p0=p0, bounds=b)
-    
-    h = fits.Header()
-    h.append(('orden', orden))
-    params = [fits.Column(name='param_dif', format='E', array=a_dif),
-             fits.Column(name='param_int', format='E', array=a_int)]
-    
-    covs = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
-            fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
-    
-    tbhdu1 = fits.BinTableHDU.from_columns(fits.ColDefs(params))
-    tbhdu2 = fits.BinTableHDU.from_columns(fits.ColDefs(covs))
-    primary_hdu = fits.PrimaryHDU(header=h)
-    hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
-    
-    output = f'{d}/fit_{func_dif.__name__}_{f}.fits'
-    hdul.writeto(output,overwrite=True)
 
+    except RuntimeError:
+        print(f'El perfil {f} no ajustó para la funcion {func_dif.__name__}')
+
+    try:    
+        a_int, cov_int = curve_fit(f=func_int, xdata=xdata, ydata=yint, sigma=eint,
+                                p0=p0, bounds=b)
+        
+    except RuntimeError:
+        print(f'El perfil {f} no ajustó para la función {func_int.__name__}')    
+
+        h = fits.Header()
+        h.append(('orden', orden))
+        params = [fits.Column(name='param_dif', format='E', array=a_dif),
+                 fits.Column(name='param_int', format='E', array=a_int)]
+    
+        covs = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
+                fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
+    
+        tbhdu1 = fits.BinTableHDU.from_columns(fits.ColDefs(params))
+        tbhdu2 = fits.BinTableHDU.from_columns(fits.ColDefs(covs))
+        primary_hdu = fits.PrimaryHDU(header=h)
+        hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
+    
+        output = f'{d}/fit_{func_dif.__name__}_{f}.fits'
+        hdul.writeto(output,overwrite=True)
 
 ##
 f1 = np.array([hamaus, clampitt, higuchi])
