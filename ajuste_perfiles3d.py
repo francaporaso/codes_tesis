@@ -122,14 +122,16 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     hdul.writeto(output,overwrite=True)
 
 ##
-f1 = np.array([hamaus, clampitt, higuchi])
-f2 = np.array([int_hamaus, int_clampitt, int_higuchi])
+# f1 = np.array([hamaus, clampitt, higuchi])
+f1 = np.array([hamaus])
+# f2 = np.array([int_hamaus, int_clampitt, i1nt_higuchi])
+f2 = np.array([int_hamaus])
 
 ## p0 de cada func
-p0 = np.array([[0.3,1.2,-0.05,2.,7],
+p0 = np.array([[0.1,1.05,-0.1,1.5,7.],
                [0.5,0.5,-0.5,0.1],   
                [0.5,0.5,-0.5,0.1]], dtype=object)   
-b = np.array([([0.,0.,-0.5,1.,1.],[3.,3.,0.,3.,10]),
+b = np.array([([0.,0.,-1,1.,5.],[3.,3.,0.,5.,10]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.])], dtype=object)
 orden = np.array(['rs, rv, dc, a, b', 
@@ -143,7 +145,8 @@ radios = ['9-12']
 tipos = np.array(['Total', 'S', 'R'])
 redshift = np.array(['lowz', 'highz'])
 
-file = np.array([f'3d_{t}_{z}.fits' for t in tipos for z in redshift])
+# file = np.array([f'3d_{t}_{z}.fits' for t in tipos for z in redshift])
+file = np.array(['3d_R_lowz.fits'])
 
 for radio in radios:
     d = f'/home/fcaporaso/profiles/voids/Rv_{radio}/3D'
