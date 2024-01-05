@@ -88,7 +88,7 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
         print(f'El perfil {f} no ajustó para la funcion {func_dif.__name__}')
         a_dif = np.ones_like(p0)
         cov_dif = np.ones((len(p0),len(p0)))
-        chi2_dif = np.NaN
+        chi2_dif = 1000
 
     try:    
         a_int, cov_int = curve_fit(f=func_int, xdata=xdata, ydata=yint, sigma=eint,
@@ -100,8 +100,7 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
         print(f'El perfil {f} no ajustó para la función {func_int.__name__}')    
         a_int = np.ones_like(p0)
         cov_int = np.ones_like((len(p0),len(p0)))
-
-        chi2_int = np.NaN
+        chi2_int = 1000
 
     h = fits.Header()
     h.append(('orden', orden))
