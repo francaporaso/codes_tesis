@@ -50,6 +50,30 @@ def int_higuchi(r,Rv,R2,dc,d2):
     integral = np.array([quad_vec(integrando, 0, ri)[0] for ri in r])
     return (3/r**3)*integral
 
+def chi_red(ajuste,data,err,gl):
+	'''
+	Reduced chi**2
+	------------------------------------------------------------------
+	INPUT:
+	ajuste       (float or array of floats) fitted value/s
+	data         (float or array of floats) data used for fitting
+	err          (float or array of floats) error in data
+	gl           (float) grade of freedom (number of fitted variables)
+	------------------------------------------------------------------
+	OUTPUT:
+	chi          (float) Reduced chi**2 	
+	'''
+		
+	BIN=len(data)
+	chi=((((ajuste-data)**2)/(err**2)).sum())/float(BIN-1-gl)
+	return chi
+
+def gl(func):
+    if func.__name__ == 'hamaus':
+        return 5
+    else:
+        return 4
+
 ## funcion de ajuste
 
 def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d):
@@ -57,28 +81,37 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     try:
         a_dif, cov_dif = curve_fit(f=func_dif, xdata=xdata, ydata=ydif, sigma=edif,
                                 p0=p0, bounds=b)
+        
+        chi2_dif = chi_red(func_dif(xdata,*a_dif), ydif, edif, gl(func_dif))
 
     except RuntimeError:
         print(f'El perfil {f} no ajustó para la funcion {func_dif.__name__}')
         a_dif = np.ones_like(p0)
-        cov_dif = np.ones_like((p0,p0))
+        cov_dif = np.ones((len(p0),len(p0)))
+        chi2_dif = np.NaN
 
     try:    
         a_int, cov_int = curve_fit(f=func_int, xdata=xdata, ydata=yint, sigma=eint,
                                 p0=p0, bounds=b)
         
+        chi2_int = chi_red(func_int(xdata,*a_dif), yint, eint, gl(func_dif))
+        
     except RuntimeError:
         print(f'El perfil {f} no ajustó para la función {func_int.__name__}')    
         a_int = np.ones_like(p0)
-        cov_int = np.ones_like((p0,p0))
+        cov_int = np.ones_like((len(p0),len(p0)))
+
+        chi2_int = np.NaN
 
     h = fits.Header()
     h.append(('orden', orden))
+    h.append(('chi_red_dif', chi2_dif))
+    h.append(('chi_red_int', chi2_int))
     params = [fits.Column(name='param_dif', format='E', array=a_dif),
              fits.Column(name='param_int', format='E', array=a_int)]
 
-    covs = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
-            fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
+    covs   = [fits.Column(name='cov_dif', format='E', array=cov_dif.flatten()),
+             fits.Column(name='cov_int', format='E', array=cov_int.flatten())]
 
     tbhdu1 = fits.BinTableHDU.from_columns(fits.ColDefs(params))
     tbhdu2 = fits.BinTableHDU.from_columns(fits.ColDefs(covs))
@@ -93,10 +126,10 @@ f1 = np.array([hamaus, clampitt, higuchi])
 f2 = np.array([int_hamaus, int_clampitt, int_higuchi])
 
 ## p0 de cada func
-p0 = np.array([[0.5,0.5,-0.5,3.,7.],
+p0 = np.array([[0.3,1.2,-0.05,2.,7],
                [0.5,0.5,-0.5,0.1],   
                [0.5,0.5,-0.5,0.1]], dtype=object)   
-b = np.array([([0.,0.,-1.,1.,1.],[3.,3.,10,50,500]),
+b = np.array([([0.,0.,-0.5,1.,1.],[3.,3.,0.,3.,10]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.])], dtype=object)
 orden = np.array(['rs, rv, dc, a, b', 
@@ -105,7 +138,7 @@ orden = np.array(['rs, rv, dc, a, b',
 
 ## leyendo datos
 # radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
-radios = np.array(['9-12', '12-15', '15-18', '18-50'])
+radios = '9-12'
 
 tipos = np.array(['Total', 'S', 'R'])
 redshift = np.array(['lowz', 'highz'])
