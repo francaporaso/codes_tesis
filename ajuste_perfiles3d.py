@@ -127,10 +127,10 @@ f1 = np.array([hamaus])
 f2 = np.array([int_hamaus])
 
 ## p0 de cada func
-p0 = np.array([[0.1,1.05,-0.1,1.5,7.],
+p0 = np.array([[2.,0.6,-0.6,1.5,2.],
                [0.5,0.5,-0.5,0.1],   
                [0.5,0.5,-0.5,0.1]], dtype=object)   
-b = np.array([([0.,0.,-1,1.,5.],[3.,3.,0.,5.,10]),
+b = np.array([([0.,0.,-1,1.1,1.1],[3.,3.,0,5.,10]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.]),
               ([0.,0.,-1,-1.],[3.,3.,10.,100.])], dtype=object)
 orden = np.array(['rs, rv, dc, a, b', 
@@ -139,7 +139,7 @@ orden = np.array(['rs, rv, dc, a, b',
 
 ## leyendo datos
 # radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
-radios = ['9-12']
+radios = ['15-18']
 
 tipos = np.array(['Total', 'S', 'R'])
 redshift = np.array(['lowz', 'highz'])
