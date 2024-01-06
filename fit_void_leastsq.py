@@ -299,11 +299,11 @@ nombres = np.array(['tot_lowz', 'tot_highz', 'S_lowz', 'S_highz', 'R_lowz', 'R_h
 
 tslice = np.array([])
 i=0
-for r in radios:
+for rad in radios:
     print('----')
-    print(f'Ajustando para los radios {r}')
+    print(f'Ajustando para los radios {rad}')
     print('----')
-    d = f'/home/fcaporaso/profiles/voids/Rv_{r}'
+    d = f'/home/fcaporaso/profiles/voids/Rv_{rad}'
     for j,f in enumerate(files):
         print(f'Ajustando el perfil: {f}_{r}.fits')
         t1 = time.time()
