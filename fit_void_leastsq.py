@@ -83,7 +83,7 @@ def sigma_clampitt(R,Rv,R2,dc,d2,x):
 def sigma_hamaus(r,rs,rv,dc,a,b,x):
     
     def integrand(z,R):
-        return hamaus(r=np.sqrt(z**2+R**2),rv=rv,rs=rs,dc=dc,a=a,b=b)
+        return hamaus(r=np.sqrt(z**2+R**2),rv=rv,rs=rs,delta=dc,a=a,b=b)
   
     den_integrada = quad_vec(integrand, -1e3, 1e3, args=(r,), epsrel=1e-3)[0]
 
