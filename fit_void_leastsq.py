@@ -308,6 +308,14 @@ for rad in radios:
         print(f'Ajustando el perfil: {f}_{rad}.fits')
         t1 = time.time()
 
+        ### DEBE QUITARSE ANTES DE USAR
+        ### Está para saltar algunos perfiles que ya se ajustaron...
+        if f'{f}_{rad}' == 'smallz_6-9':
+            continue
+        if f'{f}_{rad}' == 'highz_6-9':
+            continue
+        ###
+
         with fits.open(f'{d}/{f}_{rad}.fits') as hdu:
             h = hdu[0].header
             r = hdu[1].data.Rp
@@ -324,6 +332,7 @@ for rad in radios:
             eSigma = np.sqrt(np.diag(covS))/rv_medio
 
             for fu,P,B,O in zip(funcs,p0,bounds,orden):
+
                 print(f'con {fu.__name__}')
                 ajuste(fu ,xdata=r, y=Sigma, ey=eSigma, p0=P, b=B, orden=O, f=nombres[j], d=d)
 
