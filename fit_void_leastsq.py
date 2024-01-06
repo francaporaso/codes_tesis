@@ -93,97 +93,97 @@ def sigma_hamaus(r,rs,rv,dc,a,b,x):
 
 # ----
 
-def delta_sigma_clampitt(data,A3,Rv):
+# def delta_sigma_clampitt(data,A3,Rv):
 
-    r = [data]
+#     r = [data]
 
-    def integrand(x,A3,Rv):
-        return sigma_clampitt([x],A3,Rv)*x
+#     def integrand(x,A3,Rv):
+#         return sigma_clampitt([x],A3,Rv)*x
 
-    anillo = sigma_clampitt(r,A3,Rv)
-    disco = np.zeros_like(r)
-    for j,p in enumerate(r):
-        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
+#     anillo = sigma_clampitt(r,A3,Rv)
+#     disco = np.zeros_like(r)
+#     for j,p in enumerate(r):
+#         disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
 
-    return disco - anillo
+#     return disco - anillo
 
-def delta_sigma_krause(r,A3,A0,Rv):
+# def delta_sigma_krause(r,A3,A0,Rv):
     
-    def integrand(x):
-        return sigma_krause([x],A3,A0,Rv)*x
+#     def integrand(x):
+#         return sigma_krause([x],A3,A0,Rv)*x
 
-    anillo = sigma_krause(r,A3,A0,Rv)
-    disco = np.zeros_like(r)
-    for j,p in enumerate(r):
-        disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
+#     anillo = sigma_krause(r,A3,A0,Rv)
+#     disco = np.zeros_like(r)
+#     for j,p in enumerate(r):
+#         disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
         
-    return disco - anillo
+#     return disco - anillo
 
-def delta_sigma_higuchi():
-    pass
+# def delta_sigma_higuchi():
+#     pass
 
-def delta_sigma_hamaus(data,rs,delta,Rv,a,b):
+# def delta_sigma_hamaus(data,rs,delta,Rv,a,b):
     
-    #r, Rv = data[:-1], data[-1]
-    r = [data]
-    # Rv = 1.
+#     #r, Rv = data[:-1], data[-1]
+#     r = [data]
+#     # Rv = 1.
     
-    def integrand(x,rs,delta,Rv,a,b):
-        return sigma_hamaus([x],rs,delta,Rv,a,b)*x
+#     def integrand(x,rs,delta,Rv,a,b):
+#         return sigma_hamaus([x],rs,delta,Rv,a,b)*x
 
-    anillo = sigma_hamaus(r,rs,delta,Rv,a,b)
-    disco = np.zeros_like(r)
-    for j,p in enumerate(r):
-        disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,Rv,a,b))[0]
+#     anillo = sigma_hamaus(r,rs,delta,Rv,a,b)
+#     disco = np.zeros_like(r)
+#     for j,p in enumerate(r):
+#         disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,Rv,a,b))[0]
 
-    return disco-anillo
+#     return disco-anillo
 
-## ----
+# ## ----
 
-def DSt_clampitt_unpack(kargs):
-    return delta_sigma_clampitt(*kargs)
+# def DSt_clampitt_unpack(kargs):
+#     return delta_sigma_clampitt(*kargs)
 
-def DSt_clampitt_parallel(data,A3,Rv):
+# def DSt_clampitt_parallel(data,A3,Rv):
     
-    r, ncores = data[:-1], int(data[-1])
-    partial = DSt_clampitt_unpack
+#     r, ncores = data[:-1], int(data[-1])
+#     partial = DSt_clampitt_unpack
     
-    if ncores > len(r):
-        ncores = len(r)
+#     if ncores > len(r):
+#         ncores = len(r)
     
-    lbins = int(round(len(r)/float(ncores), 0))
-    slices = ((np.arange(lbins)+1)*ncores).astype(int)
-    slices = slices[(slices < len(r))]
-    Rsplit = np.split(r,slices)
+#     lbins = int(round(len(r)/float(ncores), 0))
+#     slices = ((np.arange(lbins)+1)*ncores).astype(int)
+#     slices = slices[(slices < len(r))]
+#     Rsplit = np.split(r,slices)
 
-    dsigma = np.zeros_like(r)
-    dsigma = np.array_split(dsigma,slices)
+#     dsigma = np.zeros_like(r)
+#     dsigma = np.array_split(dsigma,slices)
 
-    for j,r_j in enumerate(Rsplit):
+#     for j,r_j in enumerate(Rsplit):
         
-        num = len(r_j)
+#         num = len(r_j)
         
-        A3_arr = np.full_like(r_j,A3)
-        Rv_arr = np.full_like(r_j,Rv)
+#         A3_arr = np.full_like(r_j,A3)
+#         Rv_arr = np.full_like(r_j,Rv)
         
-        entrada = np.array([r_j.T,A3_arr, Rv_arr]).T
+#         entrada = np.array([r_j.T,A3_arr, Rv_arr]).T
                 
-        with Pool(processes=num) as pool:
-            salida = np.array(pool.map(partial,entrada))
-            pool.close()
-            pool.join()
+#         with Pool(processes=num) as pool:
+#             salida = np.array(pool.map(partial,entrada))
+#             pool.close()
+#             pool.join()
         
-        dsigma[j] = salida
+#         dsigma[j] = salida
 
-    dsigma = np.concatenate(dsigma,axis=0).flatten()
+#     dsigma = np.concatenate(dsigma,axis=0).flatten()
 
-    return dsigma
+#     return dsigma
 
 
-def DSt_hamaus_unpack(kargs):
-    return delta_sigma_hamaus(*kargs)
+# def DSt_hamaus_unpack(kargs):
+#     return delta_sigma_hamaus(*kargs)
 
-def DSt_hamaus_parallel(data,rs,delta,Rv,a,b):
+# def DSt_hamaus_parallel(data,rs,delta,Rv,a,b):
     
     r, ncores = data[:-1], int(data[-1])
     partial = DSt_hamaus_unpack
@@ -281,16 +281,20 @@ def ajuste(func, xdata, y, ey, p0, b, orden, f, d):
 radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
 files = np.array(['smallz', 'highz', 'sz_S', 'hz_S', 'sz_R', 'hz_R'])
 
-p0 = np.array([[2.,0.6,-0.6,1.5,2.],
-               [0.5,0.5,-0.5,0.1],   
-               [0.5,0.5,-0.5,0.1]], dtype=object)   
+
+funcs = np.array([sigma_hamaus, 
+                  sigma_clampitt, 
+                  sigma_higuchi])
+p0 = np.array([[1.,1.,-0.6,3.,7.,0.],
+               [0.5,0.5,-0.5,0.1,0.],   
+               [0.5,0.5,-0.5,0.1,0.]], dtype=object)   
 bounds = np.array([([0.,0.,-1,1.1,1.1,-10],[3.,3.,0,5.,10,10]),
                    ([0.,0.,-1,-1.,-10],[3.,3.,10.,100.,10]),
                    ([0.,0.,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
 orden = np.array(['rs, rv, dc, a, b, x', 
                   'Rv, R2, dc, d2, x',
                   'Rv, R2, dc, d2, x'])
-funcs = np.array([sigma_hamaus, sigma_clampitt, sigma_higuchi])
+
 nombres = np.array(['tot_lowz', 'tot_highz', 'S_lowz', 'S_highz', 'R_lowz', 'R_highz'])
 
 tslice = np.array([])
