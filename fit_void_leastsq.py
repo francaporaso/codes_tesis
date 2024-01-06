@@ -305,10 +305,10 @@ for rad in radios:
     print('----')
     d = f'/home/fcaporaso/profiles/voids/Rv_{rad}'
     for j,f in enumerate(files):
-        print(f'Ajustando el perfil: {f}_{r}.fits')
+        print(f'Ajustando el perfil: {f}_{rad}.fits')
         t1 = time.time()
 
-        with fits.open(f'{d}/{f}_{r}.fits') as hdu:
+        with fits.open(f'{d}/{f}_{rad}.fits') as hdu:
             h = hdu[0].header
             r = hdu[1].data.Rp
             p = hdu[2].data
@@ -323,9 +323,9 @@ for rad in radios:
             covS = c.covS.reshape(60,60)
             eSigma = np.sqrt(np.diag(covS))/rv_medio
 
-            for f,P,B,O in zip(funcs,p0,bounds,orden):
-                print(f'con {f.__name__}')
-                ajuste(f ,xdata=r, y=Sigma, ey=eSigma, p0=P, b=B, orden=O, f=nombres[j], d=d)
+            for fu,P,B,O in zip(funcs,p0,bounds,orden):
+                print(f'con {fu.__name__}')
+                ajuste(fu ,xdata=r, y=Sigma, ey=eSigma, p0=P, b=B, orden=O, f=nombres[j], d=d)
 
         t2 = time.time()
         ts = (t2-t1)/60
