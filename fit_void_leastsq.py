@@ -1,105 +1,97 @@
 '''Ajuste de perfiles de voids mediante cuadrados minimos. Por defecto ajusta ambos Sigma y DSigma'''
 import numpy as np
 from scipy.integrate import quad, quad_vec
-import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from astropy.io import fits
 from scipy.optimize import curve_fit
 import argparse
 import os
+from astropy.cosmology import LambdaCDM
+from astropy.constants import c, G
+import time
 
-'''rho: ( en realidad son las fluctuaciones rho/rhomean - 1 )
-    clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
-    krause   -> Krause et al 2012 (como clampitt pero con compensacion) eq 1 pero leer texto
-    higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
-    hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
 
-def clampitt(r,A3,Rv):
-    '''Clampitt et al (2016); eq 12
-       id = 0'''
-    A0 = 1-A3
-    if r>=Rv:
-        return A0+A3-1
-    else:
-        return A0-1 + A3*(r/Rv)**3
+def pm(z):
+    '''densidad media en Msun/(pc**2 Mpc)'''
+    h = 1.
+    cosmo = LambdaCDM(H0 = 100.*h, Om0=0.3, Ode0=0.7)
+    p_cr0 = cosmo.critical_density(0).to('Msun/(pc**2 Mpc)').value
+    a = cosmo.scale_factor(z)
+    out = p_cr0*cosmo.Om0/a**3
+    return out
+
+
+def hamaus(r, rs, rv, delta, a, b):
+        
+    d = delta*(1. - (r/rs)**a)/(1. + (r/rv)**b)
+    return d
+
+def clampitt(r,Rv,R2,dc,d2):
+    R_V = np.full_like(r, Rv)
+    R2s  = np.full_like(r,R2)
     
+    delta = (r<=R_V)*(dc + (d2-dc)*(r/Rv)**3) + ((r>R_V)&(r<=R2s))*d2 + (r>R2s)*0
     
-def krause(r,A3,A0,Rv):
-    '''Krause et al (2012); eq 1 (see text)
-       id = 1'''
-    if r<Rv:
-        return A0-1+A3*(r/Rv)**3
-    elif r>2*Rv: #ultima parte
-        return 0
-    else: #centro
-        return A0+A3-1
+    return delta
 
-    # return np.piecewise(r,[r<Rv, 2*Rv>r>Rv],[lambda r: A0+A3*(r/Rv)**3, A0+A3, 1])
-
-def higuchi(r,R1,R2,rho1,rho2):
-    '''Higuchi et al (2013); eq 23
-       id = 2'''
-    if r<R1:
-        return rho1-1 
-    elif r>R2:
-        return 0
-    else:
-        return rho2-1
-
-def hamaus(r, rs, delta, Rv, a, b):
-    '''Hamaus et al (2014); eq 2
-       id = 3
-       
-       delta < 0 siempre!'''
-    return delta*(1-(r/rs)**a)/(1+(r/Rv)**b)
+def higuchi(r,Rv,R2,dc,d2):
+    unos = np.full_like(r,Rv)
+    R2s  = np.full_like(r,R2)
+    
+    delta = (r<=unos)*dc + ((r>unos)&(r<=R2s))*d2 + (r>R2s)*0
+    
+    return delta
 
 
 ### Densidades proyectadas para cada funcion
 
-def sigma_clampitt(r,A3,Rv):
+def sigma_higuchi(R,Rv,R2,dc,d2,x):
+    # Rv = 1.
+    Rv = np.full_like(R,Rv)
+    R2 = np.full_like(R,R2)
     
-    def integrand(z,R,A3,Rv):
-        return clampitt(np.sqrt(np.square(z)+np.square(R)),A3,Rv)
+    m1 = (R<=Rv)
+    m2 = (R>Rv)&(R<=R2)
+    
+    den_integrada = np.zeros_like(R)
+    den_integrada[m1] = (np.sqrt(Rv[m1]**2-R[m1]**2)*(dc-d2) + d2*np.sqrt(R2[m1]**2-R[m1]**2))
+    den_integrada[m2] = d2*np.sqrt(R2[m2]**2-R[m2]**2)
 
-    sigma = np.zeros_like(r)
-    for j,x in enumerate(r):
-        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,Rv))[0]
+    sigma = rho_mean*2*den_integrada/Rv + x
     return sigma
 
-def sigma_krause(r,A3,A0,Rv):
+def sigma_clampitt(R,Rv,R2,dc,d2,x):
+
+    Rv = np.full_like(R,Rv)
+    R2 = np.full_like(R,R2)
     
-    def integrand(z,R,A3,A0,Rv):
-        return krause(np.sqrt(np.square(z)+np.square(R)),A3,A0,Rv)
-  
-    sigma = np.zeros_like(r)
-    for j,x in enumerate(r):
-        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,A3,A0,Rv))[0]
+    den_integrada = np.zeros_like(R)
+    
+    m1 = (R<=Rv)
+    m2 = (R>Rv)&(R<=R2)
+    
+    s2 = np.sqrt(R2[m1]**2 - R[m1]**2)
+    sv = np.sqrt(Rv[m1]**2 - R[m1]**2)
+    arg = np.sqrt((Rv[m1]/R[m1])**2 - 1)
+
+    den_integrada[m1] = 2*(dc*s2 + (d2-dc)*(sv*(5/8*(R[m1]/Rv[m1])**2 - 1) + s2 + 3/8*(R[m1]**4/Rv[m1]**3)*np.arcsinh(arg)))   
+    den_integrada[m2] = 2*(d2*np.sqrt(R2[m2]**2-R[m2]**2))
+
+    sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
-def sigma_higuchi(r,A3,A0,Rv):
-    pass
-
-# def sigma_hamaus(r,rs,delta,a,b):
-#     Rv=1.
-#     def integrand(z,R,rs,delta,a,b):
-#         return hamaus(np.sqrt(np.square(z)+np.square(R)),rs,delta,Rv,a,b)
-  
-#     sigma = np.zeros_like(r)
-#     for j,x in enumerate(r):
-#         sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,a,b))[0]
-#     return sigma
-
-def sigma_hamaus(r,rs,delta,Rv,a,b):
+def sigma_hamaus(r,rs,rv,dc,a,b,x):
     
-    def integrand(z,R,rs,delta,Rv,a,b):
-        return hamaus(np.sqrt(np.square(z)+np.square(R)),rs,delta,Rv,a,b)
+    def integrand(z,R):
+        return hamaus(r=np.sqrt(z**2+R**2),rv=rv,rs=rs,dc=dc,a=a,b=b)
   
-    sigma = np.zeros_like(r)
-    for j,x in enumerate(r):
-        sigma[j] = quad(integrand, -np.inf, np.inf, args=(x,rs,delta,Rv,a,b))[0]
+    den_integrada = quad_vec(integrand, -1e3, 1e3, args=(r,), epsrel=1e-3)[0]
+
+    sigma = rho_mean*den_integrada/rv + x
+    
     return sigma
 
-# ----- o -----
+# ----
 
 def delta_sigma_clampitt(data,A3,Rv):
 
@@ -146,7 +138,7 @@ def delta_sigma_hamaus(data,rs,delta,Rv,a,b):
 
     return disco-anillo
 
-## ----- o -----
+## ----
 
 def DSt_clampitt_unpack(kargs):
     return delta_sigma_clampitt(*kargs)
@@ -230,196 +222,113 @@ def DSt_hamaus_parallel(data,rs,delta,Rv,a,b):
 
     return dsigma
 
+## ----
+def chi_red(ajuste,data,err,gl):
+	'''
+	Reduced chi**2
+	------------------------------------------------------------------
+	INPUT:
+	ajuste       (float or array of floats) fitted value/s
+	data         (float or array of floats) data used for fitting
+	err          (float or array of floats) error in data
+	gl           (float) grade of freedom (number of fitted variables)
+	------------------------------------------------------------------
+	OUTPUT:
+	chi          (float) Reduced chi**2 	
+	'''
+		
+	BIN=len(data)
+	chi=((((ajuste-data)**2)/(err**2)).sum())/float(BIN-1-gl)
+	return chi
 
+def gl(func):
+    if func.__name__ == 'sigma_hamaus':
+        return 6
+    else:
+        return 5
 
-if __name__ == '__main__':
-
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
-  parser.add_argument('-name', action='store', dest='name',default='smallz_6-9')
-  parser.add_argument('-out', action='store', dest='out',default='pru')
-  parser.add_argument('-ncores', action='store', dest='ncores',default=10)
-  parser.add_argument('-rmax', action='store', dest='rmax',default='inf')
-  parser.add_argument('-fitS', action='store', dest='fitS',default=False)
-  parser.add_argument('-fitDS', action='store', dest='fitDS',default=False)
-  parser.add_argument('-usecov', action='store', dest='usecov',default=False)
-  parser.add_argument('-rho', action='store', dest='rho',default='clampitt')
-  parser.add_argument('-p0', action='store', dest='p0',default=1)
-  args = parser.parse_args()
-  
-  sample = args.sample
-  name   = args.name
-  output   = args.out
-  ncores = int(args.ncores)
-  fitS   = bool(args.fitS)
-  fitDS  = bool(args.fitDS)
-  usecov  = bool(args.usecov)
-  rho    = args.rho   
-  p0     = float(args.p0)
-  
-  if args.rmax == 'inf':
-      rmax = np.inf
-  else:
-      rmax = float(args.rmax)
-
-  '''rho:
-  clampitt -> Clampitt et al 2016 (cuadratica adentro de Rv, constante afuera) eq 12
-  krause   -> Krause et al 2012 (como clampitt pero con compensacion) eq 1 pero leer texto
-  higuchi  -> Higuchi et al 2013 (conocida como top hat, 3 contantes) eq 23
-  hamaus   -> Hamaus et al 2014 (algo similar a una ley de potencias) eq 2'''
-
+def ajuste(func, xdata, y, ey, p0, b, orden, f, d):
     
-  if rho=='clampitt':
-      projected_density = sigma_clampitt
-      projected_density_contrast = delta_sigma_clampitt
-      nparams = 2
-  elif rho=='krause':
-      projected_density = sigma_krause
-      projected_density_contrast = delta_sigma_krause
-      nparams = 3
-  elif rho=='higuchi':
-      projected_density = sigma_higuchi
-      projected_density_contrast = delta_sigma_higuchi
-      nparams = 4
-  elif rho=='hamaus':
-      projected_density = sigma_hamaus
-      projected_density_contrast = DSt_hamaus_parallel
-      nparams = 4
-  else:
-      raise TypeError(f'rho: "{rho}" no es ninguna de las funciones definidas.')
-      
-  directory = f'../profiles/voids/{sample}/{name}.fits'
-  header    = fits.open(directory)[0]
-  Rp        = fits.open(directory)[1].data.Rp
-  p         = fits.open(directory)[2].data
-  covar     = fits.open(directory)[3].data
-  
-  print(f'Fitting from {directory}')
-  print(f'Using {ncores} cores')
-  print(f'Model: {rho}')
-  
-  
-  if fitS & fitDS:
-      raise ValueError('No es compatible fitS y fitDS = True, dejar sin especificar para fitear ambos')
-  
-  p0 = np.ones(nparams)
-  bounds = (-np.inf,np.inf)
+    try:
+        popt, cov = curve_fit(f=func, xdata=xdata, ydata=y, sigma=ey,
+                              p0=p0, bounds=b)
+        
+        chi2 = chi_red(func(xdata,*popt), y, ey, gl(func))
+
+    except RuntimeError:
+        print(f'El perfil {f} no ajustó para la funcion {func.__name__}')
+        popt = np.ones_like(p0)
+        cov = np.ones((len(p0),len(p0)))
+        chi2 = 1000
+
+    h = fits.Header()
+    h.append(('orden', orden))
+    h.append(('chi_red', chi2))
+
+    params = fits.ColDefs([fits.Column(name='param', format='E', array=popt)])
+    covs   = fits.ColDefs([fits.Column(name='cov', format='E', array=cov.flatten())])
+
+    tbhdu1 = fits.BinTableHDU.from_columns(params)
+    tbhdu2 = fits.BinTableHDU.from_columns(covs)
+    primary_hdu = fits.PrimaryHDU(header=h)
+    hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
+
+    output = f'{d}/fit/fit_{func.__name__}_{f}'
+    hdul.writeto(output,overwrite=True)
 
 
-#### REVISAR! CAMBIE LA CANTIDAD DE PARAMETROS!!! (AGREGUE DE VUELTA RV)
-  if rho == 'hamaus':
-      p0 = np.array([ 0.9, -0.9,  1.4,  4.])
-      var = np.append(Rp,ncores)
-      bounds = (np.array([0.,0., -np.inf, -np.inf, -np.inf]),np.array([np.inf,np.inf, np.inf, np.inf, np.inf]))
-  
-  
-  if fitS:
-      covS   = covar.covS.reshape(60,60)
-          
-      if usecov:
-          out = f'S_cov'
-          print(f'Fitting Sigma, using covariance matrix')
-          f_S, fcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-          
-          print(f'parametros ajustados: {f_S}')
-          print(f'errores: {np.diag(fcov_S)}')
-          table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-  
-      else:   
-          out = f'S_diag'
-  
-          print(f'Fitting Sigma, using covariance diagonal only')
-  
-          eS   = np.sqrt(np.diag(covS))
-          f_S, fcov_S = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-  
-          print(f'parametros ajustados: {f_S}')
-          print(f'errores: {np.diag(fcov_S)}')
-          table_opt = [fits.Column(name='f_S',format='D',array=f_S)]
-          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten())]
-  
-  elif fitDS:
-      covDSt = covar.covDSt.reshape(60,60)
-  
-      if usecov:
-          out = f'DS_cov'
-  
-          print(f'Fitting Delta Sigma, using covariance matrix')
-  
-          f_DS, fcov_DS = curve_fit(projected_density_contrast, Rp, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-              
-          print(f'parametros ajustados: {f_DS}')
-          print(f'errores: {np.diag(fcov_DS)}')
-          table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-          table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-  
-      else: 
-          out = f'DS_diag'
-  
-          print(f'Fitting Delta Sigma, using covariance diagonal only')
-  
-          eDSt = np.sqrt(np.diag(covDSt))
-          f_DS, fcov_DS = curve_fit(projected_density_contrast, Rp, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-              
-          print(f'parametros ajustados: {f_DS}')
-          print(f'errores: {np.diag(fcov_DS)}')
-          table_opt = [fits.Column(name='f_DSt',format='D',array=f_DS)]
-          table_err = [fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-      
-  else:
-      covS   = covar.covS.reshape(60,60)
-      covDSt = covar.covDSt.reshape(60,60)
-  
-      if usecov:
-          out =f'full_cov'
-          print(f'Fitting Sigma and Delta Sigma, using covariance matrix')
-  
-          f_S, fcov_S   = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=covS, p0=p0)
-          f_DS, fcov_DS = curve_fit(projected_density, Rp, p.DSigma_T.reshape(101,60)[0], sigma=covDSt, p0=p0)
-              
-          table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-                      fits.Column(name='f_DSt',format='D',array=f_DS)]
-              
-          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-  
-      else:
-          out =f'full_diag'
-          print(f'Fitting Sigma, using covariance diagonal only')
-  
-          eS   = np.sqrt(np.diag(covS))
-          eDSt = np.sqrt(np.diag(covDSt))
-          f_S, fcov_S   = curve_fit(projected_density, Rp, p.Sigma.reshape(101,60)[0], sigma=eS, p0=p0)
-  
-          print(f'Fitting Delta Sigma, using covariance diagonal only')
-  
-          f_DS, fcov_DS = curve_fit(projected_density_contrast, var, p.DSigma_T.reshape(101,60)[0], sigma=eDSt, p0=p0)
-  
-          table_opt = [fits.Column(name='f_S',format='D',array=f_S),
-                      fits.Column(name='f_DSt',format='D',array=f_DS)]
-              
-          table_err = [fits.Column(name='fcov_S',format='D',array=fcov_S.flatten()),
-                      fits.Column(name='fcov_DSt',format='D',array=fcov_DS.flatten())]
-  
-  
-  hdu = fits.Header()
-  hdu.append(('Nvoids',header.header['N_VOIDS']))
-  hdu.append(('Rv_min',header.header['RV_MIN']))
-  hdu.append(('Rv_max',header.header['RV_MAX']))
-  hdu.append(f'using {rho}')
-  
-  tbhdu_pro = fits.BinTableHDU.from_columns(fits.ColDefs(table_opt))
-  tbhdu_cov = fits.BinTableHDU.from_columns(fits.ColDefs(table_err))
-          
-  primary_hdu = fits.PrimaryHDU(header=hdu)
-          
-  hdul = fits.HDUList([primary_hdu, tbhdu_pro, tbhdu_cov])
-  
-  out = out+output
-  try:
-      os.mkdir(f'../profiles/voids/{sample}/fit')
-  except FileExistsError:
-      pass
-  hdul.writeto(f'../profiles/voids/{sample}/fit/lsq_{name}_{rho}_{out}.fits',overwrite=True)
-  print(f'Saved in ../profiles/voids/{sample}/fit/lsq_{name}_{rho}_{out}.fits !')
+## --- 
+radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
+files = np.array(['smallz', 'highz', 'sz_S', 'hz_S', 'sz_R', 'hz_R'])
+
+p0 = np.array([[2.,0.6,-0.6,1.5,2.],
+               [0.5,0.5,-0.5,0.1],   
+               [0.5,0.5,-0.5,0.1]], dtype=object)   
+bounds = np.array([([0.,0.,-1,1.1,1.1,-10],[3.,3.,0,5.,10,10]),
+                   ([0.,0.,-1,-1.,-10],[3.,3.,10.,100.,10]),
+                   ([0.,0.,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
+orden = np.array(['rs, rv, dc, a, b, x', 
+                  'Rv, R2, dc, d2, x',
+                  'Rv, R2, dc, d2, x'])
+funcs = np.array([sigma_hamaus, sigma_clampitt, sigma_higuchi])
+nombres = np.array(['tot_lowz', 'tot_highz', 'S_lowz', 'S_highz', 'R_lowz', 'R_highz'])
+
+tslice = np.array([])
+i=0
+for r in radios:
+    print('----')
+    print(f'Ajustando para los radios {r}')
+    print('----')
+    d = f'/home/fcaporaso/profiles/voids/Rv_{r}'
+    for j,f in enumerate(files):
+        print(f'Ajustando el perfil: {f}_{r}.fits')
+        t1 = time.time()
+
+        with fits.open(f'{d}/{f}_{r}.fits') as hdu:
+            h = hdu[0].header
+            r = hdu[1].data.Rp
+            p = hdu[2].data
+            c = hdu[3].data
+
+            rv_medio = h['Rv_mean']
+            z_medio  = h['z_mean']
+
+            rho_mean = pm(z_medio)
+
+            Sigma = p.Sigma.reshape(101,60)[0]/rv_medio
+            covS = c.covS.reshape(60,60)
+            eSigma = np.sqrt(np.diag(covS))/rv_medio
+
+            for f,P,B,O in zip(funcs,p0,bounds,orden):
+                ajuste(f ,xdata=r, y=Sigma, ey=eSigma, p0=P, b=B, orden=O, f=nombres[j], d=d)
+
+        t2 = time.time()
+        ts = (t2-t1)/60
+        tslice = np.append(tslice,ts)
+        i+=1
+        print(f'Tardó {np.round(ts,4)} min')
+        print(f' ')
+    print('Tiempo restante estimado')
+    print(f'{np.round(np.mean(tslice)*(30-(i)), 3)} min')
+
+print('Terminado!')
