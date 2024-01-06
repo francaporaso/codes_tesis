@@ -61,6 +61,8 @@ def sigma_higuchi(R,Rv,R2,dc,d2,x):
     return sigma
 
 def sigma_clampitt(R,Rv,R2,dc,d2,x):
+    if Rv>R2:
+        return np.inf
 
     Rv = np.full_like(R,Rv)
     R2 = np.full_like(R,R2)
@@ -307,14 +309,6 @@ for rad in radios:
     for j,f in enumerate(files):
         print(f'Ajustando el perfil: {f}_{rad}.fits')
         t1 = time.time()
-
-        ### DEBE QUITARSE ANTES DE USAR
-        ### Está para saltar algunos perfiles que ya se ajustaron...
-        if f'{f}_{rad}' == 'smallz_6-9':
-            continue
-        if f'{f}_{rad}' == 'highz_6-9':
-            continue
-        ###
 
         with fits.open(f'{d}/{f}_{rad}.fits') as hdu:
             h = hdu[0].header
