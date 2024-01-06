@@ -273,7 +273,7 @@ def ajuste(func, xdata, y, ey, p0, b, orden, f, d):
     primary_hdu = fits.PrimaryHDU(header=h)
     hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
 
-    output = f'{d}/fit/fit_{func.__name__}_{f}'
+    output = f'{d}/fit/fit_{func.__name__}_{f}.fits'
     hdul.writeto(output,overwrite=True)
 
 
@@ -324,6 +324,7 @@ for r in radios:
             eSigma = np.sqrt(np.diag(covS))/rv_medio
 
             for f,P,B,O in zip(funcs,p0,bounds,orden):
+                print(f'con {f.__name__}')
                 ajuste(f ,xdata=r, y=Sigma, ey=eSigma, p0=P, b=B, orden=O, f=nombres[j], d=d)
 
         t2 = time.time()
@@ -331,8 +332,8 @@ for r in radios:
         tslice = np.append(tslice,ts)
         i+=1
         print(f'Tardó {np.round(ts,4)} min')
-        print(f' ')
+        # print(f' ')
     print('Tiempo restante estimado')
     print(f'{np.round(np.mean(tslice)*(30-(i)), 3)} min')
 
-print('Terminado!')
+print(f'Terminado en {np.sum(tslice)} min!')
