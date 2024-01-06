@@ -310,6 +310,22 @@ for rad in radios:
         print(f'Ajustando el perfil: {f}_{rad}.fits')
         t1 = time.time()
 
+        ##
+        if f'{f}_{rad}' == 'smallz_6-9':
+            print('Salteado!')
+            continue
+        if f'{f}_{rad}' == 'highz_6-9':
+            print('Salteado!')
+            continue
+        if f'{f}_{rad}' == 'sz_S':
+            print('Salteado!')
+            continue
+        if f'{f}_{rad}' == 'hz_S':
+            print('Salteado!')
+            continue
+        ##
+
+
         with fits.open(f'{d}/{f}_{rad}.fits') as hdu:
             h = hdu[0].header
             r = hdu[1].data.Rp
