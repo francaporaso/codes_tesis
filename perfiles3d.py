@@ -77,6 +77,9 @@ def step_densidad(xv, yv, zv, rv_j,
 
     return np.array([MASAsum, MASAacum, Ninbin, nhalos], dtype=object)
 
+def step_densidad_unpack(minput):
+	return step_densidad(*minput)
+
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
@@ -288,7 +291,7 @@ if __name__=='__main__':
 
 
     try:
-        os.mkdir(f'../profiles/voids/Rv_{round(Rv_min)}-{round(Rv_max)}/3D')
+        os.makedirs(f'../profiles/voids/Rv_{round(Rv_min)}-{round(Rv_max)}/3D')
     except FileExistsError:
         pass
 
