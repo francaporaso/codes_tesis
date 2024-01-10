@@ -277,11 +277,11 @@ if __name__=='__main__':
 
 
     try:
-        os.mkdir(f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/3D')
+        os.mkdir(f'../profiles/voids/Rv_{round(Rv_min)}-{round(Rv_max)}/3D')
     except FileExistsError:
         pass
 
-    output_folder = f'../profiles/voids/Rv_{int(Rv_min)}-{int(Rv_max)}/3D/'
+    output_folder = f'../profiles/voids/Rv_{round(Rv_min)}-{round(Rv_max)}/3D/'
 
     hdul.writeto(f'{output_folder+sample}.fits',overwrite=True)
 
