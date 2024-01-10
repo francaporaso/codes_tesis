@@ -151,12 +151,12 @@ def partial_profile(RA0,DEC0,Z,Rv,
             e2 += es2
         
         #get tangential ellipticities 
-        et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c
+        et = (-e1*np.cos(2*theta)-e2*np.sin(2*theta))*sigma_c/Rv.value
         #get cross ellipticities
-        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))*sigma_c
+        ex = (-e1*np.sin(2*theta)+e2*np.cos(2*theta))*sigma_c/Rv.value
                
         #get convergence
-        k  = catdata.kappa*sigma_c
+        k  = catdata.kappa*sigma_c/Rv.value
 
         r = (np.rad2deg(rads)/DEGxMPC.value)/(Rv.value)
         #r = (np.rad2deg(rads)*3600*KPCSCALE)/(Rv*1000.)
