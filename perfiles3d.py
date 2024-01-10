@@ -234,12 +234,12 @@ if __name__=='__main__':
         resultado, res_poly = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                         Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                                         rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                                        FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
+                                        FLAG=FLAG, nboot=NBOOT, interpolar=INTP, M_halos=M_halos)
     else:
         resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                               FLAG=FLAG, nboot=NBOOT, interpolar=INTP)
+                               FLAG=FLAG, nboot=NBOOT, interpolar=INTP, M_halos=M_halos)
 
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     r = (bines[:-1] + np.diff(bines)*0.5)
