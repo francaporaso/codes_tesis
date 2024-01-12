@@ -139,27 +139,24 @@ orden = np.array(['rs, rv, dc, a, b, x',
 
 ## leyendo datos
 # radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
-radios = ['6-10']
+radios = ['6-10','10-50']
 
 # tipos = np.array(['Total', 'S', 'R'])
 # redshift = np.array(['lowz', 'highz'])
 
 # file = np.array([f'3d_{t}_{z}.fits' for t in tipos for z in redshift])
-file = np.array(['rvchico_tot_6-9.fits'])
+file = np.array(['Rv_6-10/3D/rvchico_tot.fits', 'Rv_6-10/3D/rvchico_R.fits', 'Rv_6-10/3D/rvchico_S.fits',
+                 'Rv_10-50/3D/rvalto_tot.fits', 'Rv_10-50/3D/rvalto_R.fits', 'Rv_10-50/3D/rvalto_S.fits'])
 
-for radio in radios:
-    d = f'/home/fcaporaso/profiles/voids/Rv_{radio}/3D'
-    print('----')
-    print(f'Ajustando para los radios {radio}')
-    print('----')
-    for f in file:
-        print(f'Ajustando perfil {f}')
-
-        p = fits.open(f'{d}/{f}')[1].data
-        h = fits.open(f'{d}/{f}')[0].header
-
-        xdata = p.r
-        for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
-            print(f'usando {f_dif.__name__}')
-            ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
-                   p0=p, b=v, orden=o, f=f, d=d)
+d = '../profiles/voids'
+for f in file:
+    print(f'Ajustando perfil {f}')
+    p = fits.open(f'{d}/{f}')[1].data
+    h = fits.open(f'{d}/{f}')[0].header
+    
+    xdata = p.r
+    
+    for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
+        print(f'usando {f_dif.__name__}')
+        ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
+               p0=p, b=v, orden=o, f=f, d=d)
