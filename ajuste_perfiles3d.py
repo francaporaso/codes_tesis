@@ -5,50 +5,50 @@ from scipy.optimize import curve_fit
 
 
 ## definicion de funciones de ajuste
-def hamaus(r, rs, rv, delta, a, b):
+def hamaus(r, rs, rv, delta, a, b,x):
         
     d = delta*(1. - (r/rs)**a)/(1. + (r/rv)**b)
-    return d
+    return d+x
 
-def int_hamaus(r,rs,rv,delta,a,b):
+def int_hamaus(r,rs,rv,delta,a,b,x):
     
     def integrando(q):
-        return hamaus(q,rs,rv,delta,a,b)*(q**2)
+        return hamaus(q,rs,rv,delta,a,b,0)*(q**2)
     
     integral = np.array([quad_vec(integrando, 0, ri)[0] for ri in r])
-    return (3/r**3)*integral
+    return (3/r**3)*integral+x
 
-def clampitt(r,Rv,R2,dc,d2):
+def clampitt(r,Rv,R2,dc,d2,x):
     R_V = np.full_like(r, Rv)
     R2s  = np.full_like(r,R2)
     
     delta = (r<=R_V)*(dc + (d2-dc)*(r/Rv)**3) + ((r>R_V)&(r<=R2s))*d2 + (r>R2s)*0
     
-    return delta
+    return delta+x
 
-def int_clampitt(r,Rv,R2,dc,d2):
+def int_clampitt(r,Rv,R2,dc,d2,x):
     
     def integrando(q):
-        return clampitt(q,Rv,R2,dc,d2)*(q**2)
+        return clampitt(q,Rv,R2,dc,d2,0)*(q**2)
     
     integral = np.array([quad_vec(integrando, 0, ri)[0] for ri in r])
-    return (3/r**3)*integral
+    return (3/r**3)*integral+x
 
-def higuchi(r,Rv,R2,dc,d2):
+def higuchi(r,Rv,R2,dc,d2,x):
     unos = np.full_like(r,Rv)
     R2s  = np.full_like(r,R2)
     
     delta = (r<=unos)*dc + ((r>unos)&(r<=R2s))*d2 + (r>R2s)*0
     
-    return delta
+    return delta+x
 
-def int_higuchi(r,Rv,R2,dc,d2):
+def int_higuchi(r,Rv,R2,dc,d2,x):
     
     def integrando(q):
-        return higuchi(q,Rv,R2,dc,d2)*(q**2)
+        return higuchi(q,Rv,R2,dc,d2,0)*(q**2)
     
     integral = np.array([quad_vec(integrando, 0, ri)[0] for ri in r])
-    return (3/r**3)*integral
+    return (3/r**3)*integral+x
 
 def chi_red(ajuste,data,err,gl):
 	'''
@@ -121,31 +121,31 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     hdul.writeto(output,overwrite=True)
 
 ##
-# f1 = np.array([hamaus, clampitt, higuchi])
-f1 = np.array([hamaus])
-# f2 = np.array([int_hamaus, int_clampitt, i1nt_higuchi])
-f2 = np.array([int_hamaus])
+f1 = np.array([hamaus, clampitt, higuchi])
+# f1 = np.array([hamaus])
+f2 = np.array([int_hamaus, int_clampitt, int_higuchi])
+# f2 = np.array([int_hamaus])
 
 ## p0 de cada func
-p0 = np.array([[2.,0.6,-0.6,1.5,2.],
-               [0.5,0.5,-0.5,0.1],   
-               [0.5,0.5,-0.5,0.1]], dtype=object)   
-b = np.array([([0.,0.,-1,1.1,1.1],[3.,3.,0,5.,10]),
-              ([0.,0.,-1,-1.],[3.,3.,10.,100.]),
-              ([0.,0.,-1,-1.],[3.,3.,10.,100.])], dtype=object)
-orden = np.array(['rs, rv, dc, a, b', 
-                  'Rv,R2,dc,d2',
-                  'Rv,R2,dc,d2'])
+p0 = np.array([[2.,0.6,-0.6,1.5,2.,0],
+               [0.5,0.5,-0.5,0.1,0],   
+               [0.5,0.5,-0.5,0.1,0]], dtype=object)   
+b = np.array([([0.,0.,-1,1,1,-10],[3.,3.,0,10.,10,10]),
+              ([0.,0.,-1,-1.,-10],[3.,3.,10.,10.,10]),
+              ([0.,0.,-1,-1.,-10],[3.,3.,10.,10.,10])], dtype=object)
+orden = np.array(['rs, rv, dc, a, b, x', 
+                  'Rv, R2, dc, d2, x',
+                  'Rv, R2, dc, d2, x'])
 
 ## leyendo datos
 # radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
-radios = ['15-18']
+radios = ['6-10']
 
-tipos = np.array(['Total', 'S', 'R'])
-redshift = np.array(['lowz', 'highz'])
+# tipos = np.array(['Total', 'S', 'R'])
+# redshift = np.array(['lowz', 'highz'])
 
 # file = np.array([f'3d_{t}_{z}.fits' for t in tipos for z in redshift])
-file = np.array(['3d_R_lowz.fits'])
+file = np.array(['rvchico_tot_6-9.fits'])
 
 for radio in radios:
     d = f'/home/fcaporaso/profiles/voids/Rv_{radio}/3D'
@@ -158,14 +158,8 @@ for radio in radios:
         p = fits.open(f'{d}/{f}')[1].data
         h = fits.open(f'{d}/{f}')[0].header
 
-        den_dif = p.masa_dif/(p.vol_dif*h['den_media']) - 1
-        e_den_dif = p.std_masa_dif/(p.vol_dif*h['den_media'])
-
-        den_int = p.masa_int/(p.vol_int*h['den_media']) - 1
-        e_den_int = p.std_masa_int/(p.vol_int*h['den_media'])
-
         xdata = p.r
         for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
             print(f'usando {f_dif.__name__}')
-            ajuste(f_dif,f_int,xdata=xdata[1:], ydif=den_dif[1:],edif=e_den_dif[1:], yint=den_int[1:], eint=e_den_int[1:],
+            ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
                    p0=p, b=v, orden=o, f=f, d=d)
