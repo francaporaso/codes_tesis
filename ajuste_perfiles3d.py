@@ -104,8 +104,8 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
 
     h = fits.Header()
     h.append(('orden', orden))
-    h.append(('chi_red_dif', chi2_dif))
-    h.append(('chi_red_int', chi2_int))
+    h.append(('chi_dif', np.float32(chi2_dif)))
+    h.append(('chi_int', np.float32(chi2_int)))
     params = [fits.Column(name='param_dif', format='E', array=a_dif),
              fits.Column(name='param_int', format='E', array=a_int)]
 
@@ -117,8 +117,9 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     primary_hdu = fits.PrimaryHDU(header=h)
     hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
 
-    f = f.split('/')[-1]
     d = d+'/'+f.split('/')[0]+'/'+f.split('/')[1]
+    f = f.split('/')[-1]
+
     output = f'{d}/fit_{func_dif.__name__}_{f}'
     hdul.writeto(output,overwrite=True)
 
