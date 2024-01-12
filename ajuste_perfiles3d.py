@@ -151,12 +151,14 @@ file = np.array(['Rv_6-10/3D/rvchico_tot.fits', 'Rv_6-10/3D/rvchico_R.fits', 'Rv
 d = '../profiles/voids'
 for f in file:
     print(f'Ajustando perfil {f}')
-    p = fits.open(f'{d}/{f}')[1].data
-    h = fits.open(f'{d}/{f}')[0].header
+
+    with fits.open(f'{d}/{f}') as dat:
+        p = dat[1].data
+        h = dat[0].header
     
-    xdata = p.r
+        xdata = p.r
     
-    for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
-        print(f'usando {f_dif.__name__}')
-        ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
-               p0=p, b=v, orden=o, f=f, d=d)
+        for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
+            print(f'usando {f_dif.__name__}')
+            ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
+                   p0=p, b=v, orden=o, f=f, d=d)
