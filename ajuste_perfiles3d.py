@@ -117,6 +117,8 @@ def ajuste(func_dif, func_int, xdata, ydif, edif, yint, eint, p0, b, orden, f, d
     primary_hdu = fits.PrimaryHDU(header=h)
     hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
 
+    f = f.split('/')[-1]
+    d = d+'/'+f.split('/')[0]+'/'+f.split('/')[1]
     output = f'{d}/fit_{func_dif.__name__}_{f}'
     hdul.writeto(output,overwrite=True)
 
@@ -157,8 +159,11 @@ for f in file:
         h = dat[0].header
     
         xdata = p.r
-    
+        ydif=p.den_dif
+        edif=p.e_den_dif
+        yint=p.den_int
+        eint=p.e_den_int
         for f_dif,f_int,p,v,o in zip(f1,f2,p0,b,orden):
             print(f'usando {f_dif.__name__}')
-            ajuste(f_dif,f_int,xdata=xdata, ydif=p.den_dif,edif=p.e_den_dif, yint=p.den_int, eint=p.e_den_int,
+            ajuste(f_dif,f_int,xdata=xdata, ydif=ydif, edif=edif, yint=yint, eint=eint,
                    p0=p, b=v, orden=o, f=f, d=d)
