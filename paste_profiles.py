@@ -19,7 +19,7 @@ def cov_matrix(array):
         return COV
 
 
-def paste(sample, name, ndts=60,nslices=10):
+def paste(sample, name,nslices=10):
     '''
     COMO DEFLATENAR LOS ARRAYS:
     Sigma, DSigma_T/X y Ninbin son matrices 101xN, donde N es el numero de puntos del perfil entero. En este caso N=60
@@ -29,7 +29,7 @@ def paste(sample, name, ndts=60,nslices=10):
     Para usarlas usar np.reshape(N,N) 
     '''
 
-    n = ndts//nslices
+    # n = ndts//nslices
 
     directory = f'../profiles/voids/{sample}/'
 
@@ -38,11 +38,13 @@ def paste(sample, name, ndts=60,nslices=10):
     headers  = np.array([fits.open(directory+f'{p}.fits')[0] for p in prof])
     perfiles = np.array([fits.open(directory+f'{p}.fits')[1] for p in prof])
 
-    R        = np.array([perfiles[j].data.Rp.reshape(101,n)[0] for j in np.arange(nslices)]).flatten()
-    Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n) for j in np.arange(nslices)]),axis=1)
-    DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,n) for j in np.arange(nslices)]),axis=1)
-    DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,n) for j in np.arange(nslices)]),axis=1)
-    Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,n) for j in np.arange(nslices)]),axis=1)
+    n = np.array([headers[0]['ndots']//nslices for i in range(nslices)])
+
+    R        = np.array([perfiles[j].data.Rp.reshape(101,n[j])[0] for j in np.arange(nslices)]).flatten()
+    Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
 
     covS   = cov_matrix(Sigma[1:,:]).flatten()
     covDSt = cov_matrix(DSigma_T[1:,:]).flatten()
@@ -65,7 +67,8 @@ def paste(sample, name, ndts=60,nslices=10):
         print('Calculando valores medios')
         L = np.loadtxt(f'/mnt/simulations/MICE/voids_MICE.dat').T
         Rv, z, rho_1, rho_2, flag = L[1], L[4], L[8], L[9], L[11]
-        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= -1.)&(rho_1 < 1.))&((rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= 2)
+        mvoids = ((Rv >= Rv_min)&(Rv < Rv_max))&((z >= z_min)&(z < z_max))&((rho_1 >= -1.)&(rho_1 < 1.))&(
+                  (rho_2 >= rho2_min)&(rho_2 < rho2_max))&(flag >= 2)
         L = L[:,mvoids]
         z_mean    = np.mean(L[4])
         Rv_mean   = np.mean(L[1])
@@ -103,23 +106,21 @@ def paste(sample, name, ndts=60,nslices=10):
     hdul = fits.HDUList([primary_hdu, tbhdu_r, tbhdu_p, tbhdu_c])
 
     hdul.writeto(f'{directory}{name}_{int(Rv_min)}-{int(Rv_max)}.fits',overwrite=True)
-
+    print(f'Guardado en {directory}{name}_{int(Rv_min)}-{int(Rv_max)}.fits')
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sample', action='store', dest='sample',default='Rv_6-9')
     parser.add_argument('-name', action='store', dest='name',default='smallz')
-    parser.add_argument('-ndts', action='store', dest='n',default=60)
     parser.add_argument('-nslices', action='store', dest='nslices',default=10)
 
     args = parser.parse_args()
     sample  = args.sample
     name    = args.name
-    ndts   = int(args.n)
     nslices = int(args.nslices)
 
-    paste(sample,name,ndts,nslices)  
-
-
+    print('Pegando...')
+    paste(sample,name,nslices)  
+    print('Terminado!')
     
