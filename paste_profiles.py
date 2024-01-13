@@ -5,18 +5,18 @@ import argparse
 
 def cov_matrix(array):
         
-        K = len(array)
-        Kmean = np.average(array,axis=0)
-        bins = array.shape[1]
-        
-        COV = np.zeros((bins,bins))
-        
-        for k in range(K):
-            dif = (array[k]- Kmean)
-            COV += np.outer(dif,dif)        
-        
-        COV *= (K-1)/K
-        return COV
+    K = len(array)
+    Kmean = np.average(array,axis=0)
+    bins = array.shape[1]
+    
+    COV = np.zeros((bins,bins))
+    
+    for k in range(K):
+        dif = (array[k]- Kmean)
+        COV += np.outer(dif,dif)        
+    
+    COV *= (K-1)/K
+    return COV
 
 
 def paste(sample, name,nslices=10):
@@ -40,11 +40,27 @@ def paste(sample, name,nslices=10):
 
     n = np.array([headers[i].header['ndots'] for i in range(nslices)])
 
-    R        = np.array([perfiles[j].data.Rp.reshape(101,n[j])[0] for j in np.arange(nslices)]).flatten()
-    Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
-    DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
-    DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
-    Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    # R        = np.array([perfiles[j].data.Rp.reshape(101,n[j])[0] for j in np.arange(nslices)]).flatten()
+    # Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    # DSigma_T = np.concatenate(np.array([perfiles[j].data.DSigma_T.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    # DSigma_X = np.concatenate(np.array([perfiles[j].data.DSigma_X.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+    # Ninbin   = np.concatenate(np.array([perfiles[j].data.Ninbin.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
+
+    ntot = n.sum()
+    R = np.zeros(ntot)
+    Sigma = np.zeros((101,ntot))
+    DSigma_T = np.zeros((101,ntot))
+    DSigma_X = np.zeros((101,ntot))
+    Ninbin = np.zeros((101,ntot))
+
+    k = 0
+    for j in range(nslices):
+        R[k:n[j]+k] = perfiles[j].data.Rp.reshape(101,n[j])[0]
+        Sigma[:,k:n[j]+k]    = perfiles[j].data.Sigma.reshape(101,n[j])
+        DSigma_T[:,k:n[j]+k] = perfiles[j].data.DSigma_T.reshape(101,n[j])
+        DSigma_X[:,k:n[j]+k] = perfiles[j].data.DSigma_X.reshape(101,n[j])
+        Ninbin[:,k:n[j]+k]   = perfiles[j].data.Ninbin.reshape(101,n[j])
+        k += n[j]
 
     covS   = cov_matrix(Sigma[1:,:]).flatten()
     covDSt = cov_matrix(DSigma_T[1:,:]).flatten()
@@ -57,7 +73,7 @@ def paste(sample, name,nslices=10):
     rho2_max  = headers[0].header['rho2_max']
     z_min     = headers[0].header['z_min']
     z_max     = headers[0].header['z_max']
-    ndots     = np.sum([headers[j].header['ndots'] for j in np.arange(nslices)])
+    ndots     = ntot
 
     try:
         Rv_mean   = headers[0].header['Rv_mean']
