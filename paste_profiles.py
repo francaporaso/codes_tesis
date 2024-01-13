@@ -38,7 +38,7 @@ def paste(sample, name,nslices=10):
     headers  = np.array([fits.open(directory+f'{p}.fits')[0] for p in prof])
     perfiles = np.array([fits.open(directory+f'{p}.fits')[1] for p in prof])
 
-    n = np.array([headers[i]['ndots']//nslices for i in range(nslices)])
+    n = np.array([headers[i]['ndots'] for i in range(nslices)])
 
     R        = np.array([perfiles[j].data.Rp.reshape(101,n[j])[0] for j in np.arange(nslices)]).flatten()
     Sigma    = np.concatenate(np.array([perfiles[j].data.Sigma.reshape(101,n[j]) for j in np.arange(nslices)]),axis=1)
