@@ -127,16 +127,18 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     #calculamos los perfiles de cada void
     # Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
-    MASAsum  = np.zeros((Nvoids, NBINS))
-    MASAacum = np.zeros((Nvoids, NBINS))
-    Ninbin   = np.zeros((Nvoids, NBINS))
+    # MASAsum  = np.zeros((Nvoids, NBINS))
+    # MASAacum = np.zeros((Nvoids, NBINS))
+    # Ninbin   = np.zeros((Nvoids, NBINS))
+    MASAsum  = np.array([])
+    MASAacum = np.array([])
+    Ninbin   = np.array([])
     nh = 0
 
     print('Calculando perfiles...')
     LARGO = len(Lsplit)
 
     tslice = np.array([])
-    i = 0
         
     for l, Lsplit_l in enumerate(Lsplit):
                 
@@ -167,11 +169,10 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
 
         for j, profilesums in enumerate(salida):
         
-            MASAsum[i:num+i,:]  = profilesums[0]
-            MASAacum[i:num+i,:] = profilesums[1]
-            Ninbin[i:num+i,:]   = profilesums[2]
+            MASAsum  = np.append(MASAsum,profilesums[0])
+            MASAacum = np.append(MASAacum, profilesums[1])
+            Ninbin   = np.append(Ninbin, profilesums[2])
             nh += profilesums[3]
-        i += num
 
         del salida
 
@@ -182,18 +183,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
         print(f'{np.round(ts,4)} min')
         print('Timpo restante estimado')
         print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
-
-    
-    # for j in np.arange(Nvoids):
-    #     xv   = L[5][j]
-    #     yv   = L[6][j]
-    #     zv   = L[7][j]
-    #     rv_j = L[1][j]
-
-    #     MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX,
-    #                                                                 LOGM=LOGM, M_halos=M_halos)
-    #     nh += nhalos 
-
 
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
