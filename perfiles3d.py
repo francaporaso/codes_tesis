@@ -100,6 +100,8 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     
     L = L[:,MASKvoids]
     
+    Nvoids = len(L.T)
+    
     del z, rho_1, rho_2, flag
 
     if Nvoids < ncores:
