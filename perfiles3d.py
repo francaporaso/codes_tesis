@@ -62,7 +62,6 @@ def step_densidad(xv, yv, zv, rv_j,
     mask_j = ((np.abs(M_halos.xhalo-xv)<=RMAX*rv_j)&(np.abs(M_halos.yhalo-yv)<=RMAX*rv_j)&(np.abs(M_halos.zhalo-zv)<=RMAX*rv_j)&(
                M_halos.lmhalo >= LOGM))
     halos_vj = M_halos[mask_j]
-    del mask_j
     
     xh = halos_vj.xhalo
     yh = halos_vj.yhalo
@@ -112,8 +111,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     
     L = L[:,MASKvoids]
     Nvoids = len(L.T)
-    
-    del z, rho_1, rho_2, flag, MASKvoids
 
     # corte del catalogo para paralelizado
     if Nvoids < ncores:
@@ -174,8 +171,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
             Ninbin   = np.append(Ninbin, profilesums[2])
             nh += profilesums[3]
 
-        del salida
-
         t2 = time.time()
         ts = (t2-t1)/60.
         tslice = np.append(tslice, ts)
@@ -216,29 +211,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     output = np.array([masa_dif, masa_int, den_dif, den_int,
                        std_masa_dif, std_masa_int, e_den_dif, e_den_int,
                        vol_dif, vol_acum, Nbin, Nvoids, den_media], dtype=object)
-
-    if interpolar:
-        print('Interpolando...')
-
-        poly_m_d = np.zeros((Nvoids,NBINS))
-        poly_m_i = np.zeros((Nvoids,NBINS))
-    
-        for j in range(Nvoids):
-            p_d = np.poly1d(np.polyfit(R,MASAsum[j],4))
-            poly_m_d[j] = p_d(R)
-        
-            p_i = np.poly1d(np.polyfit(R,MASAacum[j],4))
-            poly_m_i[j] = p_i(R)
-
-        poly_mdif = np.sum(poly_m_d, axis=0)
-        poly_mint = np.sum(poly_m_i, axis=0)
-        
-        std_poly_m_d = boot(poly_m_d, nboot)
-        std_poly_m_i = boot(poly_m_i, nboot)
-
-        output_poly = np.array([poly_mdif, poly_mint, std_poly_m_d, std_poly_m_i])
-
-        return output, output_poly
 
     return output
 
