@@ -183,6 +183,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
         print('Timpo restante estimado')
         print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
+    
     # for j in np.arange(Nvoids):
     #     xv   = L[5][j]
     #     yv   = L[6][j]
@@ -196,6 +197,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
 
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
+    print(f'Calculo de perfiles terminado en {np.round(tslice.sum(), 3)} min')
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
 
     masa_dif  = np.sum(MASAsum, axis=0)
@@ -291,6 +293,8 @@ if __name__=='__main__':
     centrales = (M_halos.flag_central == 0)
     M_halos = M_halos[centrales]
 
+    tin = time.time()
+
     resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                            Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                            rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
@@ -339,8 +343,10 @@ if __name__=='__main__':
 
     hdul.writeto(f'{output_folder+sample}.fits',overwrite=True)
 
+    tfin = time.time()
+
     print(f'Archivo guardado en: {output_folder+sample}.fits !')
-    print(f'Terminado!')
+    print(f'Terminado en {(tfin-tin)/60} min!')
 
 
 
