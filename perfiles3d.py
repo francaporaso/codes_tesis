@@ -27,7 +27,8 @@ from astropy.stats import bootstrap
 from astropy.utils import NumpyRNGContext
 from astropy.io import fits
 import os
-
+import time
+from multiprocessing import Pool, Process
 
 h=1
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
@@ -83,7 +84,7 @@ def step_densidad_unpack(minput):
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
-              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, interpolar=False, M_halos=None):
+              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, ncores=10, interpolar=False, M_halos=None):
     
     ## cargamos el catalogo de voids identificados
     L = np.loadtxt(folder+lcat).T
@@ -100,12 +101,21 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     L = L[:,MASKvoids]
     
     del z, rho_1, rho_2, flag
+
+    if Nvoids < ncores:
+        ncores=Nvoids
     
+    lbins = int(round(Nvoids/float(ncores), 0))
+    slices = ((np.arange(lbins)+1)*ncores).astype(int)
+    slices = slices[(slices < Nvoids)]
+    Lsplit = np.split(L.T,slices)
+
     # radio medio del ensemble
     rv_mean = np.mean(L[1])
     
     bines = np.linspace(RMIN,RMAX,NBINS+1)
     R = bines[:-1] + 0.5*np.diff(bines)
+
 
     #calculamos los perfiles de cada void
     Nvoids = len(L.T)
@@ -116,6 +126,45 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     nh = 0
 
     print('Calculando perfiles...')
+    # LARGO = len(Lsplit)
+
+    # tslice = np.array([])
+    # i = 0
+        
+    # for l, Lsplit_l in enumerate(Lsplit):
+                
+    #     print(f'Vuelta {l+1} de {LARGO}')
+                
+    #     t1 = time.time()
+    #     num = len(Lsplit_l)
+
+    #     if num == 1:
+    #         entrada = [Lsplit_l[5], Lsplit_l[6],
+    #                    Lsplit_l[7], Lsplit_l[1],
+    #                    NBINS, RMIN, RMAX,LOGM, M_halos]
+                    
+    #         salida = [step_densidad(entrada)]
+    #     else:                
+    #         rmin   = np.full(num, RMAX)
+    #         rmax   = np.full(num, RMIN)
+    #         nbins  = np.full(num, NBINS, dtype=int)
+    #         logm   = np.full(num, LOGM)
+    #         mhalos = np.full(num, M_halos, dtype=object)
+                    
+    #         entrada = np.array([Lsplit_l.T[5],Lsplit_l.T[6],
+    #                             Lsplit_l.T[7],Lsplit_l.T[1],
+    #                             nbins,rmin,rmax,logm,mhalos]).T
+    #         with Pool(processes=num) as pool:
+    #             salida = np.array(pool.map(step_densidad_unpack,entrada))
+    #             pool.close()
+    #             pool.join()
+
+    #     for j, profilesums in enumerate(salida):
+        
+    #         MASAsum[i:] = profilesums[0]
+    #     i += num
+
+
     for j in np.arange(Nvoids):
         xv   = L[5][j]
         yv   = L[6][j]
@@ -209,6 +258,7 @@ if __name__=='__main__':
     parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
     parser.add_argument('-NBOOT', action='store', dest='NBOOT', default=100)
     parser.add_argument('-INTP', action='store', dest='INTP', default=False)
+    parser.add_argument('-ncores', action='store', dest='ncores', default=10)
     args = parser.parse_args()
 
     sample   = args.sample
@@ -227,9 +277,12 @@ if __name__=='__main__':
     NBINS    = int(args.NBINS)
     NBOOT    = int(args.NBOOT)
     INTP     = bool(args.INTP)
+    ncores   = int(args.ncores)
 
 
-    M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos.fits')[1].data
+    M_halos = fits.open('/home/fcaporaso/cats/MICE/micecat2_halos_full.fits')[1].data
+    centrales = (M_halos.flag_central == 0)
+    M_halos = M_halos[centrales]
 
     if INTP:
         print('Calculando con interpolación...')
@@ -237,12 +290,12 @@ if __name__=='__main__':
         resultado, res_poly = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                         Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                                         rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                                        FLAG=FLAG, nboot=NBOOT, interpolar=INTP, M_halos=M_halos)
+                                        FLAG=FLAG, nboot=NBOOT, ncores=ncores, interpolar=INTP, M_halos=M_halos)
     else:
         resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
                                Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
                                rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                               FLAG=FLAG, nboot=NBOOT, interpolar=INTP, M_halos=M_halos)
+                               FLAG=FLAG, nboot=NBOOT, ncores=ncores, interpolar=INTP, M_halos=M_halos)
 
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     r = (bines[:-1] + np.diff(bines)*0.5)
