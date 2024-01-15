@@ -57,7 +57,7 @@ def step_densidad(xv, yv, zv, rv_j,
     NBINS (int): cantidad de puntos a calcular del perfil
     RMIN,RMAX (float): radio minimo y maximo donde calcular el perfil'''
     
-    
+    NBINS = round(NBINS)
     #seleccionamos los halos dentro de la caja
     mask_j = ((np.abs(M_halos.xhalo-xv)<=RMAX*rv_j)&(np.abs(M_halos.yhalo-yv)<=RMAX*rv_j)&(np.abs(M_halos.zhalo-zv)<=RMAX*rv_j)&(
                M_halos.lmhalo >= LOGM))
