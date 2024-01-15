@@ -184,6 +184,12 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
         print('Timpo restante estimado')
         print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
+    # corrigiendo la forma de los arrays
+    
+    MASAsum  = MASAsum.reshape(Nvoids,NBINS)
+    MASAacum = MASAacum.reshape(Nvoids,NBINS)
+    Ninbin   = Ninbin.reshape(Nvoids,NBINS)
+    
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
     print(f'Calculo de perfiles terminado en {np.round(tslice.sum(), 3)} min')
