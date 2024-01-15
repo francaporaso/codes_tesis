@@ -46,7 +46,7 @@ def boot(poblacion, nboot=100):
     return std
 
 def step_densidad(xv, yv, zv, rv_j,
-              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12.):
+              NBINS=10,RMIN=0.01,RMAX=3., LOGM=9.):
     '''calcula la masa en funcion de la distancia al centro para 1 void
     
     j (int): # void
@@ -94,7 +94,7 @@ def step_densidad_unpack(minput):
 	return step_densidad(*minput)
 
 
-def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
+def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
               lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, ncores=10, interpolar=False):
     
@@ -125,7 +125,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     Lsplit = np.split(L.T,slices)
     
     #calculamos los perfiles de cada void
-    Nvoids = len(L.T)
+    # Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
     MASAsum  = np.zeros((Nvoids, NBINS))
     MASAacum = np.zeros((Nvoids, NBINS))
@@ -152,8 +152,8 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
                     
             salida = [step_densidad(entrada)]
         else:                
-            rmin   = np.full(num, RMAX)
-            rmax   = np.full(num, RMIN)
+            rmin   = np.full(num, RMIN)
+            rmax   = np.full(num, RMAX)
             nbins  = np.full(num, NBINS, dtype=int)
             logm   = np.full(num, LOGM)
                     
@@ -206,7 +206,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     den_dif = masa_dif/(vol_dif*den_media) - 1
     
     std_masa_dif = boot(MASAsum, nboot=nboot)
-    e_den_dif  = std_masa_dif/(vol_dif*den_media)
+    e_den_dif  = std_masa_dif/(vol_dif*den_media)   
 
     # calculo de densidad acumulada
     masa_int = np.sum(MASAacum, axis=0)
@@ -259,7 +259,7 @@ if __name__=='__main__':
     parser.add_argument('-FLAG', action='store', dest='FLAG', default=2.)
     parser.add_argument('-z_min', action='store', dest='z_min', default=0.2)
     parser.add_argument('-z_max', action='store', dest='z_max', default=0.3)
-    parser.add_argument('-LOGM', action='store', dest='LOGM', default=10.)
+    parser.add_argument('-LOGM', action='store', dest='LOGM', default=9.)
     parser.add_argument('-RMIN', action='store', dest='RMIN', default=0.05)
     parser.add_argument('-RMAX', action='store', dest='RMAX', default=3.)
     parser.add_argument('-NBINS', action='store', dest='NBINS', default=40)
@@ -328,19 +328,7 @@ if __name__=='__main__':
 
     tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
 
-    if INTP:
-        table_poly = [fits.Column(name='poly_mdif', format='E', array=res_poly[0]),
-                      fits.Column(name='poly_mint', format='E', array=res_poly[1]),
-                      fits.Column(name='std_poly_mdif', format='E', array=res_poly[2]),
-                      fits.Column(name='std_poly_mint', format='E', array=res_poly[3])]
-        
-        tbhdu_poly = fits.BinTableHDU.from_columns(fits.ColDefs(table_poly))
-
-        hdul = fits.HDUList([primary_hdu, tbhdu, tbhdu_poly])
-
-    else:
-        hdul = fits.HDUList([primary_hdu, tbhdu])
-
+    hdul = fits.HDUList([primary_hdu, tbhdu])
 
     try:
         os.makedirs(f'../profiles/voids/Rv_{round(Rv_min)}-{round(Rv_max)}/3D')
