@@ -172,7 +172,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
             Ninbin[i:num+i,:]   = profilesums[2]
             nh += profilesums[3]
         i += num
-        
+
         del salida
 
         t2 = time.time()
@@ -196,6 +196,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
 
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
+    bines = np.linspace(RMIN,RMAX,num=NBINS+1)
 
     masa_dif  = np.sum(MASAsum, axis=0)
     Nbin      = np.sum(Ninbin, axis=0)
