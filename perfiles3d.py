@@ -62,6 +62,7 @@ def step_densidad(xv, yv, zv, rv_j,
     mask_j = ((np.abs(M_halos.xhalo-xv)<=RMAX*rv_j)&(np.abs(M_halos.yhalo-yv)<=RMAX*rv_j)&(np.abs(M_halos.zhalo-zv)<=RMAX*rv_j)&(
                M_halos.lmhalo >= LOGM))
     halos_vj = M_halos[mask_j]
+    del mask_j
     
     xh = halos_vj.xhalo
     yh = halos_vj.yhalo
@@ -171,6 +172,8 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
             Ninbin[i:num+i,:]   = profilesums[2]
             nh += profilesums[3]
         i += num
+        
+        del salida
 
         t2 = time.time()
         ts = (t2-t1)/60.
