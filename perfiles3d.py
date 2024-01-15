@@ -147,7 +147,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         if num == 1:
             entrada = [Lsplit_l[5], Lsplit_l[6],
                        Lsplit_l[7], Lsplit_l[1],
-                       NBINS, RMIN, RMAX,LOGM, M_halos]
+                       NBINS, RMIN, RMAX,LOGM]
                     
             salida = [step_densidad(entrada)]
         else:                
@@ -155,11 +155,10 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
             rmax   = np.full(num, RMIN)
             nbins  = np.full(num, NBINS, dtype=int)
             logm   = np.full(num, LOGM)
-            mhalos = np.full(num, M_halos, dtype=object)
                     
             entrada = np.array([Lsplit_l.T[5],Lsplit_l.T[6],
                                 Lsplit_l.T[7],Lsplit_l.T[1],
-                                nbins,rmin,rmax,logm,mhalos]).T
+                                nbins,rmin,rmax,logm]).T
             with Pool(processes=num) as pool:
                 salida = np.array(pool.map(step_densidad_unpack,entrada))
                 pool.close()
