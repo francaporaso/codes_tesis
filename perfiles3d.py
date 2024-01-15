@@ -33,6 +33,17 @@ from multiprocessing import Pool, Process
 h=1
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
+def boot(poblacion, nboot=100):
+    size,ndots = poblacion.shape
+    
+    index = np.arange(size)
+    with NumpyRNGContext(1):
+        bootresult = bootstrap(index, nboot)
+    INDEX=bootresult.astype(int)
+
+    std = np.std(poblacion[INDEX].sum(axis=1), axis=0)
+
+    return std
 
 def step_densidad(xv, yv, zv, rv_j,
               NBINS=10,RMIN=0.01,RMAX=3., LOGM=12., M_halos=None):
@@ -99,11 +110,11 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
                   rho_2 >= rho2_min)&(rho_2 < rho2_max)&(flag >= FLAG))
     
     L = L[:,MASKvoids]
-    
     Nvoids = len(L.T)
     
-    del z, rho_1, rho_2, flag
+    del z, rho_1, rho_2, flag, MASKvoids
 
+    # corte del catalogo para paralelizado
     if Nvoids < ncores:
         ncores=Nvoids
     
@@ -111,14 +122,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     slices = ((np.arange(lbins)+1)*ncores).astype(int)
     slices = slices[(slices < Nvoids)]
     Lsplit = np.split(L.T,slices)
-
-    # radio medio del ensemble
-    rv_mean = np.mean(L[1])
     
-    bines = np.linspace(RMIN,RMAX,NBINS+1)
-    R = bines[:-1] + 0.5*np.diff(bines)
-
-
     #calculamos los perfiles de cada void
     Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
@@ -128,54 +132,65 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
     nh = 0
 
     print('Calculando perfiles...')
-    # LARGO = len(Lsplit)
+    LARGO = len(Lsplit)
 
-    # tslice = np.array([])
-    # i = 0
+    tslice = np.array([])
+    i = 0
         
-    # for l, Lsplit_l in enumerate(Lsplit):
+    for l, Lsplit_l in enumerate(Lsplit):
                 
-    #     print(f'Vuelta {l+1} de {LARGO}')
+        print(f'Vuelta {l+1} de {LARGO}')
                 
-    #     t1 = time.time()
-    #     num = len(Lsplit_l)
+        t1 = time.time()
+        num = len(Lsplit_l)
 
-    #     if num == 1:
-    #         entrada = [Lsplit_l[5], Lsplit_l[6],
-    #                    Lsplit_l[7], Lsplit_l[1],
-    #                    NBINS, RMIN, RMAX,LOGM, M_halos]
+        if num == 1:
+            entrada = [Lsplit_l[5], Lsplit_l[6],
+                       Lsplit_l[7], Lsplit_l[1],
+                       NBINS, RMIN, RMAX,LOGM, M_halos]
                     
-    #         salida = [step_densidad(entrada)]
-    #     else:                
-    #         rmin   = np.full(num, RMAX)
-    #         rmax   = np.full(num, RMIN)
-    #         nbins  = np.full(num, NBINS, dtype=int)
-    #         logm   = np.full(num, LOGM)
-    #         mhalos = np.full(num, M_halos, dtype=object)
+            salida = [step_densidad(entrada)]
+        else:                
+            rmin   = np.full(num, RMAX)
+            rmax   = np.full(num, RMIN)
+            nbins  = np.full(num, NBINS, dtype=int)
+            logm   = np.full(num, LOGM)
+            mhalos = np.full(num, M_halos, dtype=object)
                     
-    #         entrada = np.array([Lsplit_l.T[5],Lsplit_l.T[6],
-    #                             Lsplit_l.T[7],Lsplit_l.T[1],
-    #                             nbins,rmin,rmax,logm,mhalos]).T
-    #         with Pool(processes=num) as pool:
-    #             salida = np.array(pool.map(step_densidad_unpack,entrada))
-    #             pool.close()
-    #             pool.join()
+            entrada = np.array([Lsplit_l.T[5],Lsplit_l.T[6],
+                                Lsplit_l.T[7],Lsplit_l.T[1],
+                                nbins,rmin,rmax,logm,mhalos]).T
+            with Pool(processes=num) as pool:
+                salida = np.array(pool.map(step_densidad_unpack,entrada))
+                pool.close()
+                pool.join()
 
-    #     for j, profilesums in enumerate(salida):
+        for j, profilesums in enumerate(salida):
         
-    #         MASAsum[i:] = profilesums[0]
-    #     i += num
+            MASAsum[i:num+i,:]  = profilesums[0]
+            MASAacum[i:num+i,:] = profilesums[1]
+            Ninbin[i:num+i,:]   = profilesums[2]
+            nh += profilesums[3]
+        i += num
 
+        t2 = time.time()
+        ts = (t2-t1)/60.
+        tslice = np.append(tslice, ts)
+        print('Tiempo del corte')
+        print(f'{np.round(ts,4)} min')
+        print('Timpo restante estimado')
+        print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
-    for j in np.arange(Nvoids):
-        xv   = L[5][j]
-        yv   = L[6][j]
-        zv   = L[7][j]
-        rv_j = L[1][j]
+    # for j in np.arange(Nvoids):
+    #     xv   = L[5][j]
+    #     yv   = L[6][j]
+    #     zv   = L[7][j]
+    #     rv_j = L[1][j]
 
-        MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX,
-                                                                    LOGM=LOGM, M_halos=M_halos)
-        nh += nhalos 
+    #     MASAsum[j], MASAacum[j], Ninbin[j], nhalos = step_densidad(xv=xv, yv=yv, zv=xv, rv_j=rv_j, NBINS=NBINS, RMIN=RMIN, RMAX=RMAX,
+    #                                                                 LOGM=LOGM, M_halos=M_halos)
+    #     nh += nhalos 
+
 
     # realizamos el stacking de masa y calculo de densidad
     print(f'# halos: {nh}')
@@ -226,19 +241,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
         return output, output_poly
 
     return output
-
-def boot(poblacion, nboot=100):
-    size,ndots = poblacion.shape
-    
-    index = np.arange(size)
-    with NumpyRNGContext(1):
-        bootresult = bootstrap(index, nboot)
-    INDEX=bootresult.astype(int)
-
-    std = np.std(poblacion[INDEX].sum(axis=1), axis=0)
-
-    return std
-
 
 
 if __name__=='__main__':
