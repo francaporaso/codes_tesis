@@ -46,7 +46,7 @@ def boot(poblacion, nboot=100):
     return std
 
 def step_densidad(xv, yv, zv, rv_j,
-              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12., M_halos=None):
+              NBINS=10,RMIN=0.01,RMAX=3., LOGM=12.):
     '''calcula la masa en funcion de la distancia al centro para 1 void
     
     j (int): # void
@@ -95,7 +95,7 @@ def step_densidad_unpack(minput):
 
 def perfil_rho(NBINS, RMIN, RMAX, LOGM = 12.,
               Rv_min = 12., Rv_max=15., z_min=0.2, z_max=0.3, rho1_min=-1., rho1_max=1., rho2_min=-1., rho2_max=100., FLAG=2,
-              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, ncores=10, interpolar=False, M_halos=None):
+              lcat = 'voids_MICE.dat', folder = '/mnt/simulations/MICE/', nboot=100, ncores=10, interpolar=False):
     
     ## cargamos el catalogo de voids identificados
     L = np.loadtxt(folder+lcat).T
@@ -288,18 +288,10 @@ if __name__=='__main__':
     centrales = (M_halos.flag_central == 0)
     M_halos = M_halos[centrales]
 
-    if INTP:
-        print('Calculando con interpolación...')
-        print('Puede demorar unos segundos más...')
-        resultado, res_poly = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
-                                        Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
-                                        rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                                        FLAG=FLAG, nboot=NBOOT, ncores=ncores, interpolar=INTP, M_halos=M_halos)
-    else:
-        resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
-                               Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
-                               rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
-                               FLAG=FLAG, nboot=NBOOT, ncores=ncores, interpolar=INTP, M_halos=M_halos)
+    resultado = perfil_rho(NBINS=NBINS, RMIN=RMIN, RMAX=RMAX, LOGM=LOGM,
+                           Rv_min=Rv_min, Rv_max=Rv_max, z_min=z_min, z_max=z_max,
+                           rho1_min=rho1_min, rho1_max=rho1_max, rho2_min=rho2_min, rho2_max=rho2_max,
+                           FLAG=FLAG, nboot=NBOOT, ncores=ncores, interpolar=INTP)
 
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     r = (bines[:-1] + np.diff(bines)*0.5)
