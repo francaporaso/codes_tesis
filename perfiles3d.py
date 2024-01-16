@@ -228,7 +228,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
 
     den_dif  = np.mean(den_difsum, axis=0)
     Nbin      = np.sum(Ninbin, axis=0)
-    e_den_dif  = boot(den_dif, nboot=nboot)   
+    e_den_dif  = boot(den_difsum, nboot=nboot)   
     den_int  = np.mean(den_intsum, axis=0)
     e_den_int  = boot(den_intsum, nboot=nboot)
 
