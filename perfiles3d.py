@@ -209,14 +209,15 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     den_media = np.mean(den_difsum, axis=1) #shape=(Nvoids)
 
     den_dif = np.array([den_difsum[i]/den_media[i] for i in range(Nvoids)]) - 1 
-    e_den_dif = boot(den_difsum, nboot=nboot)
+    e_den_dif = boot(den_dif, nboot=nboot)
+    den_dif = np.mean(den_dif, axis=0)
     
     # densidad acumulada/integrada
     den_intsum = MASAacum/np.cumsum(vol_dif)
     
     den_int = np.array([den_intsum[i]/den_media[i] for i in range(Nvoids)]) - 1
-    e_den_int = boot(den_intsum, nboot=nboot)
- 
+    e_den_int = boot(den_int, nboot=nboot)
+    den_int = np.mean(den_int, axis=0)
  
     # output = np.array([masa_dif, masa_int, den_dif, den_int,
     #                    std_masa_dif, std_masa_int, e_den_dif, e_den_int,
