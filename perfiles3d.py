@@ -41,7 +41,7 @@ def boot(poblacion, nboot=100):
         bootresult = bootstrap(index, nboot)
     INDEX=bootresult.astype(int)
 
-    std = np.std(poblacion[INDEX].sum(axis=1), axis=0)
+    std = np.std(poblacion[INDEX].mean(axis=1), axis=0)
 
     return std
 
@@ -194,8 +194,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     
     MASAsum  = MASAsum.reshape(Nvoids,NBINS)
     MASAacum = MASAacum.reshape(Nvoids,NBINS)
-    # den_difsum   = den_difsum.reshape(Nvoids,NBINS)
-    # den_intsum   = den_intsum.reshape(Nvoids,NBINS)
     Ninbin   = Ninbin.reshape(Nvoids,NBINS)
     
     # realizamos el stacking de masa y calculo de densidad
@@ -203,27 +201,26 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     print(f'Calculo de perfiles terminado en {np.round(tslice.sum(), 3)} min')
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
 
-    masa_dif  = np.sum(MASAsum, axis=0)
     Nbin      = np.sum(Ninbin, axis=0)
-    vol_dif   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
-    den_media = np.sum(masa_dif)/((4*np.pi/3)*(RMAX**3 - RMIN**3)) # masa total sobre volumen de la caja
 
-    den_dif = masa_dif/(vol_dif*den_media) - 1
+    # densidad diferencial
+    vol_dif    = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
+    den_difsum = MASAsum/vol_dif #shape=(Nvoids,NBINS), cada fila es la densidad de c/void individual
+    den_media = np.mean(den_difsum, axis=1) #shape=(Nvoids)
+
+    den_dif = np.array([den_difsum[i]/den_media[i] for i in range(Nvoids)]) - 1 
+    e_den_dif = boot(den_difsum, nboot=nboot)
     
-    std_masa_dif = boot(MASAsum, nboot=nboot)
-    e_den_dif  = std_masa_dif/(vol_dif*den_media)   
-
-    # calculo de densidad acumulada
-    masa_int = np.sum(MASAacum, axis=0)
-    vol_acum = np.cumsum(vol_dif)
-    den_int = masa_int/(vol_acum*den_media) -1
-
-    std_masa_int = boot(MASAacum, nboot=nboot)
-    e_den_int  = std_masa_int/(vol_acum*den_media)
+    # densidad acumulada/integrada
+    den_intsum = MASAacum/np.cumsum(vol_dif)
     
-    output = np.array([masa_dif, masa_int, den_dif, den_int,
-                       std_masa_dif, std_masa_int, e_den_dif, e_den_int,
-                       vol_dif, vol_acum, Nbin, Nvoids, den_media, nh], dtype=object)
+    den_int = np.array([den_intsum[i]/den_media[i] for i in range(Nvoids)]) - 1
+    e_den_int = boot(den_intsum, nboot=nboot)
+ 
+ 
+    # output = np.array([masa_dif, masa_int, den_dif, den_int,
+    #                    std_masa_dif, std_masa_int, e_den_dif, e_den_int,
+    #                    vol_dif, vol_acum, Nbin, Nvoids, den_media, nh], dtype=object)
 
     # den_dif  = np.mean(den_difsum, axis=0)
     # Nbin      = np.sum(Ninbin, axis=0)
@@ -231,9 +228,9 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     # den_int  = np.mean(den_intsum, axis=0)
     # e_den_int  = boot(den_intsum, nboot=nboot)
 
-    # output = np.array([den_dif, den_int,
-    #                    e_den_dif, e_den_int,
-    #                    Nbin, Nvoids, nh], dtype=object)
+    output = np.array([den_dif, den_int,
+                       e_den_dif, e_den_int,
+                       Nbin, Nvoids, nh], dtype=object)
 
     return output
 
@@ -294,8 +291,8 @@ if __name__=='__main__':
     r = (bines[:-1] + np.diff(bines)*0.5)
 
     h = fits.Header()
-    h.append(('Nvoids',int(resultado[11])))
-    # h.append(('Nvoids',int(resultado[5])))
+    # h.append(('Nvoids',int(resultado[11])))
+    h.append(('Nvoids',int(resultado[5])))
     h.append(('Rv_min',np.round(Rv_min,2)))
     h.append(('Rv_max',np.round(Rv_max,2)))
     h.append(('rho1_min',np.round(rho1_min,2)))
@@ -305,28 +302,28 @@ if __name__=='__main__':
     h.append(('z_min',np.round(z_min,2)))
     h.append(('z_max',np.round(z_max,2)))
     h.append(('nhalos',resultado[-1]))
-    h.append(('den_media', np.float32(resultado[12])))
+    # h.append(('den_media', np.float32(resultado[12])))
 
     primary_hdu = fits.PrimaryHDU(header=h)
 
-    table_p = [ fits.Column(name='r', format='E', array=r),
-                fits.Column(name='masa_dif', format='E', array=resultado[0]),
-                fits.Column(name='masa_int', format='E', array=resultado[1]),
-                fits.Column(name='den_dif', format='E', array=resultado[2]),
-                fits.Column(name='den_int', format='E', array=resultado[3]),
-                fits.Column(name='std_masa_dif', format='E', array=resultado[4]),
-                fits.Column(name='std_masa_int', format='E', array=resultado[5]),
-                fits.Column(name='e_den_dif', format='E', array=resultado[6]),
-                fits.Column(name='e_den_int', format='E', array=resultado[7]),
-                fits.Column(name='vol_dif', format='E', array=resultado[8]),
-                fits.Column(name='vol_int', format='E', array=resultado[9]),
-                fits.Column(name='Nbin', format='E', array=resultado[10])]   
     # table_p = [ fits.Column(name='r', format='E', array=r),
-    #             fits.Column(name='den_dif', format='E', array=resultado[0]),
-    #             fits.Column(name='den_int', format='E', array=resultado[1]),
-    #             fits.Column(name='e_den_dif', format='E', array=resultado[2]),
-    #             fits.Column(name='e_den_int', format='E', array=resultado[3]),
-    #             fits.Column(name='Nbin', format='E', array=resultado[4])] 
+    #             fits.Column(name='masa_dif', format='E', array=resultado[0]),
+    #             fits.Column(name='masa_int', format='E', array=resultado[1]),
+    #             fits.Column(name='den_dif', format='E', array=resultado[2]),
+    #             fits.Column(name='den_int', format='E', array=resultado[3]),
+    #             fits.Column(name='std_masa_dif', format='E', array=resultado[4]),
+    #             fits.Column(name='std_masa_int', format='E', array=resultado[5]),
+    #             fits.Column(name='e_den_dif', format='E', array=resultado[6]),
+    #             fits.Column(name='e_den_int', format='E', array=resultado[7]),
+    #             fits.Column(name='vol_dif', format='E', array=resultado[8]),
+    #             fits.Column(name='vol_int', format='E', array=resultado[9]),
+    #             fits.Column(name='Nbin', format='E', array=resultado[10])]   
+    table_p = [ fits.Column(name='r', format='E', array=r),
+                fits.Column(name='den_dif', format='E', array=resultado[0]),
+                fits.Column(name='den_int', format='E', array=resultado[1]),
+                fits.Column(name='e_den_dif', format='E', array=resultado[2]),
+                fits.Column(name='e_den_int', format='E', array=resultado[3]),
+                fits.Column(name='Nbin', format='E', array=resultado[4])] 
 
     tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs(table_p))
 
