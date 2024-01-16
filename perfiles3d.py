@@ -195,8 +195,8 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     
     # MASAsum  = MASAsum.reshape(Nvoids,NBINS)
     # MASAacum = MASAacum.reshape(Nvoids,NBINS)
-    den_difsum   = den_dif.reshape(Nvoids,NBINS)
-    den_intsum   = den_int.reshape(Nvoids,NBINS)
+    den_difsum   = den_difsum.reshape(Nvoids,NBINS)
+    den_intsum   = den_intsum.reshape(Nvoids,NBINS)
     Ninbin   = Ninbin.reshape(Nvoids,NBINS)
     
     # realizamos el stacking de masa y calculo de densidad
