@@ -34,14 +34,14 @@ h=1
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
 def boot(poblacion, nboot=100):
-    size,ndots = poblacion.shape
+    size,_ = poblacion.shape
     
     index = np.arange(size)
     with NumpyRNGContext(1):
         bootresult = bootstrap(index, nboot)
     INDEX=bootresult.astype(int)
 
-    std = np.std(poblacion[INDEX].mean(axis=1), axis=0)
+    std = np.array([np.std(poblacion.T[i][INDEX]) for i in range(len(poblacion.T))])
 
     return std
 
