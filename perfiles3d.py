@@ -33,17 +33,19 @@ from multiprocessing import Pool, Process
 h=1
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
-def boot(poblacion, nboot=100):
-    size,_ = poblacion.shape
+def boot(poblacion,nboot=10000):
+    Nvoids,NBINS = poblacion.shape
     
-    index = np.arange(size)
+    index = np.arange(Nvoids)
     with NumpyRNGContext(1):
         bootresult = bootstrap(index, nboot)
     INDEX=bootresult.astype(int)
 
-    std = np.array([np.std(poblacion.T[i][INDEX]) for i in range(len(poblacion.T))])
-
-    return std
+    resample_mean = poblacion[INDEX].mean(axis=1) # shape = (nboot, NBINS), son las medias de cada resample
+    mean = resample_mean.mean(axis=0)             # shape = (NBINS) es la media de las medias del resample, una para cada punto del perfil
+    std  = resample_mean.std(axis=0)              # shape = (NBINS) es la desviacion estándar de las medias del resample
+    
+    return mean, std
 
 def step_densidad(xv, yv, zv, rv_j,
               NBINS=10,RMIN=0.01,RMAX=3., LOGM=9.):
@@ -129,15 +131,9 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     Lsplit = np.split(L.T,slices)
     
     #calculamos los perfiles de cada void
-    # Nvoids = len(L.T)
     print(f'# de voids: {Nvoids}')
-    # MASAsum  = np.zeros((Nvoids, NBINS))
-    # MASAacum = np.zeros((Nvoids, NBINS))
-    # Ninbin   = np.zeros((Nvoids, NBINS))
     MASAsum  = np.array([])
     MASAacum = np.array([])
-    # den_difsum = np.array([])
-    # den_intsum = np.array([])
     Ninbin  = np.array([])
     nh = 0
 
@@ -177,8 +173,6 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
         
             MASAsum  = np.append(MASAsum,profilesums[0])
             MASAacum = np.append(MASAacum, profilesums[1])
-            # den_difsum = np.append(den_difsum, profilesums[0])
-            # den_intsum = np.append(den_intsum, profilesums[1])
             Ninbin  = np.append(Ninbin, profilesums[2])
             nh += profilesums[3]
 
@@ -190,8 +184,7 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
         print('Timpo restante estimado')
         print(f'{np.round(np.mean(tslice)*(LARGO-(l+1)), 3)} min')
 
-    # corrigiendo la forma de los arrays
-    
+    # corrigiendo la forma de los arrays   
     MASAsum  = MASAsum.reshape(Nvoids,NBINS)
     MASAacum = MASAacum.reshape(Nvoids,NBINS)
     Ninbin   = Ninbin.reshape(Nvoids,NBINS)
@@ -200,34 +193,18 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     print(f'# halos: {nh}')
     print(f'Calculo de perfiles terminado en {np.round(tslice.sum(), 3)} min')
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
+    Nbin  = np.sum(Ninbin, axis=0)
+    vol   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
 
-    Nbin      = np.sum(Ninbin, axis=0)
+    den_difsum = MASAsum/vol                # shape=(Nvoids,NBINS), cada fila es la densidad de c/void individual
+    den_intsum = MASAacum/np.cumsum(vol)    # shape=(Nvoids,NBINS), cada fila es la den acumulada de c/void individual
+    den_media = np.mean(den_difsum, axis=1) # shape=(Nvoids) densidad media de cada void
 
-    # densidad diferencial
-    vol_dif    = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
-    den_difsum = MASAsum/vol_dif #shape=(Nvoids,NBINS), cada fila es la densidad de c/void individual
-    den_media = np.mean(den_difsum, axis=1) #shape=(Nvoids)
+    delta_dif = (den_difsum.T/den_media).T
+    delta_int = (den_intsum.T/den_media).T
 
-    den_dif = np.array([den_difsum[i]/den_media[i] for i in range(Nvoids)]) - 1 
-    e_den_dif = boot(den_dif, nboot=nboot)
-    den_dif = np.mean(den_dif, axis=0)
-    
-    # densidad acumulada/integrada
-    den_intsum = MASAacum/np.cumsum(vol_dif)
-    
-    den_int = np.array([den_intsum[i]/den_media[i] for i in range(Nvoids)]) - 1
-    e_den_int = boot(den_int, nboot=nboot)
-    den_int = np.mean(den_int, axis=0)
- 
-    # output = np.array([masa_dif, masa_int, den_dif, den_int,
-    #                    std_masa_dif, std_masa_int, e_den_dif, e_den_int,
-    #                    vol_dif, vol_acum, Nbin, Nvoids, den_media, nh], dtype=object)
-
-    # den_dif  = np.mean(den_difsum, axis=0)
-    # Nbin      = np.sum(Ninbin, axis=0)
-    # e_den_dif  = boot(den_difsum, nboot=nboot)   
-    # den_int  = np.mean(den_intsum, axis=0)
-    # e_den_int  = boot(den_intsum, nboot=nboot)
+    den_dif, e_den_dif = boot(delta_dif, nboot=nboot)
+    den_int, e_den_int = boot(delta_int, nboot=nboot)
 
     output = np.array([den_dif, den_int,
                        e_den_dif, e_den_int,
