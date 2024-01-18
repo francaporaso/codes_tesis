@@ -195,18 +195,17 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     Nbin  = np.sum(Ninbin, axis=0)
     vol   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
-
-    den_difsum = MASAsum/vol                # shape=(Nvoids,NBINS), cada fila es la densidad de c/void individual
-    den_intsum = MASAacum/np.cumsum(vol)    # shape=(Nvoids,NBINS), cada fila es la den acumulada de c/void individual
-    # den_media = np.mean(den_difsum, axis=1) # shape=(Nvoids) densidad media de cada void
     vol_tot = (4*np.pi/3)*(RMAX**3 - RMIN**3)
-    den_media = np.sum(MASAsum, axis=1)/vol_tot
-    
-    delta_dif = (den_difsum.T/den_media).T
-    delta_int = (den_intsum.T/den_media).T
 
-    den_dif, e_den_dif = boot(delta_dif, nboot=nboot)
-    den_int, e_den_int = boot(delta_int, nboot=nboot)
+    masacumtot = boot(MASAacum, nboot=nboot)
+    masatot    = boot(MASAsum, nboot=nboot)
+    d_m = np.sum(masatot)/vol_tot #densidad media
+
+    den_int   = masacumtot[0]/(np.cumsum(vol)*d_m)-1
+    e_den_int = masacumtot[1]/(np.cumsum(vol)*d_m)
+
+    den_dif   = masatot[0]/(vol*d_m)-1
+    e_den_dif = masatot[1]/(vol*d_m)
 
     output = np.array([den_dif, den_int,
                        e_den_dif, e_den_int,
