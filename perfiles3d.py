@@ -195,11 +195,13 @@ def perfil_rho(NBINS, RMIN, RMAX, LOGM = 9.,
     bines = np.linspace(RMIN,RMAX,num=NBINS+1)
     Nbin  = np.sum(Ninbin, axis=0)
     vol   = np.array([(4*np.pi/3)*((bines[i+1])**3 - (bines[i])**3) for i in range(NBINS)])
-    vol_tot = (4*np.pi/3)*(RMAX**3 - RMIN**3)
+    # vol_tot = (4*np.pi/3)*(RMAX**3 - RMIN**3)
+    vol_cat = (3072/np.mean(Rv))**3 #vol del cat en unidades del radio medio... 
 
     masacumtot = boot(MASAacum, nboot=nboot)
     masatot    = boot(MASAsum, nboot=nboot)
-    d_m = np.sum(masatot)/vol_tot #densidad media
+    # d_m = np.sum(masatot)/vol_tot #densidad media local
+    d_m = np.sum(10**M_halos.lmhalo)/vol_cat #densidad media del catalogo
 
     den_int   = masacumtot[0]/(np.cumsum(vol)*d_m)-1
     e_den_int = masacumtot[1]/(np.cumsum(vol)*d_m)
