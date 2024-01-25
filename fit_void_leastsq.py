@@ -249,7 +249,7 @@ def gl(func):
     else:
         return 5
 
-def ajuste(func, xdata, y, ey, p0, b, orden, f, d):
+def ajuste(func, xdata, y, ey, p0, b):
     
     try:
         popt, cov = curve_fit(f=func, xdata=xdata, ydata=y, sigma=ey,
@@ -263,40 +263,96 @@ def ajuste(func, xdata, y, ey, p0, b, orden, f, d):
         cov = np.ones((len(p0),len(p0)))
         chi2 = 1000
 
-    h = fits.Header()
-    h.append(('orden', orden))
-    h.append(('chi_red', chi2))
-
-    params = fits.ColDefs([fits.Column(name='param', format='E', array=popt)])
-    covs   = fits.ColDefs([fits.Column(name='cov', format='E', array=cov.flatten())])
-
-    tbhdu1 = fits.BinTableHDU.from_columns(params)
-    tbhdu2 = fits.BinTableHDU.from_columns(covs)
-    primary_hdu = fits.PrimaryHDU(header=h)
-    hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
-
-    output = f'{d}/fit/fit_{func.__name__}_{f}.fits'
-    hdul.writeto(output,overwrite=True)
+    return chi2, popt, cov
 
 
 ## --- 
+if __name__ == '__main__':
+
+    funcs = np.array([sigma_hamaus, 
+                      sigma_clampitt, 
+                      sigma_higuchi])
+    p0 = np.array([[1.,1.,-0.6,3.,7.,0.],
+                   [1.,1.5,-0.5,0.1,0.],   
+                   [1.,1.5,-0.5,0.1,0.]], dtype=object)   
+    bounds = np.array([([0.,0.,-1,1.1,1.1,-10],[3.,3.,0,5.,10,10]),
+                       ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
+                       ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
+    orden = np.array(['rs, rv, dc, a, b, x', 
+                      'Rv, R2, dc, d2, x',
+                      'Rv, R2, dc, d2, x'])
+
+
+    ## PARA LOS PERFILES NUEVOS
+    nombres = np.array(['tot', 'R', 'S'])
+    i = 0
+    tslice = np.array([])
+
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['tot','R','S']):
+            t1 = time.time()
+            print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
+
+            with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
+                h = dat[0].header
+                A = dat[1].data
+                B = dat[2].data
+                C = dat[3].data
+
+            rho_mean = pm(h['z_mean'])
+            S = B.Sigma.reshape(101,60)[0]
+            # DSt = B.DSigma_T.reshape(101,60)[0]
+            # DSx = B.DSigma_X.reshape(101,60)[0]
+            covS = C.covS.reshape(60,60)
+            eS = np.sqrt(np.diag(covS))
+            # covDSt = C.covDSt.reshape(60,60)
+            # eDSt = np.sqrt(np.diag(covDSt))
+            # covDSx = C.covDSx.reshape(60,60)
+            # eDSx = np.sqrt(np.diag(covDSx))
+
+            for fu,P0,Bo,Or in zip(funcs,p0,bounds,orden):
+                print(f'con {fu.__name__}')
+                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
+
+                h = fits.Header()
+                h.append(('orden', Or))
+                h.append(('chi_red', chi2))
+
+                params = fits.ColDefs([fits.Column(name='param', format='E', array=popt)])
+                covs   = fits.ColDefs([fits.Column(name='cov', format='E', array=pcov.flatten())])
+
+                tbhdu1 = fits.BinTableHDU.from_columns(params)
+                tbhdu2 = fits.BinTableHDU.from_columns(covs)
+                primary_hdu = fits.PrimaryHDU(header=h)
+                hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
+
+
+                try:
+                    aaa = carpeta.split('/')[0]
+                    carpeta_out = f'../profiles/voids/{aaa}/fit'    
+                    os.mkdir(carpeta_out)
+                except FileExistsError:
+                    pass        
+                
+                output = f'{carpeta_out}/fit_{fu.__name__}_{archivo}.fits'
+                hdul.writeto(output,overwrite=True)
+
+            t2 = time.time()
+            ts = (t2-t1)/60
+            tslice = np.append(tslice,ts)
+            i+=1
+            print(f'Tardó {np.round(ts,4)} min')
+            # print(f' ')
+        print('Tiempo restante estimado')
+        print(f'{np.round(np.mean(tslice)*(30-(i)), 3)} min')
+
+    print(f'Terminado en {np.sum(tslice)} min!')
+
+
+
+''' ## PARA LOS PERFILES QUE SACAMOS PRIMERO
 radios = np.array(['6-9', '9-12', '12-15', '15-18', '18-50'])
 files = np.array(['smallz', 'highz', 'sz_S', 'hz_S', 'sz_R', 'hz_R'])
-
-
-funcs = np.array([sigma_hamaus, 
-                  sigma_clampitt, 
-                  sigma_higuchi])
-p0 = np.array([[1.,1.,-0.6,3.,7.,0.],
-               [1.,1.5,-0.5,0.1,0.],   
-               [1.,1.5,-0.5,0.1,0.]], dtype=object)   
-bounds = np.array([([0.,0.,-1,1.1,1.1,-10],[3.,3.,0,5.,10,10]),
-                   ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
-                   ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
-orden = np.array(['rs, rv, dc, a, b, x', 
-                  'Rv, R2, dc, d2, x',
-                  'Rv, R2, dc, d2, x'])
-
 nombres = np.array(['tot_lowz', 'tot_highz', 'S_lowz', 'S_highz', 'R_lowz', 'R_highz'])
 
 tslice = np.array([])
@@ -354,5 +410,4 @@ for rad in radios:
         # print(f' ')
     print('Tiempo restante estimado')
     print(f'{np.round(np.mean(tslice)*(30-(i)), 3)} min')
-
-print(f'Terminado en {np.sum(tslice)} min!')
+'''
