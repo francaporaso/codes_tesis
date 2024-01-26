@@ -254,28 +254,30 @@ def ajuste(func, xdata, y, ey, p0, b):
 ## --- 
 if __name__ == '__main__':
 
-    funcs = np.array([sigma_hamaus, 
-                      sigma_clampitt, 
-                      sigma_higuchi])
-    p0 = np.array([[1.,1.,-0.4,2.,8.,0.],
-                   [1.,1.5,-0.5,0.1,0.],   
-                   [1.,1.5,-0.5,0.1,0.]], dtype=object)   
-    bounds = np.array([([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
-                       ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
-                       ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
-    orden = np.array(['rs, rv, dc, a, b, x', 
-                      'Rv, R2, dc, d2, x',
-                      'Rv, R2, dc, d2, x'])
+    # funcs = np.array([sigma_hamaus, 
+                    #   sigma_clampitt, 
+                    #   sigma_higuchi])
+    funcs = np.array([delta_sigma_hamaus])#, 
+                    #   sigma_clampitt, 
+                    #   sigma_higuchi])    
+    
+    p0 = np.array([[1.,1.,-0.4,2.,8.,0.]])#,
+                #    [1.,1.5,-0.5,0.1,0.],   
+                #    [1.,1.5,-0.5,0.1,0.]], dtype=object)   
+    bounds = np.array([([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10])])#,
+                    #    ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
+                    #    ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
+    orden = np.array(['rs, rv, dc, a, b, x'])#, 
+                    #   'Rv, R2, dc, d2, x',
+                    #   'Rv, R2, dc, d2, x'])
 
 
     ## PARA LOS PERFILES NUEVOS
     i = 0
     tslice = np.array([])
 
-    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
-        # for k, archivo in enumerate(['tot','R','S']):
-        for k, archivo in enumerate(['R','S']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['tot','R','S']):
             t1 = time.time()
             print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
 
@@ -286,19 +288,21 @@ if __name__ == '__main__':
                 C = dat[3].data
 
             rho_mean = pm(h['z_mean'])
-            S = B.Sigma.reshape(101,60)[0]
-            # DSt = B.DSigma_T.reshape(101,60)[0]
+            
+            # S = B.Sigma.reshape(101,60)[0]
+            DSt = B.DSigma_T.reshape(101,60)[0]
             # DSx = B.DSigma_X.reshape(101,60)[0]
-            covS = C.covS.reshape(60,60)
-            eS = np.sqrt(np.diag(covS))
-            # covDSt = C.covDSt.reshape(60,60)
-            # eDSt = np.sqrt(np.diag(covDSt))
+            # covS = C.covS.reshape(60,60)
+            # eS = np.sqrt(np.diag(covS))
+            covDSt = C.covDSt.reshape(60,60)
+            eDSt = np.sqrt(np.diag(covDSt))
             # covDSx = C.covDSx.reshape(60,60)
             # eDSx = np.sqrt(np.diag(covDSx))
 
             for fu,P0,Bo,Or in zip(funcs,p0,bounds,orden):
                 print(f'con {fu.__name__}')
-                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
+                # chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
+                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=DSt, ey=eDSt, p0=P0, b=Bo)            
 
                 h = fits.Header()
                 h.append(('orden', Or))
