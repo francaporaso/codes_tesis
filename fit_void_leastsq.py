@@ -1,14 +1,14 @@
 '''Ajuste de perfiles de voids mediante cuadrados minimos. Por defecto ajusta ambos Sigma y DSigma'''
 import numpy as np
-from scipy.integrate import quad, quad_vec
-from multiprocessing import Pool
-from astropy.io import fits
-from scipy.optimize import curve_fit
 import argparse
 import os
+import time
+from multiprocessing import Pool
+from scipy.integrate import quad, quad_vec
+from scipy.optimize import curve_fit
+from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 from astropy.constants import c, G
-import time
 
 
 def pm(z):
@@ -47,6 +47,9 @@ def higuchi(r,Rv,R2,dc,d2):
 
 def sigma_higuchi(R,Rv,R2,dc,d2,x):
     # Rv = 1.
+    if Rv>R2:
+        return np.inf
+        
     Rv = np.full_like(R,Rv)
     R2 = np.full_like(R,R2)
     
@@ -93,52 +96,34 @@ def sigma_hamaus(r,rs,rv,dc,a,b,x):
     
     return sigma
 
-# ----
+## contraste de densidad proyectado de cada funcion
 
-# def delta_sigma_clampitt(data,A3,Rv):
+# def delta_sigma_clampitt(R,Rv,R2,dc,d2,x):
 
-#     r = [data]
+#     def integrand(y):
+#         return sigma_clampitt(R,Rv,R2,dc,d2,x)*y
 
-#     def integrand(x,A3,Rv):
-#         return sigma_clampitt([x],A3,Rv)*x
+#     anillo = sigma_clampitt(R,Rv,R2,dc,d2,x)
+#     disco = quad_vec(integrand, 0, R, epsrel=1e-3)[0]
 
-#     anillo = sigma_clampitt(r,A3,Rv)
-#     disco = np.zeros_like(r)
-#     for j,p in enumerate(r):
-#         disco[j] = 2./p**2 * quad(integrand, 0., p, args=(A3,Rv))[0]
-
-#     return disco - anillo
-
-# def delta_sigma_krause(r,A3,A0,Rv):
-    
-#     def integrand(x):
-#         return sigma_krause([x],A3,A0,Rv)*x
-
-#     anillo = sigma_krause(r,A3,A0,Rv)
-#     disco = np.zeros_like(r)
-#     for j,p in enumerate(r):
-#         disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
-        
 #     return disco - anillo
 
 # def delta_sigma_higuchi():
 #     pass
 
-# def delta_sigma_hamaus(data,rs,delta,Rv,a,b):
-    
-#     #r, Rv = data[:-1], data[-1]
-#     r = [data]
-#     # Rv = 1.
-    
-#     def integrand(x,rs,delta,Rv,a,b):
-#         return sigma_hamaus([x],rs,delta,Rv,a,b)*x
+def delta_sigma_hamaus(r,rs,rv,dc,a,b,x):
 
-#     anillo = sigma_hamaus(r,rs,delta,Rv,a,b)
-#     disco = np.zeros_like(r)
-#     for j,p in enumerate(r):
-#         disco[j] = 2./p**2 * quad(integrand, 0., p, args=(rs,delta,Rv,a,b))[0]
+    # Rv = 1.
+    
+    def integrand(y):
+        return sigma_hamaus(y,rs,rv,dc,a,b,x)*y
 
-#     return disco-anillo
+    anillo = sigma_hamaus(r,rs,rv,dc,a,b,x)
+    disco = np.zeros_like(r)
+    for j,p in enumerate(r):
+        disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
+
+    return disco-anillo
 
 # ## ----
 
@@ -258,7 +243,7 @@ def ajuste(func, xdata, y, ey, p0, b):
         chi2 = chi_red(func(xdata,*popt), y, ey, gl(func))
 
     except RuntimeError:
-        print(f'El perfil {f} no ajustó para la funcion {func.__name__}')
+        print(f'El perfil no ajustó para la funcion {func.__name__}')
         popt = np.ones_like(p0)
         cov = np.ones((len(p0),len(p0)))
         chi2 = 1000
@@ -272,10 +257,10 @@ if __name__ == '__main__':
     funcs = np.array([sigma_hamaus, 
                       sigma_clampitt, 
                       sigma_higuchi])
-    p0 = np.array([[1.,1.,-0.6,3.,7.,0.],
+    p0 = np.array([[1.,1.,-0.4,2.,8.,0.],
                    [1.,1.5,-0.5,0.1,0.],   
                    [1.,1.5,-0.5,0.1,0.]], dtype=object)   
-    bounds = np.array([([0.,0.,-1,1.1,1.1,-10],[3.,3.,0,5.,10,10]),
+    bounds = np.array([([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
                        ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
                        ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
     orden = np.array(['rs, rv, dc, a, b, x', 
@@ -284,12 +269,13 @@ if __name__ == '__main__':
 
 
     ## PARA LOS PERFILES NUEVOS
-    nombres = np.array(['tot', 'R', 'S'])
     i = 0
     tslice = np.array([])
 
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-        for k, archivo in enumerate(['tot','R','S']):
+    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+        # for k, archivo in enumerate(['tot','R','S']):
+        for k, archivo in enumerate(['R','S']):
             t1 = time.time()
             print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
 
