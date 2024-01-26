@@ -116,12 +116,12 @@ def Scl(y,Rv,R2,dc,d2,x):
         f2 = 2*(d2*np.sqrt(R2**2-y**2))
         return rho_mean*f2/Rv+x
 
-def delta_sigma_clampitt(R,Rv,R2,dc,d2,x):
+def delta_sigma_clampitt(R,Rv,R2,dc,d2):
 
     def integrand(y):
-        return Scl(y,Rv,R2,dc,d2,x)*y
+        return Scl(y,Rv,R2,dc,d2,0)*y
 
-    anillo = sigma_clampitt(R,Rv,R2,dc,d2,x)
+    anillo = sigma_clampitt(R,Rv,R2,dc,d2,0)
     disco = np.zeros_like(R)
     for i,Ri in enumerate(R):
         disco[i] = (2/Ri**2)*quad(integrand, 0, Ri)[0]
@@ -232,19 +232,24 @@ if __name__ == '__main__':
     
     p0 = np.array(
                     [
-                        [1.,1.,-0.4,2.,8.,0.],
-                #       [1.,1.5,-0.5,0.1,0.],   
-                #       [1.,1.5,-0.5,0.1,0.],   
+                        # [1.,1.,-0.4,2.,8.,0.],
+                        [1.,1.5,-0.5,0.1],   
+                        [1.,1.5,-0.5,0.1],   
                     ],
                     dtype=object
                   )
     
-    bounds = np.array([([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10])])#,
-                    #    ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
-                    #    ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10])], dtype=object)
-    orden = np.array(['rs, rv, dc, a, b, x'])#, 
-                    #   'Rv, R2, dc, d2, x',
-                    #   'Rv, R2, dc, d2, x'])
+    bounds = np.array([
+                        # ([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
+                        ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
+                        ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
+                      ], dtype=object
+                     )
+    orden = np.array([
+                        # 'rs, rv, dc, a, b, x', 
+                        'Rv, R2, dc, d2',
+                        'Rv, R2, dc, d2',   
+                     ])
 
 
     ## PARA LOS PERFILES NUEVOS
