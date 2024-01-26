@@ -219,36 +219,36 @@ def ajuste(func, xdata, y, ey, p0, b):
 ## --- 
 if __name__ == '__main__':
 
-    # funcs = np.array([
-    #                     sigma_hamaus, 
-    #                     sigma_clampitt, 
-    #                     sigma_higuchi,
-    #                 ])
     funcs = np.array([
+                        # sigma_hamaus, 
+                        # sigma_clampitt, 
+                        sigma_higuchi,
+                    ])
+    # funcs = np.array([
                         # delta_sigma_hamaus
-                            delta_sigma_clampitt, 
-                            delta_sigma_higuchi,  
-                    ]) 
+                        # delta_sigma_clampitt, 
+                        # delta_sigma_higuchi,  
+                    # ]) 
     
     p0 = np.array(
                     [
                         # [1.,1.,-0.4,2.,8.,0.],
-                        [1.,1.5,-0.5,0.1],   
-                        [1.,1.5,-0.5,0.1],   
+                        # [1.,1.5,-0.5,0.1],   
+                        [1.,1.5,-0.5,0.1,0],   
                     ],
                     dtype=object
                   )
     
     bounds = np.array([
                         # ([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
-                        ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
-                        ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
+                        # ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
+                        ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
                       ], dtype=object
                      )
     orden = np.array([
                         # 'rs, rv, dc, a, b, x', 
-                        'Rv, R2, dc, d2',
-                        'Rv, R2, dc, d2',   
+                        # 'Rv, R2, dc, d2',
+                        'Rv, R2, dc, d2, x',   
                      ])
 
 
@@ -269,20 +269,20 @@ if __name__ == '__main__':
 
             rho_mean = pm(h['z_mean'])
 
-            # S = B.Sigma.reshape(101,60)[0]
-            DSt = B.DSigma_T.reshape(101,60)[0]
+            S = B.Sigma.reshape(101,60)[0]
+            # DSt = B.DSigma_T.reshape(101,60)[0]
             # DSx = B.DSigma_X.reshape(101,60)[0]
-            # covS = C.covS.reshape(60,60)
-            # eS = np.sqrt(np.diag(covS))
-            covDSt = C.covDSt.reshape(60,60)
-            eDSt = np.sqrt(np.diag(covDSt))
+            covS = C.covS.reshape(60,60)
+            eS = np.sqrt(np.diag(covS))
+            # covDSt = C.covDSt.reshape(60,60)
+            # eDSt = np.sqrt(np.diag(covDSt))
             # covDSx = C.covDSx.reshape(60,60)
             # eDSx = np.sqrt(np.diag(covDSx))
 
             for fu,P0,Bo,Or in zip(funcs,p0,bounds,orden):
                 print(f'con {fu.__name__}')
-                # chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
-                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=DSt, ey=eDSt, p0=P0, b=Bo)            
+                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
+                # chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=DSt, ey=eDSt, p0=P0, b=Bo)            
 
                 h = fits.Header()
                 h.append(('orden', Or))
@@ -314,9 +314,9 @@ if __name__ == '__main__':
             print(f'Tardó {np.round(ts,4)} min')
             # print(f' ')
         print('Tiempo restante estimado')
-        print(f'{np.round(np.mean(tslice)*(30-(i)), 3)} min')
+        print(f'{np.round(np.mean(tslice)*(6-(i)), 3)} min')
 
-    print(f'Terminado en {np.sum(tslice)} min!')
+    print(f'Terminado en {np.round(np.sum(tslice),3)} min!')
 
 
 
