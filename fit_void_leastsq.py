@@ -157,7 +157,6 @@ def delta_sigma_higuchi(R,Rv,R2,dc,d2):
     return disco-anillo
 
 
-
 def delta_sigma_hamaus(r,rs,rv,dc,a,b):
 
     # Rv = 1.

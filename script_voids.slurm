@@ -23,52 +23,8 @@ conda activate env_py39
 
 ##srun ./run_fit_zphot.sh
 ##srun ./run_fit_zphotw3.sh
-##:)srun python forVoid_slice_MICE.py -sample smallz -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3.
-##:)srun python forVoid_slice_MICE.py -sample highz -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3.
-##
-##:)srun python forVoid_slice_MICE.py -sample sz_S -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_S -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##
-##:)srun python forVoid_slice_MICE.py -sample sz_R -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_R -ncores 10 -nslices 10 -nbins 60 -Rv_min 6. -Rv_max 9. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##
-##
-##:)srun python forVoid_slice_MICE.py -sample smallz -ncores 10 -nslices 10 -nbins 60 -Rv_min 9. -Rv_max 12. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. 
-##:)srun python forVoid_slice_MICE.py -sample highz -ncores 10 -nslices 10 -nbins 60 -Rv_min 9. -Rv_max 12. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3.
-##
-##:)srun python forVoid_slice_MICE.py -sample sz_S -ncores 10 -nslices 10 -nbins 60 -Rv_min 9. -Rv_max 12. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_S -ncores 56 -nslices 9 -nbins 54 -Rv_min 9. -Rv_max 12. -z_min 0.3 -z_max 0.4 -RIN 0.34 -ROUT 3. -rho2_min 0.
-##
-##:)srun python forVoid_slice_MICE.py -sample sz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 9. -Rv_max 12. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 9. -Rv_max 12. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_max 0.
+srun python forVoid_slice_MICE.py -sample zchico -ncores 56 -nslices 2 -nbins 40 -Rv_min 6. -Rv_max 9.622 -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3.0
+srun python forVoid_slice_MICE.py -sample zalto -ncores 56 -nslices 2 -nbins 40 -Rv_min 6. -Rv_max 9.622 -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3.0
 
-
-##:) clemente srun python forVoid_slice_MICE.py -sample smallz -ncores 10 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. 
-##:)srun python forVoid_slice_MICE.py -sample highz -ncores 56 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3.
-
-##:) clementesrun python forVoid_slice_MICE.py -sample sz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_min 0.
-
-##:) sersicsrun python forVoid_slice_MICE.py -sample sz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 12. -Rv_max 15. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_max 0.
-
-
-##:)srun python forVoid_slice_MICE.py -sample smallz -ncores 10 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.2 -z_max 0.3 -RIN 2. -ROUT 3. 
-##:)srun python forVoid_slice_MICE.py -sample highz -ncores 56 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3.
-
-##:)srun python forVoid_slice_MICE.py -sample sz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_min 0.
-
-##:) srun python forVoid_slice_MICE.py -sample sz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 15. -Rv_max 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_max 0.
-
-
-##:) srun python forVoid_slice_MICE.py -sample smallz -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. 
-##:)srun python forVoid_slice_MICE.py -sample highz -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3.
-##  
-##:) srun python forVoid_slice_MICE.py -sample sz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##:)srun python forVoid_slice_MICE.py -sample hz_S -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_min 0.
-##  
-##:) srun python forVoid_slice_MICE.py -sample sz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3. -rho2_max 0.
-##  srun python forVoid_slice_MICE.py -sample hz_R -ncores 56 -nslices 10 -nbins 60 -Rv_min 18. -z_min 0.3 -z_max 0.4 -RIN 0.05 -ROUT 3. -rho2_max 0.
-
+srun python forVoid_slice_MICE.py -sample zchico -ncores 56 -nslices 2 -nbins 40 -Rv_min 9.622 -Rv_max 50.0 -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3.0
+srun python forVoid_slice_MICE.py -sample zalto -ncores 56 -nslices 2 -nbins 40 -Rv_min 9.622 -Rv_max 50.0 -z_min 0.2 -z_max 0.3 -RIN 0.05 -ROUT 3.0
