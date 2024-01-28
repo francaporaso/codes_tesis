@@ -226,7 +226,7 @@ def log_probability_sigma_hamaus(theta, r, y, yerr):
 ### --- 
 ## ajuste
 
-def ajuste(xdata, ydata, ycov, pos, log_probability:function,
+def ajuste(xdata, ydata, ycov, pos, log_probability,
            nit=1000, ncores=32):
     
     '''
