@@ -208,9 +208,9 @@ def ajuste(func, xdata, y, ey, p0, b):
 
     except RuntimeError:
         print(f'El perfil no ajustó para la funcion {func.__name__}')
-        popt = np.ones_like(p0)
-        cov = np.ones((len(p0),len(p0)))
-        chi2 = 1000
+        popt = np.full_like(p0, 999)
+        cov = np.full((len(p0),len(p0)), 999)
+        chi2 = 999
 
     return chi2, popt, cov
 

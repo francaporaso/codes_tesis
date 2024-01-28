@@ -171,17 +171,46 @@ def delta_sigma_hamaus(r,rs,dc,a,b):
 
     return disco-anillo
 
+## chi reducido
+
+def chi_red(ajuste,data,err,gl):
+	'''
+	Reduced chi**2
+	------------------------------------------------------------------
+	INPUT:
+	ajuste       (float or array of floats) fitted value/s
+	data         (float or array of floats) data used for fitting
+	err          (float or array of floats) error in data
+	gl           (float) grade of freedom (number of fitted variables)
+	------------------------------------------------------------------
+	OUTPUT:
+	chi          (float) Reduced chi**2 	
+	'''
+		
+	BIN=len(data)
+	chi=((((ajuste-data)**2)/(err**2)).sum())/float(BIN-1-gl)
+	return chi
+
 ### ----
 
 ### likelihoods
 
 def log_likelihood(theta, r, y, yerr):
-    
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
     rs,dc,a,b,x = theta
-    model = sigma_hamaus(r, rs, dc, a, b, x)
-    sigma2 = yerr**2
-    return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    modelo = sigma_hamaus(r, rs, dc, a, b, x)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
     # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
 
 def log_prior(theta):
     rs,dc,a,b,x = theta
@@ -213,15 +242,15 @@ with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
 rho_mean = pm(h['z_mean'])
 
 S = B.Sigma.reshape(101,60)[0]
-DSt = B.DSigma_T.reshape(101,60)[0]
+# DSt = B.DSigma_T.reshape(101,60)[0]
 covS = C.covS.reshape(60,60)
 eS = np.sqrt(np.diag(covS))
-covDSt = C.covDSt.reshape(60,60)
-eDSt = np.sqrt(np.diag(covDSt))
+# covDSt = C.covDSt.reshape(60,60)
+# eDSt = np.sqrt(np.diag(covDSt))
 
 ### --- 
 ## ajuste
-nw = 15
+nw = 32
 pos = np.array([
     np.random.uniform(0.8, 1.2, nw),     # rs
     np.random.uniform(-0.7, -0.5, nw),   # dc
@@ -232,8 +261,14 @@ pos = np.array([
 
 nwalkers, ndim = pos.shape
 
+usecov = True
+if usecov:
+    yerr = np.linalg.inv(covS)
+else:
+    yerr = eS
+
 with Pool() as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp,S,eS), pool=pool)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp,S,yerr), pool=pool)
     start = time.time()
     sampler.run_mcmc(pos, 1000, progress=True)
     end = time.time()
@@ -244,11 +279,15 @@ mcmc_out = sampler.get_chain(flat=True).T
 
 ### ---
 ## guardado
-rs = np.percentile(mcmc_out[0][100:], [16, 50, 84])
-dc = np.percentile(mcmc_out[1][100:], [16, 50, 84])
-a = np.percentile(mcmc_out[2][100:], [16, 50, 84])
-b = np.percentile(mcmc_out[3][100:], [16, 50, 84])
-x = np.percentile(mcmc_out[4][100:], [16, 50, 84])
+tirar = 200
+
+rs = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
+dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
+a  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
+b  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
+x  = np.percentile(mcmc_out[4][tirar:], [16, 50, 84])
+
+chi = chi_red(sigma_hamaus(Rp, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), S, eS, 5)
 
 table_opt = np.array([
     fits.Column(name='rs',format='D',array=mcmc_out[0]),
@@ -259,13 +298,18 @@ table_opt = np.array([
     ])
 
 hdu = fits.Header()
-hdu.append(('rs',np.round(rs[1],4)))
-hdu.append(('dc',np.round(dc[1],4)))
-hdu.append(('a',np.round(a[1],4)))
-hdu.append(('b',np.round(b[1],4)))
-hdu.append(('x',np.round(x[1],4)))
+hdu.append(('nw',nwalkers))
+hdu.append(('ndim',ndim))
+hdu.append(('chi_red',chi))
 
-sample = 'prueba'
+hdu.append(('rs',rs[1]))
+hdu.append(('dc',dc[1]))
+hdu.append(('a',a[1]))
+hdu.append(('b',b[1]))
+hdu.append(('x',x[1]))
+
+
+sample = 'prucov'
 primary_hdu = fits.PrimaryHDU(header=hdu)
 tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
 hdul = fits.HDUList([primary_hdu, tbhdu1])
