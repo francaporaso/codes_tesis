@@ -45,8 +45,8 @@ def higuchi(r,Rv,R2,dc,d2):
 
 ### Densidades proyectadas para cada función
 
-def sigma_higuchi(R,Rv,R2,dc,d2,x):
-    # Rv = 1.
+def sigma_higuchi(R,R2,dc,d2,x):
+    Rv = 1.
     if Rv>R2:
         return np.inf
         
@@ -63,7 +63,8 @@ def sigma_higuchi(R,Rv,R2,dc,d2,x):
     sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
-def sigma_clampitt(R,Rv,R2,dc,d2,x):
+def sigma_clampitt(R,R2,dc,d2,x):
+    Rv = 1.
     if Rv>R2:
         return np.inf
 
@@ -85,8 +86,8 @@ def sigma_clampitt(R,Rv,R2,dc,d2,x):
     sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
-def sigma_hamaus(r,rs,rv,dc,a,b,x):
-    
+def sigma_hamaus(r,rs,dc,a,b,x):
+    rv = 1.
     def integrand(z,R):
         return hamaus(r=np.sqrt(z**2+R**2),rv=rv,rs=rs,delta=dc,a=a,b=b)
   
@@ -116,12 +117,12 @@ def Scl(y,Rv,R2,dc,d2,x):
         f2 = 2*(d2*np.sqrt(R2**2-y**2))
         return rho_mean*f2/Rv+x
 
-def delta_sigma_clampitt(R,Rv,R2,dc,d2):
-
+def delta_sigma_clampitt(R,R2,dc,d2):
+    Rv = 1.
     def integrand(y):
         return Scl(y,Rv,R2,dc,d2,0)*y
 
-    anillo = sigma_clampitt(R,Rv,R2,dc,d2,0)
+    anillo = sigma_clampitt(R,R2,dc,d2,0)
     disco = np.zeros_like(R)
     for i,Ri in enumerate(R):
         disco[i] = (2/Ri**2)*quad(integrand, 0, Ri)[0]
@@ -144,12 +145,12 @@ def Shi(y,Rv,R2,dc,d2,x):
         return rho_mean*f2/Rv+x
 
     
-def delta_sigma_higuchi(R,Rv,R2,dc,d2):
-
+def delta_sigma_higuchi(R,R2,dc,d2):
+    Rv = 1.
     def integrand(y):
         return Shi(y,Rv,R2,dc,d2,0)*y
 
-    anillo = sigma_higuchi(R,Rv,R2,dc,d2,0)
+    anillo = sigma_higuchi(R,R2,dc,d2,0)
     disco = np.zeros_like(R)
     for i,Ri in enumerate(R):
         disco[i] = (2/Ri**2)*quad(integrand, 0, Ri)[0]
@@ -157,14 +158,13 @@ def delta_sigma_higuchi(R,Rv,R2,dc,d2):
     return disco-anillo
 
 
-def delta_sigma_hamaus(r,rs,rv,dc,a,b):
-
-    # Rv = 1.
+def delta_sigma_hamaus(r,rs,dc,a,b):
     
+    rv = 1.
     def integrand(y):
-        return sigma_hamaus(y,rs,rv,dc,a,b)*y
+        return sigma_hamaus(y,rs,dc,a,b)*y
 
-    anillo = sigma_hamaus(r,rs,rv,dc,a,b)
+    anillo = sigma_hamaus(r,rs,dc,a,b)
     disco = np.zeros_like(r)
     for j,p in enumerate(r):
         disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
@@ -219,9 +219,9 @@ def ajuste(func, xdata, y, ey, p0, b):
 if __name__ == '__main__':
 
     funcs = np.array([
-                        # sigma_hamaus, 
+                        sigma_hamaus, 
                         # sigma_clampitt, 
-                        sigma_higuchi,
+                        # sigma_higuchi,
                     ])
     # funcs = np.array([
                         # delta_sigma_hamaus
@@ -231,23 +231,23 @@ if __name__ == '__main__':
     
     p0 = np.array(
                     [
-                        # [1.,1.,-0.4,2.,8.,0.],
+                        [1.,1.,-0.4,2.,8.,0.],
                         # [1.,1.5,-0.5,0.1],   
-                        [1.,1.5,-0.5,0.1,0],   
+                        # [1.,1.5,-0.5,0.1,0],   
                     ],
                     dtype=object
                   )
     
     bounds = np.array([
-                        # ([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
+                        ([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
                         # ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
-                        ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
+                        # ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
                       ], dtype=object
                      )
     orden = np.array([
-                        # 'rs, rv, dc, a, b, x', 
+                        'rs, rv, dc, a, b, x', 
                         # 'Rv, R2, dc, d2',
-                        'Rv, R2, dc, d2, x',   
+                        # 'Rv, R2, dc, d2, x',   
                      ])
 
 
