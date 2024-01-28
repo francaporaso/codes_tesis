@@ -267,7 +267,8 @@ hdu.append(('x',np.round(x[1],4)))
 
 sample = 'prueba'
 primary_hdu = fits.PrimaryHDU(header=hdu)
-hdul = fits.HDUList([primary_hdu])
+tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+hdul = fits.HDUList([primary_hdu, tbhdu1])
 carpeta_out = carpeta.split('/')[0]
 outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_hamaus_{sample}.fits'
 
