@@ -215,49 +215,98 @@ def ajuste(func, xdata, y, ey, p0, b):
     return chi2, popt, cov
 
 
+def guardar_perfil(carpeta, archivo, Or, fu,
+                     chi2, popt, pcov):
+    h = fits.Header()
+    h.append(('orden', Or))
+    h.append(('chi_red', chi2))
+    
+    params = fits.ColDefs([fits.Column(name='param', format='E', array=popt)])
+    covs   = fits.ColDefs([fits.Column(name='cov', format='E', array=pcov.flatten())])
+    tbhdu1 = fits.BinTableHDU.from_columns(params)
+    tbhdu2 = fits.BinTableHDU.from_columns(covs)
+    primary_hdu = fits.PrimaryHDU(header=h)
+    hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
+    try:
+        aaa = carpeta.split('/')[0]
+        carpeta_out = f'../profiles/voids/{aaa}/fit'    
+        os.mkdir(carpeta_out)
+    except FileExistsError:
+        pass        
+    
+    output = f'{carpeta_out}/fit_{fu.__name__}_{archivo}.fits'
+    hdul.writeto(output,overwrite=True)
+
 ## --- 
 if __name__ == '__main__':
 
     funcs = np.array([
                         sigma_hamaus, 
-                        # sigma_clampitt, 
-                        # sigma_higuchi,
+                        sigma_clampitt, 
+                        sigma_higuchi,
                     ])
-    # funcs = np.array([
-                        # delta_sigma_hamaus
-                        # delta_sigma_clampitt, 
-                        # delta_sigma_higuchi,  
-                    # ]) 
+    funcs_d = np.array([
+                        delta_sigma_hamaus,
+                        delta_sigma_clampitt, 
+                        delta_sigma_higuchi,  
+                    ]) 
     
     p0 = np.array(
                     [
-                        [2.8,-0.9,0.6,3.5,-0.01],
-                        # [1.,1.5,-0.5,0.1],   
-                        # [1.,1.5,-0.5,0.1,0],   
+                        [1.5,-0.9,3.,7.,-0.01],
+                        [1.5,-0.5,0.1,0],   
+                        [1.5,-0.5,0.1,0],   
                     ],
                     dtype=object
                   )
     
+    p0_d = np.array(
+                    [
+                        [1.5,-0.9,3.,7.],
+                        [1.5,-0.5,0.1],   
+                        [1.5,-0.5,0.1],   
+                    ],
+                    dtype=object
+                  )
+
     bounds = np.array([
                         ([0.,-1,0.,1.,-10],[10.,0,10.,20,10]),
-                        # ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
-                        # ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
+                        ([1.,-1,-1.,-10],[3.,0.,10.,10]),
+                        ([1.,-1,-1.,-10],[3.,0.,10.,10]),
                       ], dtype=object
                      )
+    
+    bounds_d = np.array([
+                        ([0.,-1,0.,1.],[10.,0,10.,20]),
+                        ([1.,-1,-1.],[3.,0.,10.]),
+                        ([1.,-1,-1.],[3.,0.,10.]),
+                      ], dtype=object
+                     )
+    
     orden = np.array([
                         'rs, dc, a, b, x', 
-                        # 'Rv, R2, dc, d2',
-                        # 'Rv, R2, dc, d2, x',   
+                        'R2, dc, d2, x',
+                        'R2, dc, d2, x',   
                      ])
 
+    orden_d = np.array([
+                        'rs, dc, a, b', 
+                        'R2, dc, d2',
+                        'R2, dc, d2',   
+                     ])
 
     ## PARA LOS PERFILES NUEVOS
     i = 0
     tslice = np.array([])
 
-    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):}
-    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
-        for k, archivo in enumerate(['R']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    # for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['tot', 'R', 'S']):
+            
+            if f'{carpeta}{archivo}'=='Rv_10-50/rvalto_R':
+                print('Salteado Rv_10-50/rvalto_R')
+                continue
+
             t1 = time.time()
             print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
 
@@ -270,12 +319,12 @@ if __name__ == '__main__':
             rho_mean = pm(h['z_mean'])
 
             S = B.Sigma.reshape(101,60)[0]
-            # DSt = B.DSigma_T.reshape(101,60)[0]
+            DSt = B.DSigma_T.reshape(101,60)[0]
             # DSx = B.DSigma_X.reshape(101,60)[0]
             covS = C.covS.reshape(60,60)
             eS = np.sqrt(np.diag(covS))
-            # covDSt = C.covDSt.reshape(60,60)
-            # eDSt = np.sqrt(np.diag(covDSt))
+            covDSt = C.covDSt.reshape(60,60)
+            eDSt = np.sqrt(np.diag(covDSt))
             # covDSx = C.covDSx.reshape(60,60)
             # eDSx = np.sqrt(np.diag(covDSx))
 
@@ -284,28 +333,15 @@ if __name__ == '__main__':
                 chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=S, ey=eS, p0=P0, b=Bo)            
                 # chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=DSt, ey=eDSt, p0=P0, b=Bo)            
 
-                h = fits.Header()
-                h.append(('orden', Or))
-                h.append(('chi_red', chi2))
-
-                params = fits.ColDefs([fits.Column(name='param', format='E', array=popt)])
-                covs   = fits.ColDefs([fits.Column(name='cov', format='E', array=pcov.flatten())])
-
-                tbhdu1 = fits.BinTableHDU.from_columns(params)
-                tbhdu2 = fits.BinTableHDU.from_columns(covs)
-                primary_hdu = fits.PrimaryHDU(header=h)
-                hdul = fits.HDUList([primary_hdu, tbhdu1, tbhdu2])
-
-
-                try:
-                    aaa = carpeta.split('/')[0]
-                    carpeta_out = f'../profiles/voids/{aaa}/fit'    
-                    os.mkdir(carpeta_out)
-                except FileExistsError:
-                    pass        
+                guardar_perfil(carpeta=carpeta,archivo=archivo,Or=Or,fu=fu,
+                               chi2=chi2,popt=popt,pcov=pcov)
                 
-                output = f'{carpeta_out}/fit_{fu.__name__}_{archivo}.fits'
-                hdul.writeto(output,overwrite=True)
+            for fu,P0,Bo,Or in zip(funcs_d,p0_d,bounds_d,orden_d):
+                print(f'con {fu.__name__}')
+                chi2, popt, pcov = ajuste(fu ,xdata=A.Rp, y=DSt, ey=eDSt, p0=P0, b=Bo)                       
+
+                guardar_perfil(carpeta=carpeta,archivo=archivo,Or=Or,fu=fu,
+                               chi2=chi2,popt=popt,pcov=pcov)
 
             t2 = time.time()
             ts = (t2-t1)/60
