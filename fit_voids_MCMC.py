@@ -267,7 +267,9 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
     nit, nw, ndim = mcmc_out.shape
     tirar = int(tirar*nit)
- 
+    
+    mcmc_out = mcmc_out.reshape(nit*nw, ndim)
+
     if func.__name__ == 'sigma_hamaus':
         rs = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
         dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
