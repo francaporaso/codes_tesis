@@ -231,7 +231,7 @@ if __name__ == '__main__':
     
     p0 = np.array(
                     [
-                        [1.,1.,-0.4,2.,8.,0.],
+                        [2.8,-0.9,0.6,3.5,-0.01],
                         # [1.,1.5,-0.5,0.1],   
                         # [1.,1.5,-0.5,0.1,0],   
                     ],
@@ -239,13 +239,13 @@ if __name__ == '__main__':
                   )
     
     bounds = np.array([
-                        ([0.,0.,-1,1.,1.,-10],[3.,3.,0,10.,20,10]),
+                        ([0.,-1,0.,1.,-10],[3.,0,10.,20,10]),
                         # ([0.,0.1,-1,-1.],[3.,3.,10.,100.]),
                         # ([0.,0.1,-1,-1.,-10],[3.,3.,10.,100.,10]),
                       ], dtype=object
                      )
     orden = np.array([
-                        'rs, rv, dc, a, b, x', 
+                        'rs, dc, a, b, x', 
                         # 'Rv, R2, dc, d2',
                         # 'Rv, R2, dc, d2, x',   
                      ])
@@ -255,8 +255,9 @@ if __name__ == '__main__':
     i = 0
     tslice = np.array([])
 
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-        for k, archivo in enumerate(['tot','R','S']):
+    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):}
+    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['R']):
             t1 = time.time()
             print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
 
