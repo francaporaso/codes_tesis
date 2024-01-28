@@ -172,7 +172,6 @@ def delta_sigma_hamaus(r,rs,dc,a,b):
     return disco-anillo
 
 ## chi reducido
-
 def chi_red(ajuste,data,err,gl):
 	'''
 	Reduced chi**2
@@ -192,10 +191,9 @@ def chi_red(ajuste,data,err,gl):
 	return chi
 
 ### ----
-
 ### likelihoods
 
-def log_likelihood(theta, r, y, yerr):
+def log_likelihood_sigma_hamaus(theta, r, y, yerr):
     '''
     r : eje x
     y : datos eje y
@@ -212,110 +210,202 @@ def log_likelihood(theta, r, y, yerr):
         
     return L_S    
 
-def log_prior(theta):
+def log_prior_hamaus(theta):
     rs,dc,a,b,x = theta
     if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 10.)&(-10<=x<=10):
         return 0.0
     return -np.inf
 
-def log_probability(theta, r, y, yerr):
-    lp = log_prior(theta)
+def log_probability_sigma_hamaus(theta, r, y, yerr):
+    lp = log_prior_hamaus(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + log_likelihood(theta, r, y, yerr)
+    return lp + log_likelihood_sigma_hamaus(theta, r, y, yerr)
 
-### ---
-## datos
-
-# for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-#     for k, archivo in enumerate(['tot', 'R', 'S']):
-
-carpeta = 'Rv_6-10/rvchico_'
-archivo = 'tot'
-
-with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
-   h = dat[0].header
-   Rp = dat[1].data.Rp
-   B = dat[2].data
-   C = dat[3].data
-
-rho_mean = pm(h['z_mean'])
-
-S = B.Sigma.reshape(101,60)[0]
-# DSt = B.DSigma_T.reshape(101,60)[0]
-covS = C.covS.reshape(60,60)
-eS = np.sqrt(np.diag(covS))
-# covDSt = C.covDSt.reshape(60,60)
-# eDSt = np.sqrt(np.diag(covDSt))
 
 ### --- 
 ## ajuste
-nw = 32
-pos = np.array([
-    np.random.uniform(0.8, 1.2, nw),     # rs
-    np.random.uniform(-0.7, -0.5, nw),   # dc
-    np.random.uniform(1., 5., nw),       # a
-    np.random.uniform(5., 9., nw),       # b
-    np.random.uniform(-1, 1., nw),       # x
-    ]).T     
 
-nwalkers, ndim = pos.shape
+def ajuste(xdata, ydata, ycov, pos, log_probability:function,
+           nit=1000, ncores=32):
+    
+    '''
+    ajuste con mcmc
+    xdata: datos en el eje x
+    ydata: datos en el eje y
+    ycov: error de ydata, pueden ser errores de la diagonal o la matriz completa
+    '''   
 
-usecov = True
-if usecov:
-    yerr = np.linalg.inv(covS)
-else:
-    yerr = eS
+    nwalkers, ndim = pos.shape
 
-with Pool() as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Rp,S,yerr), pool=pool)
-    start = time.time()
-    sampler.run_mcmc(pos, 1000, progress=True)
-    end = time.time()
-    multi_time = end - start
-print(multi_time)
+    if ycov.shape == ydata.shape:
+        yerr = np.linalg.inv(ycov)
+    else:
+        yerr = ycov
 
-mcmc_out = sampler.get_chain(flat=True).T
+    with Pool(processes=ncores) as pool:
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool)
+        sampler.run_mcmc(pos, nit, progress=True)
+
+    mcmc_out = sampler.get_chain(flat=True).T
+
+    return mcmc_out
 
 ### ---
 ## guardado
-tirar = 200
+def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
+                        tirar=0.2, carpeta='Rv_6-10/rvchico_', archivo='tot', sample='pru'):
 
-rs = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
-dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
-a  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
-b  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
-x  = np.percentile(mcmc_out[4][tirar:], [16, 50, 84])
+    '''
+    guardado del mcmc
+    tirar: porcentaje de iteraciones iniciales descartadas (default 20% de las iteraciones)
+    '''
 
-chi = chi_red(sigma_hamaus(Rp, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), S, eS, 5)
+    nit, nw, ndim = mcmc_out.shape
+    tirar = int(tirar*nit)
+ 
+    if func.__name__ == 'sigma_hamaus':
+        rs = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
+        dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
+        a  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
+        b  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
+        x  = np.percentile(mcmc_out[4][tirar:], [16, 50, 84])
 
-table_opt = np.array([
-    fits.Column(name='rs',format='D',array=mcmc_out[0]),
-    fits.Column(name='dc',format='D',array=mcmc_out[1]),
-    fits.Column(name='a',format='D',array=mcmc_out[2]),
-    fits.Column(name='b',format='D',array=mcmc_out[3]),
-    fits.Column(name='x',format='D',array=mcmc_out[4])
-    ])
+        chi = chi_red(sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), ydata, yerr, 5)
 
-hdu = fits.Header()
-hdu.append(('nw',nwalkers))
-hdu.append(('ndim',ndim))
-hdu.append(('chi_red',chi))
+        table_opt = np.array([
+                                fits.Column(name='rs',format='D',array=mcmc_out[0]),
+                                fits.Column(name='dc',format='D',array=mcmc_out[1]),
+                                fits.Column(name='a',format='D',array=mcmc_out[2]),
+                                fits.Column(name='b',format='D',array=mcmc_out[3]),
+                                fits.Column(name='x',format='D',array=mcmc_out[4]),
+                            ])
 
-hdu.append(('rs',rs[1]))
-hdu.append(('dc',dc[1]))
-hdu.append(('a',a[1]))
-hdu.append(('b',b[1]))
-hdu.append(('x',x[1]))
+        hdu = fits.Header()
+
+        hdu.append(('rs',rs[1]))
+        hdu.append(('dc',dc[1]))
+        hdu.append(('a',a[1]))
+        hdu.append(('b',b[1]))
+        hdu.append(('x',x[1]))
+
+    else:
+        
+        R2 = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
+        dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
+        d2  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
+        x  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
+
+        params = np.array([R2[1], dc[1], d2[1], x[1]])
+
+        chi = chi_red(func(xdata,*params), ydata, yerr, 4)
+
+        table_opt = np.array([
+                                fits.Column(name='R2',format='D',array=mcmc_out[0]),
+                                fits.Column(name='dc',format='D',array=mcmc_out[1]),
+                                fits.Column(name='d2',format='D',array=mcmc_out[2]),
+                                fits.Column(name='x',format='D',array=mcmc_out[3]),
+                            ])
+
+        hdu = fits.Header()
+
+        hdu.append(('R2',R2[1]))
+        hdu.append(('dc',dc[1]))
+        hdu.append(('d2',d2[1]))
+        hdu.append(('x',x[1]))
+
+    hdu.append(('nw',nw))
+    hdu.append(('ndim',ndim))
+    hdu.append(('nit',nit))
+    hdu.append(('chi_red',chi))
+
+    primary_hdu = fits.PrimaryHDU(header=hdu)
+    tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+    hdul = fits.HDUList([primary_hdu, tbhdu1])
+    carpeta_out = carpeta.split('/')[0]
+
+    outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{func.__name__}_{sample}.fits'
+
+    print(f'Guardado en {outfile}')
+    hdul.writeto(outfile, overwrite=True)
 
 
-sample = 'prucov'
-primary_hdu = fits.PrimaryHDU(header=hdu)
-tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
-hdul = fits.HDUList([primary_hdu, tbhdu1])
-carpeta_out = carpeta.split('/')[0]
-outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_hamaus_{sample}.fits'
+def pos_maker(func, nw=32):
 
-print(f'Guardado en {outfile}')
+    # comunes
+    xpos = np.random.uniform(-1, 1., nw)
+    dcpos = np.random.uniform(-0.7, -0.5, nw)
+    d2pos = np.random.uniform(0., 0.1, nw)
+    r2pos = np.random.uniform(1.5, 2.5, nw)
 
-hdul.writeto(outfile, overwrite=True)
+    # hamaus
+    rspos = np.random.uniform(0.8, 1.2, nw)
+    apos = np.random.uniform(1., 5., nw)
+    bpos = np.random.uniform(5., 9., nw)
+
+    if func=='hamaus':
+        pos = np.array([
+                        rspos,     # rs
+                        dcpos,     # dc
+                        apos,      # a
+                        bpos,      # b
+                        xpos,      # x
+                    ]).T
+
+    else:
+        pos = np.array([
+                        r2pos,      # r2
+                        dcpos,      # dc
+                        d2pos,      # d2
+                        xpos,       # x
+                    ]).T
+
+    return pos
+
+if __name__ == '__main__':
+
+    ### ---
+    ## datos
+
+    carpeta = 'Rv_6-10/rvchico_'
+    archivo = 'tot'
+    sample = 'pru_cov2'
+    nit = 1000
+    nw = 32
+    ncores = 32
+
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['tot', 'R', 'S']):
+
+            # if f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot':
+            #     print(f'Salteado {carpeta}{archivo}')
+            #     continue
+
+            with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
+               h = dat[0].header
+               Rp = dat[1].data.Rp
+               B = dat[2].data
+               C = dat[3].data
+
+            rho_mean = pm(h['z_mean'])
+
+            S = B.Sigma.reshape(101,60)[0]
+            covS = C.covS.reshape(60,60)
+            eS = np.sqrt(np.diag(covS))
+            # DSt = B.DSigma_T.reshape(101,60)[0]
+            # covDSt = C.covDSt.reshape(60,60)
+            # eDSt = np.sqrt(np.diag(covDSt))
+
+            # pos inicial para hamaus
+            pos = pos_maker('hamaus', nw=nw) 
+
+            print(f'Ajustando perfil {carpeta}{archivo}')
+            print(f'Usando sigma_hamaus')
+            mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=log_probability_sigma_hamaus,
+                              nit=nit, ncores=ncores)
+
+            print('Guardando...')
+            guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=sigma_hamaus,
+                            tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+
+            print('Terminado!')
