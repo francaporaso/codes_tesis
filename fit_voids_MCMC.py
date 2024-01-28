@@ -269,7 +269,7 @@ sample = 'prueba'
 primary_hdu = fits.PrimaryHDU(header=hdu)
 hdul = fits.HDUList([primary_hdu])
 carpeta_out = carpeta.split('/')[0]
-outfile = f'../{carpeta_out}/fit/fit_mcmc_{archivo}_hamaus_{sample}.fits'
+outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_hamaus_{sample}.fits'
 
 print(f'Guardado en {outfile}')
 
