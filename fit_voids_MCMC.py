@@ -240,8 +240,11 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
 
     if ycov.shape == ydata.shape:
         yerr = np.linalg.inv(ycov)
+        print('Usando matriz de covarianza')
     else:
         yerr = ycov
+        print('Usando diagonal')
+
 
     with Pool(processes=ncores) as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool)
