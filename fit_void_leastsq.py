@@ -162,9 +162,9 @@ def delta_sigma_hamaus(r,rs,dc,a,b):
     
     rv = 1.
     def integrand(y):
-        return sigma_hamaus(y,rs,dc,a,b)*y
+        return sigma_hamaus(y,rs,dc,a,b,x=0)*y
 
-    anillo = sigma_hamaus(r,rs,dc,a,b)
+    anillo = sigma_hamaus(r,rs,dc,a,b,x=0)
     disco = np.zeros_like(r)
     for j,p in enumerate(r):
         disco[j] = 2./p**2 * quad(integrand, 0., p)[0]
