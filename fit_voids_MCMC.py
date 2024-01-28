@@ -239,18 +239,19 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
     nwalkers, ndim = pos.shape
 
     if ycov.shape == ydata.shape:
-        yerr = np.linalg.inv(ycov)
-        print('Usando matriz de covarianza')
-    else:
         yerr = ycov
         print('Usando diagonal')
+    else:
+        yerr = np.linalg.inv(ycov)
+        print('Usando matriz de covarianza')
+
 
 
     with Pool(processes=ncores) as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool)
         sampler.run_mcmc(pos, nit, progress=True)
 
-    mcmc_out = sampler.get_chain(flat=True).T
+    mcmc_out = sampler.get_chain()
 
     return mcmc_out
 
@@ -344,7 +345,7 @@ def pos_maker(func, nw=32):
     # hamaus
     rspos = np.random.uniform(0.8, 1.2, nw)
     apos = np.random.uniform(1., 5., nw)
-    bpos = np.random.uniform(5., 9., nw)
+    bpos = np.random.uniform(5., 8., nw)
 
     if func=='hamaus':
         pos = np.array([
