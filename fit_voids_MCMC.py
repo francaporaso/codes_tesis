@@ -191,7 +191,7 @@ def chi_red(ajuste,data,err,gl):
 	return chi
 
 ### ----
-### likelihoods
+### likelihoods sigma
 
 def log_likelihood_sigma_higuchi(theta, r, y, yerr):
     '''
@@ -277,6 +277,95 @@ def log_probability_sigma_hamaus(theta, r, y, yerr):
     if not np.isfinite(lp):
         return -np.inf
     return lp + log_likelihood_sigma_hamaus(theta, r, y, yerr)
+
+### ----
+### likelihoods delta sigma
+
+def log_likelihood_DSt_higuchi(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    R2,dc,d2 = theta
+    modelo = delta_sigma_higuchi(r, R2, dc, d2)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_prior_delta(theta):
+    R2,dc,d2 = theta
+    if (1. <= R2 <= 3.)&(-1. <= dc <= 0.)&(-1. <= d2 <= 5.):
+        return 0.0
+    return -np.inf
+
+def log_probability_DSt_higuchi(theta, r, y, yerr):
+    lp = log_prior_delta(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_DSt_higuchi(theta, r, y, yerr)
+
+
+
+def log_likelihood_DSt_clampitt(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    R2,dc,d2 = theta
+    modelo = delta_sigma_clampitt(r, R2, dc, d2)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_probability_DSt_clampitt(theta, r, y, yerr):
+    lp = log_prior_delta(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_DSt_clampitt(theta, r, y, yerr)
+
+
+
+def log_likelihood_DSt_hamaus(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    rs,dc,a,b = theta
+    modelo = delta_sigma_hamaus(r, rs, dc, a, b)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_prior_DSt_hamaus(theta):
+    rs,dc,a,b = theta
+    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.):
+        return 0.0
+    return -np.inf
+
+def log_probability_DSt_hamaus(theta, r, y, yerr):
+    lp = log_prior_DSt_hamaus(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_DSt_hamaus(theta, r, y, yerr)
+
 
 
 ### --- 
@@ -389,8 +478,79 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
     print(f'Guardado en {outfile}')
     hdul.writeto(outfile, overwrite=True)
 
+def guardar_perfil_deltasigma(mcmc_out, xdata, ydata, yerr, func,
+                              tirar=0.2, carpeta='Rv_6-10/rvchico_', archivo='tot', sample='pru'):
 
-def pos_maker(func, nw=32):
+    '''
+    guardado del mcmc
+    tirar: porcentaje de iteraciones iniciales descartadas (default 20% de las iteraciones)
+    '''
+
+    nit, nw, ndim = mcmc_out.shape
+    tirar = int(tirar*nit)
+    print(f'{tirar} iteraciones descartadas')
+
+    if func.__name__ == 'delta_sigma_hamaus':
+        rs = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
+        dc = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
+        a  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
+        b  = np.percentile(mcmc_out[tirar:,:,3], [16, 50, 84])
+
+        chi = chi_red(delta_sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1]), ydata, yerr, 4)
+
+        table_opt = np.array([
+                                fits.Column(name='rs',format='D',array=mcmc_out[:,:,0].flatten()),
+                                fits.Column(name='dc',format='D',array=mcmc_out[:,:,1].flatten()),
+                                fits.Column(name='a' ,format='D',array=mcmc_out[:,:,2].flatten()),
+                                fits.Column(name='b' ,format='D',array=mcmc_out[:,:,3].flatten()),
+                            ])
+
+        hdu = fits.Header()
+
+        hdu.append(('rs',rs[1]))
+        hdu.append(('dc',dc[1]))
+        hdu.append(('a',a[1]))
+        hdu.append(('b',b[1]))
+
+    else:
+        
+        R2 = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
+        dc = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
+        d2  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
+
+        params = np.array([R2[1], dc[1], d2[1]])
+
+        chi = chi_red(func(xdata,*params), ydata, yerr, 3)
+
+        table_opt = np.array([
+                                fits.Column(name='R2',format='D',array=mcmc_out[:,:,0].flatten()),
+                                fits.Column(name='dc',format='D',array=mcmc_out[:,:,1].flatten()),
+                                fits.Column(name='d2',format='D',array=mcmc_out[:,:,2].flatten()),
+                            ])
+
+        hdu = fits.Header()
+
+        hdu.append(('R2',R2[1]))
+        hdu.append(('dc',dc[1]))
+        hdu.append(('d2',d2[1]))
+
+    hdu.append(('nw',nw))
+    hdu.append(('ndim',ndim))
+    hdu.append(('nit',nit))
+    hdu.append(('chi_red',chi))
+
+    primary_hdu = fits.PrimaryHDU(header=hdu)
+    tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+    hdul = fits.HDUList([primary_hdu, tbhdu1])
+    carpeta_out = carpeta.split('/')[0]
+
+    outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{func.__name__}_{sample}.fits'
+
+    print(f'Guardado en {outfile}')
+    hdul.writeto(outfile, overwrite=True)
+
+
+def pos_makerS(func, nw=32):
 
     # comunes
     xpos = np.random.uniform(-1, 1., nw)
@@ -422,6 +582,35 @@ def pos_maker(func, nw=32):
 
     return pos
 
+def pos_makerDSt(func, nw=32):
+
+    # comunes
+    dcpos = np.random.uniform(-0.9, -0.1, nw)
+    d2pos = np.random.uniform(-0.5, 0.5, nw)
+    r2pos = np.random.uniform(1.02, 2.9, nw)
+
+    # hamaus
+    rspos = np.random.uniform(0.2, 2.8, nw)
+    apos = np.random.uniform(0.5, 4.9, nw)
+    bpos = np.random.uniform(5., 9., nw)
+
+    if func=='delta_sigma_hamaus':
+        pos = np.array([
+                        rspos,     # rs
+                        dcpos,     # dc
+                        apos,      # a
+                        bpos,      # b
+                    ]).T
+
+    else:
+        pos = np.array([
+                        r2pos,      # r2
+                        dcpos,      # dc
+                        d2pos,      # d2
+                    ]).T
+
+    return pos
+
 if __name__ == '__main__':
 
     ### ---
@@ -434,11 +623,17 @@ if __name__ == '__main__':
     nw = 32
     ncores = 32
 
-    funcs = np.array([
+    funcs_S = np.array([
                         # (sigma_higuchi, log_probability_sigma_higuchi),
                         # (sigma_clampitt, log_probability_sigma_clampitt),
                         (sigma_hamaus, log_probability_sigma_hamaus),
-                    ])
+                      ])
+    
+    funcs_DSt = np.array([
+                            # (delta_sigma_higuchi, log_probability_DSt_higuchi),
+                            # (delta_sigma_clampitt, log_probability_DSt_clampitt),
+                            (delta_sigma_hamaus, log_probability_DSt_hamaus),
+                        ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
     for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
@@ -460,22 +655,38 @@ if __name__ == '__main__':
             S = B.Sigma.reshape(101,60)[0]
             covS = C.covS.reshape(60,60)
             eS = np.sqrt(np.diag(covS))
-            # DSt = B.DSigma_T.reshape(101,60)[0]
-            # covDSt = C.covDSt.reshape(60,60)
-            # eDSt = np.sqrt(np.diag(covDSt))
 
-            # pos inicial
-            for fu, logp in funcs:
+            DSt = B.DSigma_T.reshape(101,60)[0]
+            covDSt = C.covDSt.reshape(60,60)
+            eDSt = np.sqrt(np.diag(covDSt))
 
-                pos = pos_maker(fu.__name__, nw=nw) 
+            # ajustando sigma
+            # for fu, logp in funcs_S:
+
+            #     pos = pos_makerS(fu.__name__, nw=nw) 
+
+            #     print(f'Ajustando perfil {carpeta}{archivo}')
+            #     print(f'Usando {fu.__name__}')
+            #     mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+            #                       nit=nit, ncores=ncores)
+
+            #     print('Guardando...')
+            #     guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+            #                     tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+                
+            # ajustando delta sigma
+            for fu, logp in funcs_DSt:
+
+                pos = pos_makerDSt(fu.__name__, nw=nw) 
 
                 print(f'Ajustando perfil {carpeta}{archivo}')
                 print(f'Usando {fu.__name__}')
-                mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+                mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
                                   nit=nit, ncores=ncores)
 
                 print('Guardando...')
-                guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+                guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
                                 tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+
 
     print('Terminado!')
