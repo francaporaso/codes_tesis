@@ -627,6 +627,7 @@ if __name__ == '__main__':
     parser.add_argument('-nit', action='store', dest='nit',default=1000)
     parser.add_argument('-ncores', action='store', dest='ncores',default=10)
     parser.add_argument('-nw', action='store', dest='nw',default=32)
+    parser.add_argument('-tirar', action='store', dest='tirar',default=0.1)
     parser.add_argument('-Sig', action='store', dest='Sig',default=True)
     parser.add_argument('-DSig', action='store', dest='DSig',default=True)
     args = parser.parse_args()
@@ -635,6 +636,7 @@ if __name__ == '__main__':
     ncores = int(args.ncores)
     nit    = int(args.nit)
     nw     = int(args.nw)
+    tirar  = float(args.tirar)
     Sig    = bool(args.Sig)
     DSig   = bool(args.DSig)
 
@@ -689,7 +691,7 @@ if __name__ == '__main__':
 
                     print('Guardando...')
                     guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
-                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
                 
             # ajustando delta sigma
             if DSig:
@@ -704,7 +706,7 @@ if __name__ == '__main__':
     
                     print('Guardando...')
                     guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
-                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=a.sample)
+                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=a.sample)
 
 
     print('Terminado!')
