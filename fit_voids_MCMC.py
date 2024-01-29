@@ -693,14 +693,20 @@ if __name__ == '__main__':
                     pos = pos_makerS(fu.__name__, nw=nw) 
 
                     print(f'Ajustando perfil {carpeta}{archivo}')
-                    print(f'Usando {fu.__name__}')
-                    mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-                                      nit=nit, ncores=ncores)
+                    try:
+                        print(f'Usando {fu.__name__}')
+                        mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+                                          nit=nit, ncores=ncores)
 
-                    print('Guardando...')
-                    guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
-                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
-                
+                        print('Guardando...')
+                        guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+                                        tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
+                    except ValueError:
+                        print('Error en la funcion log probability')
+                        print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+                        print('CONTINUANDO')
+                        print('----o----')
+
             # ajustando delta sigma
             if DSig:
                 for fu, logp in funcs_DSt:
