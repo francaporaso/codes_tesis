@@ -396,7 +396,7 @@ def pos_maker(func, nw=32):
     xpos = np.random.uniform(-1, 1., nw)
     dcpos = np.random.uniform(-0.9, -0.1, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
-    r2pos = np.random.uniform(1.2, 2.8, nw)
+    r2pos = np.random.uniform(1.02, 2.9, nw)
 
     # hamaus
     rspos = np.random.uniform(0.2, 2.8, nw)
@@ -435,13 +435,15 @@ if __name__ == '__main__':
     ncores = 32
 
     funcs = np.array([
-                        (sigma_higuchi, log_probability_sigma_higuchi),
-                        (sigma_clampitt, log_probability_sigma_clampitt),
+                        # (sigma_higuchi, log_probability_sigma_higuchi),
+                        # (sigma_clampitt, log_probability_sigma_clampitt),
                         (sigma_hamaus, log_probability_sigma_hamaus),
                     ])
 
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-        for k, archivo in enumerate(['tot', 'R', 'S']):
+    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
+        # for k, archivo in enumerate(['tot', 'R', 'S']):
+        for k, archivo in enumerate(['tot']):
 
             # if f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot':
             #     print(f'Salteado {carpeta}{archivo}')
