@@ -666,9 +666,9 @@ if __name__ == '__main__':
         for k, archivo in enumerate(['tot', 'R', 'S']):
         # for k, archivo in enumerate(['tot']):
 
-            # if f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot':
-            #     print(f'Salteado {carpeta}{archivo}')
-            #     continue
+            if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R'):
+                print(f'Salteado {carpeta}{archivo}')
+                continue
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
