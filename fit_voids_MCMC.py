@@ -621,7 +621,7 @@ if __name__ == '__main__':
     sample = 'pru_cov2'
     nit = 100
     ncores = 32
-    nw = 2*ncores # emcee usa la mitad de nucleos q de walkers
+    nw = 32 # emcee usa la mitad de nucleos q de walkers
 
     funcs_S = np.array([
                         # (sigma_higuchi, log_probability_sigma_higuchi),
