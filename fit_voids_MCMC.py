@@ -4,6 +4,7 @@ import astropy.units as u
 import emcee
 import time
 import corner
+import argparse
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 from astropy.coordinates import SkyCoord, Angle
@@ -613,32 +614,41 @@ def pos_makerDSt(func, nw=32):
 
 if __name__ == '__main__':
 
-    ### ---
     ## datos
+    # sample = 'pru_cov2'
+    # nit = 100
+    # ncores = 32
+    # nw = 32 # emcee usa la mitad de nucleos q de walkers
 
-    # carpeta = 'Rv_6-10/rvchico_'
-    # archivo = 'tot'
-    sample = 'pru_cov2'
-    nit = 100
-    ncores = 32
-    nw = 32 # emcee usa la mitad de nucleos q de walkers
+    ### ---
+    ## parser 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-sample', action='store', dest='sample',default='pru')
+    parser.add_argument('-nit', action='store', dest='nit',default=1000)
+    parser.add_argument('-ncores', action='store', dest='ncores',default=10)
+    parser.add_argument('-nw', action='store', dest='nw',default=32)
+    parser.add_argument('-Sig', action='store', dest='Sig',default=True)
+    parser.add_argument('-DSig', action='store', dest='DSig',default=True)
+    a = parser.parse_args()
+
+
 
     funcs_S = np.array([
-                        # (sigma_higuchi, log_probability_sigma_higuchi),
-                        # (sigma_clampitt, log_probability_sigma_clampitt),
+                        (sigma_higuchi, log_probability_sigma_higuchi),
+                        (sigma_clampitt, log_probability_sigma_clampitt),
                         (sigma_hamaus, log_probability_sigma_hamaus),
                       ])
     
     funcs_DSt = np.array([
-                            (delta_sigma_higuchi, log_probability_DSt_higuchi),
-                            (delta_sigma_clampitt, log_probability_DSt_clampitt),
-                            # (delta_sigma_hamaus, log_probability_DSt_hamaus),
+                          (delta_sigma_higuchi, log_probability_DSt_higuchi),
+                          (delta_sigma_clampitt, log_probability_DSt_clampitt),
+                          (delta_sigma_hamaus, log_probability_DSt_hamaus),
                         ])
 
-    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
-        # for k, archivo in enumerate(['tot', 'R', 'S']):
-        for k, archivo in enumerate(['tot']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    # for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
+        for k, archivo in enumerate(['tot', 'R', 'S']):
+        # for k, archivo in enumerate(['tot']):
 
             # if f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot':
             #     print(f'Salteado {carpeta}{archivo}')
@@ -661,32 +671,34 @@ if __name__ == '__main__':
             eDSt = np.sqrt(np.diag(covDSt))
 
             # ajustando sigma
-            # for fu, logp in funcs_S:
+            if a.Sig:
+                for fu, logp in funcs_S:
 
-            #     pos = pos_makerS(fu.__name__, nw=nw) 
+                    pos = pos_makerS(fu.__name__, nw=a.nw) 
 
-            #     print(f'Ajustando perfil {carpeta}{archivo}')
-            #     print(f'Usando {fu.__name__}')
-            #     mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-            #                       nit=nit, ncores=ncores)
+                    print(f'Ajustando perfil {carpeta}{archivo}')
+                    print(f'Usando {fu.__name__}')
+                    mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+                                      nit=a.nit, ncores=a.ncores)
 
-            #     print('Guardando...')
-            #     guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
-            #                     tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+                    print('Guardando...')
+                    guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=a.sample)
                 
             # ajustando delta sigma
-            for fu, logp in funcs_DSt:
-
-                pos = pos_makerDSt(fu.__name__, nw=nw) 
-
-                print(f'Ajustando perfil {carpeta}{archivo}')
-                print(f'Usando {fu.__name__}')
-                mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-                                  nit=nit, ncores=ncores)
-
-                print('Guardando...')
-                guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
-                                tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+            if a.DSig:
+                for fu, logp in funcs_DSt:
+                
+                    pos = pos_makerDSt(fu.__name__, nw=a.nw) 
+    
+                    print(f'Ajustando perfil {carpeta}{archivo}')
+                    print(f'Usando {fu.__name__}')
+                    mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
+                                      nit=a.nit, ncores=a.ncores)
+    
+                    print('Guardando...')
+                    guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
+                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=a.sample)
 
 
     print('Terminado!')
