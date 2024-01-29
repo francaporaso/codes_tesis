@@ -706,7 +706,7 @@ if __name__ == '__main__':
     
                     print('Guardando...')
                     guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
-                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=a.sample)
+                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
 
 
     print('Terminado!')
