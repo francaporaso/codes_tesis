@@ -360,8 +360,6 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
         chi = chi_red(func(xdata,*params), ydata, yerr, 4)
 
-        mcmc_out = mcmc_out.reshape(ndim, nit*nw)
-
         table_opt = np.array([
                                 fits.Column(name='R2',format='D',array=mcmc_out[:,:,0]),
                                 fits.Column(name='dc',format='D',array=mcmc_out[:,:,1]),
