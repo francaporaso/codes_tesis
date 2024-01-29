@@ -344,13 +344,13 @@ def pos_maker(func, nw=32):
     # comunes
     xpos = np.random.uniform(-1, 1., nw)
     dcpos = np.random.uniform(-0.9, -0.1, nw)
-    d2pos = np.random.uniform(0., 0.1, nw)
-    r2pos = np.random.uniform(1.5, 2.5, nw)
+    d2pos = np.random.uniform(-0.5, 0.5, nw)
+    r2pos = np.random.uniform(1., 2.8, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.3, 2.5, nw)
-    apos = np.random.uniform(1., 5., nw)
-    bpos = np.random.uniform(5., 8., nw)
+    rspos = np.random.uniform(0.2, 2.8, nw)
+    apos = np.random.uniform(0.5, 4.9, nw)
+    bpos = np.random.uniform(5., 9., nw)
 
     if func=='hamaus':
         pos = np.array([
