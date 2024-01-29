@@ -303,9 +303,9 @@ if __name__ == '__main__':
     # for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
         for k, archivo in enumerate(['tot', 'R', 'S']):
             
-            if f'{carpeta}{archivo}'=='Rv_10-50/rvalto_R':
-                print('Salteado Rv_10-50/rvalto_R')
-                continue
+            # if f'{carpeta}{archivo}'=='Rv_10-50/rvalto_R':
+            #     print('Salteado Rv_10-50/rvalto_R')
+            #     continue
 
             t1 = time.time()
             print(f'Ajustando el perfil: {carpeta}{archivo}.fits')
