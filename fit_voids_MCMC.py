@@ -629,8 +629,14 @@ if __name__ == '__main__':
     parser.add_argument('-nw', action='store', dest='nw',default=32)
     parser.add_argument('-Sig', action='store', dest='Sig',default=True)
     parser.add_argument('-DSig', action='store', dest='DSig',default=True)
-    a = parser.parse_args()
+    args = parser.parse_args()
 
+    sample = args.sample
+    ncores = int(args.ncores)
+    nit    = int(args.nit)
+    nw     = int(args.nw)
+    Sig    = bool(args.Sig)
+    DSig   = bool(args.DSig)
 
 
     funcs_S = np.array([
@@ -671,30 +677,30 @@ if __name__ == '__main__':
             eDSt = np.sqrt(np.diag(covDSt))
 
             # ajustando sigma
-            if a.Sig:
+            if Sig:
                 for fu, logp in funcs_S:
 
-                    pos = pos_makerS(fu.__name__, nw=a.nw) 
+                    pos = pos_makerS(fu.__name__, nw=nw) 
 
                     print(f'Ajustando perfil {carpeta}{archivo}')
                     print(f'Usando {fu.__name__}')
                     mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-                                      nit=a.nit, ncores=a.ncores)
+                                      nit=nit, ncores=ncores)
 
                     print('Guardando...')
                     guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
-                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=a.sample)
+                                    tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
                 
             # ajustando delta sigma
-            if a.DSig:
+            if DSig:
                 for fu, logp in funcs_DSt:
                 
-                    pos = pos_makerDSt(fu.__name__, nw=a.nw) 
+                    pos = pos_makerDSt(fu.__name__, nw=nw) 
     
                     print(f'Ajustando perfil {carpeta}{archivo}')
                     print(f'Usando {fu.__name__}')
                     mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-                                      nit=a.nit, ncores=a.ncores)
+                                      nit=nit, ncores=ncores)
     
                     print('Guardando...')
                     guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
