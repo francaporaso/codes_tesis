@@ -630,9 +630,9 @@ if __name__ == '__main__':
                       ])
     
     funcs_DSt = np.array([
-                            # (delta_sigma_higuchi, log_probability_DSt_higuchi),
-                            # (delta_sigma_clampitt, log_probability_DSt_clampitt),
-                            (delta_sigma_hamaus, log_probability_DSt_hamaus),
+                            (delta_sigma_higuchi, log_probability_DSt_higuchi),
+                            (delta_sigma_clampitt, log_probability_DSt_clampitt),
+                            # (delta_sigma_hamaus, log_probability_DSt_hamaus),
                         ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
