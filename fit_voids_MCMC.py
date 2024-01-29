@@ -278,6 +278,8 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
         chi = chi_red(sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), ydata, yerr, 5)
 
+        mcmc_out = mcmc_out.reshape(ndim, nit*nw)
+
         table_opt = np.array([
                                 fits.Column(name='rs',format='D',array=mcmc_out[0]),
                                 fits.Column(name='dc',format='D',array=mcmc_out[1]),
@@ -304,6 +306,8 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
         params = np.array([R2[1], dc[1], d2[1], x[1]])
 
         chi = chi_red(func(xdata,*params), ydata, yerr, 4)
+
+        mcmc_out = mcmc_out.reshape(ndim, nit*nw)
 
         table_opt = np.array([
                                 fits.Column(name='R2',format='D',array=mcmc_out[0]),
