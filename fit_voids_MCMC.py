@@ -628,8 +628,8 @@ if __name__ == '__main__':
     parser.add_argument('-ncores', action='store', dest='ncores',default=10)
     parser.add_argument('-nw', action='store', dest='nw',default=32)
     parser.add_argument('-tirar', action='store', dest='tirar',default=0.1)
-    parser.add_argument('-Sig', action='store', dest='Sig',default=True)
-    parser.add_argument('-DSig', action='store', dest='DSig',default=True)
+    parser.add_argument('-Sig', action='store', dest='Sig',default='True')
+    parser.add_argument('-DSig', action='store', dest='DSig',default='False')
     args = parser.parse_args()
 
     sample = args.sample
@@ -637,8 +637,16 @@ if __name__ == '__main__':
     nit    = int(args.nit)
     nw     = int(args.nw)
     tirar  = float(args.tirar)
-    Sig    = bool(args.Sig)
-    DSig   = bool(args.DSig)
+
+    if args.Sig == 'True':
+        Sig = True
+    else:
+        Sig = False
+
+    if args.DSig == 'True':
+        DSig = True
+    else:
+        DSig = False
 
 
     funcs_S = np.array([
