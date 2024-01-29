@@ -193,6 +193,62 @@ def chi_red(ajuste,data,err,gl):
 ### ----
 ### likelihoods
 
+def log_likelihood_sigma_higuchi(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    R2,dc,d2,x = theta
+    modelo = sigma_higuchi(r, R2, dc, d2, x)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_prior(theta):
+    R2,dc,d2,x = theta
+    if (1. <= R2 <= 3.)&(-1. <= dc <= 0.)&(-1. <= d2 <= 5.)&(-10<=x<=10):
+        return 0.0
+    return -np.inf
+
+def log_probability_sigma_higuchi(theta, r, y, yerr):
+    lp = log_prior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_sigma_higuchi(theta, r, y, yerr)
+
+
+
+def log_likelihood_sigma_clampitt(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    R2,dc,d2,x = theta
+    modelo = sigma_clampitt(r, R2, dc, d2, x)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_probability_sigma_clampitt(theta, r, y, yerr):
+    lp = log_prior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_sigma_clampitt(theta, r, y, yerr)
+
+
+
 def log_likelihood_sigma_hamaus(theta, r, y, yerr):
     '''
     r : eje x
@@ -244,7 +300,6 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
     else:
         yerr = np.linalg.inv(ycov)
         print('Usando matriz de covarianza')
-
 
 
     with Pool(processes=ncores) as pool:
@@ -352,7 +407,7 @@ def pos_maker(func, nw=32):
     apos = np.random.uniform(0.5, 4.9, nw)
     bpos = np.random.uniform(5., 9., nw)
 
-    if func=='hamaus':
+    if func=='sigma_hamaus':
         pos = np.array([
                         rspos,     # rs
                         dcpos,     # dc
@@ -376,12 +431,18 @@ if __name__ == '__main__':
     ### ---
     ## datos
 
-    carpeta = 'Rv_6-10/rvchico_'
-    archivo = 'tot'
+    # carpeta = 'Rv_6-10/rvchico_'
+    # archivo = 'tot'
     sample = 'pru_cov2'
-    nit = 1000
+    nit = 100
     nw = 32
     ncores = 32
+
+    funcs = np.array([
+                        (sigma_higuchi, log_probability_sigma_higuchi),
+                        (sigma_clampitt, log_probability_sigma_clampitt),
+                        (sigma_hamaus, log_probability_sigma_hamaus),
+                    ])
 
     for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
         for k, archivo in enumerate(['tot', 'R', 'S']):
@@ -405,16 +466,18 @@ if __name__ == '__main__':
             # covDSt = C.covDSt.reshape(60,60)
             # eDSt = np.sqrt(np.diag(covDSt))
 
-            # pos inicial para hamaus
-            pos = pos_maker('hamaus', nw=nw) 
+            # pos inicial
+            for fu, logp in funcs:
 
-            print(f'Ajustando perfil {carpeta}{archivo}')
-            print(f'Usando sigma_hamaus')
-            mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=log_probability_sigma_hamaus,
-                              nit=nit, ncores=ncores)
+                pos = pos_maker(fu.__name__, nw=nw) 
 
-            print('Guardando...')
-            guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=sigma_hamaus,
-                            tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+                print(f'Ajustando perfil {carpeta}{archivo}')
+                print(f'Usando {fu.__name__}')
+                mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+                                  nit=nit, ncores=ncores)
 
-            print('Terminado!')
+                print('Guardando...')
+                guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+                                tirar=0.2, carpeta=carpeta, archivo=archivo, sample=sample)
+
+    print('Terminado!')
