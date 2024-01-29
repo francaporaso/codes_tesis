@@ -267,15 +267,14 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
     nit, nw, ndim = mcmc_out.shape
     tirar = int(tirar*nit)
-    
-    mcmc_out = mcmc_out.reshape(ndim, nit*nw)
+    print(f'{tirar} iteraciones descartadas')
 
     if func.__name__ == 'sigma_hamaus':
-        rs = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
-        dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
-        a  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
-        b  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
-        x  = np.percentile(mcmc_out[4][tirar:], [16, 50, 84])
+        rs = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
+        dc = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
+        a  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
+        b  = np.percentile(mcmc_out[tirar:,:,3], [16, 50, 84])
+        x  = np.percentile(mcmc_out[tirar:,:,4], [16, 50, 84])
 
         chi = chi_red(sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), ydata, yerr, 5)
 
@@ -297,10 +296,10 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
     else:
         
-        R2 = np.percentile(mcmc_out[0][tirar:], [16, 50, 84])
-        dc = np.percentile(mcmc_out[1][tirar:], [16, 50, 84])
-        d2  = np.percentile(mcmc_out[2][tirar:], [16, 50, 84])
-        x  = np.percentile(mcmc_out[3][tirar:], [16, 50, 84])
+        R2 = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
+        dc = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
+        d2  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
+        x  = np.percentile(mcmc_out[tirar:,:,3], [16, 50, 84])
 
         params = np.array([R2[1], dc[1], d2[1], x[1]])
 
@@ -340,12 +339,12 @@ def pos_maker(func, nw=32):
 
     # comunes
     xpos = np.random.uniform(-1, 1., nw)
-    dcpos = np.random.uniform(-0.7, -0.5, nw)
+    dcpos = np.random.uniform(-0.9, -0.1, nw)
     d2pos = np.random.uniform(0., 0.1, nw)
     r2pos = np.random.uniform(1.5, 2.5, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.8, 1.2, nw)
+    rspos = np.random.uniform(0.3, 2.5, nw)
     apos = np.random.uniform(1., 5., nw)
     bpos = np.random.uniform(5., 8., nw)
 
