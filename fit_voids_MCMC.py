@@ -333,14 +333,12 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
 
         chi = chi_red(sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1], x=x[1]), ydata, yerr, 5)
 
-        mcmc_out = mcmc_out.reshape(ndim, nit*nw)
-
         table_opt = np.array([
-                                fits.Column(name='rs',format='D',array=mcmc_out[0]),
-                                fits.Column(name='dc',format='D',array=mcmc_out[1]),
-                                fits.Column(name='a',format='D',array=mcmc_out[2]),
-                                fits.Column(name='b',format='D',array=mcmc_out[3]),
-                                fits.Column(name='x',format='D',array=mcmc_out[4]),
+                                fits.Column(name='rs',format='D',array=mcmc_out[:,:,0]),
+                                fits.Column(name='dc',format='D',array=mcmc_out[:,:,1]),
+                                fits.Column(name='a',format='D',array=mcmc_out[:,:,2]),
+                                fits.Column(name='b',format='D',array=mcmc_out[:,:,3]),
+                                fits.Column(name='x',format='D',array=mcmc_out[:,:,4]),
                             ])
 
         hdu = fits.Header()
@@ -365,10 +363,10 @@ def guardar_perfil_sigma(mcmc_out, xdata, ydata, yerr, func,
         mcmc_out = mcmc_out.reshape(ndim, nit*nw)
 
         table_opt = np.array([
-                                fits.Column(name='R2',format='D',array=mcmc_out[0]),
-                                fits.Column(name='dc',format='D',array=mcmc_out[1]),
-                                fits.Column(name='d2',format='D',array=mcmc_out[2]),
-                                fits.Column(name='x',format='D',array=mcmc_out[3]),
+                                fits.Column(name='R2',format='D',array=mcmc_out[:,:,0]),
+                                fits.Column(name='dc',format='D',array=mcmc_out[:,:,1]),
+                                fits.Column(name='d2',format='D',array=mcmc_out[:,:,2]),
+                                fits.Column(name='x',format='D',array=mcmc_out[:,:,3]),
                             ])
 
         hdu = fits.Header()
@@ -400,7 +398,7 @@ def pos_maker(func, nw=32):
     xpos = np.random.uniform(-1, 1., nw)
     dcpos = np.random.uniform(-0.9, -0.1, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
-    r2pos = np.random.uniform(1., 2.8, nw)
+    r2pos = np.random.uniform(1.2, 2.8, nw)
 
     # hamaus
     rspos = np.random.uniform(0.2, 2.8, nw)
