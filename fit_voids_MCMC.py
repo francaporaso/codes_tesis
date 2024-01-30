@@ -269,7 +269,7 @@ def log_likelihood_sigma_hamaus(theta, r, y, yerr):
 
 def log_prior_hamaus(theta):
     rs,dc,a,b,x = theta
-    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.)&(-10<=x<=10):
+    if (0. <= rs <= 10.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.)&(-10<=x<=10):
         return 0.0
     return -np.inf
 
