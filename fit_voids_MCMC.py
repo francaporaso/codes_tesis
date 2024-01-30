@@ -269,7 +269,7 @@ def log_likelihood_sigma_hamaus(theta, r, y, yerr):
 
 def log_prior_hamaus(theta):
     rs,dc,a,b,x = theta
-    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.)&(-10<=x<=10):
+    if (0. <= rs <= 5.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(0. <= b <= 20.)&(-10<=x<=10):
         return 0.0
     return -np.inf
 
@@ -555,14 +555,14 @@ def pos_makerS(func, nw=32):
 
     # comunes
     xpos = np.random.uniform(-1, 1., nw)
-    dcpos = np.random.uniform(-0.9, -0.1, nw)
+    dcpos = np.random.uniform(-0.95, -0.05, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
     r2pos = np.random.uniform(1.02, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.2, 2.8, nw)
-    apos = np.random.uniform(0.5, 4.9, nw)
-    bpos = np.random.uniform(5., 9., nw)
+    rspos = np.random.uniform(0.2, 4.8, nw)
+    apos = np.random.uniform(0.1, 4.9, nw)
+    bpos = np.random.uniform(2., 9., nw)
 
     if func=='sigma_hamaus':
         pos = np.array([
@@ -661,14 +661,14 @@ if __name__ == '__main__':
                           (delta_sigma_hamaus, log_probability_DSt_hamaus),
                         ])
 
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    # for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
-        for k, archivo in enumerate(['tot', 'R', 'S']):
-        # for k, archivo in enumerate(['tot']):
+    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
+        # for k, archivo in enumerate(['tot', 'R', 'S']):
+        for k, archivo in enumerate(['R']):
 
-            if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R'):
-                print(f'Salteado {carpeta}{archivo}')
-                continue
+            # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
+            #     print(f'Salteado {carpeta}{archivo}')
+            #     continue
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
