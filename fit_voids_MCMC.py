@@ -556,8 +556,8 @@ def pos_makerS(func, nw=32):
     # comunes
     xpos = np.random.uniform(-1, 1., nw)
     dcpos = np.random.uniform(-0.95, -0.05, nw)
-    d2pos = np.random.uniform(-0.5, 0.5, nw)
-    r2pos = np.random.uniform(1.02, 2.9, nw)
+    d2pos = np.random.uniform(-0.3, 0.3, nw)
+    r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
     rspos = np.random.uniform(0.1, 2.9, nw)
@@ -685,6 +685,8 @@ if __name__ == '__main__':
             DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
             covDSt = (C.covDSt.reshape(60,60)).astype(float)
             eDSt = np.sqrt(np.diag(covDSt))
+            
+            print(f'Ajustando perfil {carpeta}{archivo}')
 
             # ajustando sigma
             if Sig:
@@ -692,7 +694,6 @@ if __name__ == '__main__':
 
                     pos = pos_makerS(fu.__name__, nw=nw) 
 
-                    print(f'Ajustando perfil {carpeta}{archivo}')
                     try:
                         print(f'Usando {fu.__name__}')
                         mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
@@ -712,15 +713,21 @@ if __name__ == '__main__':
                 for fu, logp in funcs_DSt:
                 
                     pos = pos_makerDSt(fu.__name__, nw=nw) 
-    
-                    print(f'Ajustando perfil {carpeta}{archivo}')
-                    print(f'Usando {fu.__name__}')
-                    mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-                                      nit=nit, ncores=ncores)
-    
-                    print('Guardando...')
-                    guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
-                                    tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
+
+                    try:
+                        print(f'Usando {fu.__name__}')
+                        mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
+                                          nit=nit, ncores=ncores)
+
+                        print('Guardando...')
+                        guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
+                                        tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
+                        
+                    except ValueError:
+                        print('Error en la funcion log probability')
+                        print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+                        print('CONTINUANDO')
+                        print('----o----')
 
 
     print('Terminado!')
