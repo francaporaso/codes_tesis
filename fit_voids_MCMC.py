@@ -662,7 +662,7 @@ if __name__ == '__main__':
                         ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
+    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
         # for k, archivo in enumerate(['tot', 'R', 'S']):
         for k, archivo in enumerate(['R']):
 
