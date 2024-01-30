@@ -672,18 +672,18 @@ if __name__ == '__main__':
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
-               Rp = dat[1].data.Rp
+               Rp = (dat[1].data.Rp).astype(float)
                B = dat[2].data
                C = dat[3].data
 
             rho_mean = pm(h['z_mean'])
 
-            S = B.Sigma.reshape(101,60)[0]
-            covS = C.covS.reshape(60,60)
+            S = (B.Sigma.reshape(101,60)[0]).astype(float)
+            covS = (C.covS.reshape(60,60)).astype(float)
             eS = np.sqrt(np.diag(covS))
 
-            DSt = B.DSigma_T.reshape(101,60)[0]
-            covDSt = C.covDSt.reshape(60,60)
+            DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
+            covDSt = (C.covDSt.reshape(60,60)).astype(float)
             eDSt = np.sqrt(np.diag(covDSt))
 
             # ajustando sigma
