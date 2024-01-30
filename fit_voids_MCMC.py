@@ -269,7 +269,7 @@ def log_likelihood_sigma_hamaus(theta, r, y, yerr):
 
 def log_prior_hamaus(theta):
     rs,dc,a,b,x = theta
-    if (0. <= rs <= 5.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(0. <= b <= 20.)&(-10<=x<=10):
+    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.)&(-10<=x<=10):
         return 0.0
     return -np.inf
 
@@ -560,7 +560,7 @@ def pos_makerS(func, nw=32):
     r2pos = np.random.uniform(1.02, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.2, 4.8, nw)
+    rspos = np.random.uniform(0.1, 2.9, nw)
     apos = np.random.uniform(0.1, 4.9, nw)
     bpos = np.random.uniform(2., 9., nw)
 
