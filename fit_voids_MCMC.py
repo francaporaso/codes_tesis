@@ -367,7 +367,39 @@ def log_probability_DSt_hamaus(theta, r, y, yerr):
         return -np.inf
     return lp + log_likelihood_DSt_hamaus(theta, r, y, yerr)
 
+### ---
+## helpers funciones para dejar fijo algun parametro
+def h1S(r,dc,b,x):
+    return sigma_hamaus(r=r,rs=np.inf,rv=1.,dc=dc,a=1,b=b,x=x)
 
+def log_likelihood_h1S(theta, r, y, yerr):
+    '''
+    r : eje x
+    y : datos eje y
+    yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
+    '''
+    dc,b,x = theta
+    modelo = h1S(r, dc=dc, b=b, x=x)
+    
+    # sigma2 = yerr**2
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
+    # return -0.5 * np.sum(((y - model)**2 )/sigma2)
+
+    L_S = -np.dot((y-modelo),np.dot(yerr,(y-modelo)))/2.0
+        
+    return L_S    
+
+def log_prior_h1S(theta):
+    dc,b,x = theta
+    if (-1. <= dc <= 0.)&(1.<=b<=20.)&(-2<=x<=2):
+        return 0.0
+    return -np.inf
+
+def log_probability_h1S(theta, r, y, yerr):
+    lp = log_prior_h1S(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood_h1S(theta, r, y, yerr)
 
 ### --- 
 ## ajuste
@@ -655,6 +687,10 @@ if __name__ == '__main__':
                         # (sigma_hamaus, log_probability_sigma_hamaus),
                       ])
     
+    funcs_hS = np.array([
+                         (h1S, log_probability_h1S),
+                       ])
+    
     funcs_DSt = np.array([
                           (delta_sigma_higuchi, log_probability_DSt_higuchi),
                           (delta_sigma_clampitt, log_probability_DSt_clampitt),
@@ -663,8 +699,8 @@ if __name__ == '__main__':
 
     for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
     # for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
-        for k, archivo in enumerate(['tot', 'R', 'S']):
-        # for k, archivo in enumerate(['R']):
+        # for k, archivo in enumerate(['tot', 'R', 'S']):
+        for k, archivo in enumerate(['R']):
 
             # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
             #     print(f'Salteado {carpeta}{archivo}')
@@ -690,7 +726,8 @@ if __name__ == '__main__':
 
             # ajustando sigma
             if Sig:
-                for fu, logp in funcs_S:
+                # for fu, logp in funcs_S:
+                for fu, logp in funcs_hS:
 
                     pos = pos_makerS(fu.__name__, nw=nw) 
 
