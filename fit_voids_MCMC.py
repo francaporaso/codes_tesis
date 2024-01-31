@@ -213,7 +213,7 @@ def log_likelihood_sigma_higuchi(theta, r, y, yerr):
 
 def log_prior(theta):
     R2,dc,d2,x = theta
-    if (2. <= R2 <= 3.)&(-1. <= dc <= 0.)&(-0.5 <= d2 <= 0.5)&(-5<=x<=5):
+    if (2. <= R2 <= 5.)&(-1. <= dc <= 0.)&(-0.5 <= d2 <= 0.5)&(-5<=x<=5):
         return 0.0
     return -np.inf
 
@@ -589,7 +589,7 @@ def pos_makerS(func, nw=32):
     xpos = np.random.uniform(-1, 1., nw)
     dcpos = np.random.uniform(-0.95, -0.05, nw)
     d2pos = np.random.uniform(-0.3, 0.3, nw)
-    r2pos = np.random.uniform(2.1, 2.9, nw)
+    r2pos = np.random.uniform(2.1, 4.9, nw)
 
     # hamaus
     rspos = np.random.uniform(0.1, 2.9, nw)
