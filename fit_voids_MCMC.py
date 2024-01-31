@@ -697,10 +697,10 @@ if __name__ == '__main__':
                           (delta_sigma_hamaus, log_probability_DSt_hamaus),
                         ])
 
-    # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
-        # for k, archivo in enumerate(['tot', 'R', 'S']):
-        for k, archivo in enumerate(['R']):
+    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    # for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+        for k, archivo in enumerate(['tot', 'R', 'S']):
+        # for k, archivo in enumerate(['R']):
 
             # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
             #     print(f'Salteado {carpeta}{archivo}')
