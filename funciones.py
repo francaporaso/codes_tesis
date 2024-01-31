@@ -1,3 +1,5 @@
+''' Funciones para GRAFICAR: NO USAR COMO AJUSTE XQ TIENE UN PARÁMETRO EXTRA (z)'''
+
 import numpy as np
 from astropy.cosmology import LambdaCDM
 from scipy.integrate import quad, quad_vec
@@ -12,12 +14,12 @@ def pm(z):
     return out
 
 
-def hamaus(r, rs, rv, delta, a, b):
+def hamaus(r , rs, rv, delta, a, b):
         
     d = delta*(1. - (r/rs)**a)/(1. + (r/rv)**b)
     return d
 
-def clampitt(r,Rv,R2,dc,d2):
+def clampitt(r, Rv, R2, dc, d2):
     R_V = np.full_like(r, Rv)
     R2s  = np.full_like(r,R2)
     
@@ -36,8 +38,8 @@ def higuchi(r,Rv,R2,dc,d2):
 
 ### Densidades proyectadas para cada función
 
-def sigma_higuchi(R,Rv,R2,dc,d2,x):
-    # Rv = 1.
+def sigma_higuchi(R,reds,R2,dc,d2,x):
+    Rv = 1.
     if Rv>R2:
         return np.inf
         
@@ -51,10 +53,12 @@ def sigma_higuchi(R,Rv,R2,dc,d2,x):
     den_integrada[m1] = (np.sqrt(Rv[m1]**2-R[m1]**2)*(dc-d2) + d2*np.sqrt(R2[m1]**2-R[m1]**2))
     den_integrada[m2] = d2*np.sqrt(R2[m2]**2-R[m2]**2)
 
+    rho_mean = pm(reds)
     sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
-def sigma_clampitt(R,Rv,R2,dc,d2,x):
+def sigma_clampitt(R,reds,R2,dc,d2,x):
+    Rv=1
     if Rv>R2:
         return np.inf
 
@@ -73,15 +77,19 @@ def sigma_clampitt(R,Rv,R2,dc,d2,x):
     den_integrada[m1] = 2*(dc*s2 + (d2-dc)*(sv*(5/8*(R[m1]/Rv[m1])**2 - 1) + s2 + 3/8*(R[m1]**4/Rv[m1]**3)*np.arcsinh(arg)))   
     den_integrada[m2] = 2*(d2*np.sqrt(R2[m2]**2-R[m2]**2))
 
+    rho_mean = pm(reds)
+
     sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
-def sigma_hamaus(r,rs,rv,dc,a,b,x):
-    
+def sigma_hamaus(r,reds,rs,dc,a,b,x):
+    rv=1
     def integrand(z,R):
         return hamaus(r=np.sqrt(z**2+R**2),rv=rv,rs=rs,delta=dc,a=a,b=b)
   
     den_integrada = quad_vec(integrand, -1e3, 1e3, args=(r,), epsrel=1e-3)[0]
+
+    rho_mean = pm(reds)
 
     sigma = rho_mean*den_integrada/rv + x
     
@@ -90,11 +98,14 @@ def sigma_hamaus(r,rs,rv,dc,a,b,x):
 
 ## Contraste de Densidad Proyectada de cada función
 
-def Scl(y,Rv,R2,dc,d2,x):
+def Scl(y,reds,R2,dc,d2,x):
     '''
     funcion sigma_clampitt pero solo admite como entrada un float,
     ideal para integrar
     '''
+    Rv=1
+    rho_mean = pm(reds)
+
     if y<=Rv:
         sv = np.sqrt(Rv**2 - y**2)
         s2 = np.sqrt(R2**2 - y**2)
@@ -107,23 +118,25 @@ def Scl(y,Rv,R2,dc,d2,x):
         f2 = 2*(d2*np.sqrt(R2**2-y**2))
         return rho_mean*f2/Rv+x
 
-def delta_sigma_clampitt(R,Rv,R2,dc,d2):
-
+def delta_sigma_clampitt(R,reds,R2,dc,d2):
+    
     def integrand(y):
-        return Scl(y,Rv,R2,dc,d2,0)*y
+        return Scl(y,reds,R2,dc,d2,0)*y
 
-    anillo = sigma_clampitt(R,Rv,R2,dc,d2,0)
+    anillo = sigma_clampitt(R,reds,R2,dc,d2,0)
     disco = np.zeros_like(R)
     for i,Ri in enumerate(R):
         disco[i] = (2/Ri**2)*quad(integrand, 0, Ri)[0]
     
     return disco-anillo
 
-def Shi(y,Rv,R2,dc,d2,x):
+def Shi(y,reds,R2,dc,d2,x):
     '''
     funcion sigma_higuchi pero solo admite como entrada un float,
     ideal para integrar
     '''
+    Rv=1
+    rho_mean = pm(reds)
     
     if y<=Rv:
         f1 = (np.sqrt(Rv**2-y**2)*(dc-d2) + d2*np.sqrt(R2**2-y**2))
@@ -135,12 +148,12 @@ def Shi(y,Rv,R2,dc,d2,x):
         return rho_mean*f2/Rv+x
 
     
-def delta_sigma_higuchi(R,Rv,R2,dc,d2):
+def delta_sigma_higuchi(R,reds,R2,dc,d2):
 
     def integrand(y):
-        return Shi(y,Rv,R2,dc,d2,0)*y
+        return Shi(y,reds,R2,dc,d2,0)*y
 
-    anillo = sigma_higuchi(R,Rv,R2,dc,d2,0)
+    anillo = sigma_higuchi(R,reds,R2,dc,d2,0)
     disco = np.zeros_like(R)
     for i,Ri in enumerate(R):
         disco[i] = (2/Ri**2)*quad(integrand, 0, Ri)[0]
@@ -148,14 +161,14 @@ def delta_sigma_higuchi(R,Rv,R2,dc,d2):
     return disco-anillo
 
 
-def delta_sigma_hamaus(r,rs,rv,dc,a,b):
+def delta_sigma_hamaus(r,reds,rs,dc,a,b):
 
     # Rv = 1.
     
     def integrand(y):
-        return sigma_hamaus(y,rs,rv,dc,a,b)*y
+        return sigma_hamaus(y,reds,rs,dc,a,b,0)*y
 
-    anillo = sigma_hamaus(r,rs,rv,dc,a,b)
+    anillo = sigma_hamaus(r,reds,rs,dc,a,b,0)
     disco = np.zeros_like(r)
     for j,p in enumerate(r):
         disco[j] = 2./p**2 * quad(integrand, 0., p)[0]

@@ -801,12 +801,12 @@ if __name__ == '__main__':
                                       nit=nit, ncores=ncores)
                     
                     nit, nw, ndim = mcmc_out.shape
-                    tirar = int(tirar*nit)
-                    print(f'{tirar} iteraciones descartadas')
+                    t = int(tirar*nit)
+                    print(f'{t} iteraciones descartadas')
 
-                    dc = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
-                    b  = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
-                    x  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
+                    dc = np.percentile(mcmc_out[t:,:,0], [16, 50, 84])
+                    b  = np.percentile(mcmc_out[t:,:,1], [16, 50, 84])
+                    x  = np.percentile(mcmc_out[t:,:,2], [16, 50, 84])
                     chi = chi_red(h1S(Rp, dc=dc[1], b=b[1], x=x[1]), S, eS, 3)
                     table_opt = np.array([
                                             fits.Column(name='dc',format='D',array=mcmc_out[:,:,0].flatten()),
