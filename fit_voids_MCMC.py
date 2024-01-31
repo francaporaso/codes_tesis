@@ -729,7 +729,12 @@ if __name__ == '__main__':
                 # for fu, logp in funcs_S:
                 for fu, logp in funcs_hS:
 
-                    pos = pos_makerS(fu.__name__, nw=nw) 
+                    # pos = pos_makerS(fu.__name__, nw=nw) 
+                    pos = np.array([
+                                        np.random.uniform(-0.9, -0.1, nw),  # dc
+                                        np.random.uniform(5., 9., nw),      # b
+                                        np.random.uniform(-1, 1., nw),      # x
+                                    ]).T
 
                     try:
                         print(f'Usando {fu.__name__}')
