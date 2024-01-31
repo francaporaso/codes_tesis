@@ -620,7 +620,7 @@ def pos_makerDSt(func, nw=32):
     # comunes
     dcpos = np.random.uniform(-0.9, -0.1, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
-    r2pos = np.random.uniform(1.02, 2.9, nw)
+    r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
     rspos = np.random.uniform(0.2, 2.8, nw)
