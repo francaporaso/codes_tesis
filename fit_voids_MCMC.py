@@ -682,7 +682,7 @@ if __name__ == '__main__':
 
 
     funcs_S = np.array([
-                        (sigma_higuchi, log_probability_sigma_higuchi),
+                        # (sigma_higuchi, log_probability_sigma_higuchi),
                         (sigma_clampitt, log_probability_sigma_clampitt),
                         # (sigma_hamaus, log_probability_sigma_hamaus),
                       ])
@@ -698,77 +698,13 @@ if __name__ == '__main__':
                         ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    # # for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
-    #     # for k, archivo in enumerate(['tot', 'R', 'S']):
-    #     for k, archivo in enumerate(['R']):
-
-    #         # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
-    #         #     print(f'Salteado {carpeta}{archivo}')
-    #         #     continue
-
-    #         with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
-    #            h = dat[0].header
-    #            Rp = (dat[1].data.Rp).astype(float)
-    #            B = dat[2].data
-    #            C = dat[3].data
-
-    #         rho_mean = pm(h['z_mean'])
-
-    #         S = (B.Sigma.reshape(101,60)[0]).astype(float)
-    #         covS = (C.covS.reshape(60,60)).astype(float)
-    #         eS = np.sqrt(np.diag(covS))
-
-    #         DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
-    #         covDSt = (C.covDSt.reshape(60,60)).astype(float)
-    #         eDSt = np.sqrt(np.diag(covDSt))
-            
-    #         print(f'Ajustando perfil {carpeta}{archivo}')
-
-    #         # ajustando sigma
-    #         if Sig:
-    #             for fu, logp in funcs_S:
-
-    #                 pos = pos_makerS(fu.__name__, nw=nw) 
-
-    #                 try:
-    #                     print(f'Usando {fu.__name__}')
-    #                     mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-    #                                       nit=nit, ncores=ncores)
-
-    #                     print('Guardando...')
-    #                     guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
-    #                                     tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
-    #                 except ValueError:
-    #                     print('Error en la funcion log probability')
-    #                     print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
-    #                     print('CONTINUANDO')
-    #                     print('----o----')
-
-    #         # ajustando delta sigma
-    #         if DSig:
-    #             for fu, logp in funcs_DSt:
-                
-    #                 pos = pos_makerDSt(fu.__name__, nw=nw) 
-
-    #                 try:
-    #                     print(f'Usando {fu.__name__}')
-    #                     mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-    #                                       nit=nit, ncores=ncores)
-
-    #                     print('Guardando...')
-    #                     guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
-    #                                     tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
-                        
-    #                 except ValueError:
-    #                     print('Error en la funcion log probability')
-    #                     print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
-    #                     print('CONTINUANDO')
-    #                     print('----o----')
-
-
-#### para ajustar los helper...
-    for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+        # for k, archivo in enumerate(['tot', 'R', 'S']):
         for k, archivo in enumerate(['R']):
+
+            # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
+            #     print(f'Salteado {carpeta}{archivo}')
+            #     continue
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
@@ -785,61 +721,125 @@ if __name__ == '__main__':
             DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
             covDSt = (C.covDSt.reshape(60,60)).astype(float)
             eDSt = np.sqrt(np.diag(covDSt))
-
+            
             print(f'Ajustando perfil {carpeta}{archivo}')
 
-            pos = np.array([
-                np.random.uniform(-0.9, -0.1, nw),  # dc
-                np.random.uniform(5., 9., nw),      # b
-                np.random.uniform(-1, 1., nw),      # x
-            ]).T
+            # ajustando sigma
+            if Sig:
+                for fu, logp in funcs_S:
 
-            for fu, logp in funcs_hS:
-                try:
-                    print(f'Usando {fu.__name__}')
-                    mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-                                      nit=nit, ncores=ncores)
+                    pos = pos_makerS(fu.__name__, nw=nw) 
+
+                    try:
+                        print(f'Usando {fu.__name__}')
+                        mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+                                          nit=nit, ncores=ncores)
+
+                        print('Guardando...')
+                        guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
+                                        tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
+                    except ValueError:
+                        print('Error en la funcion log probability')
+                        print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+                        print('CONTINUANDO')
+                        print('----o----')
+
+            # ajustando delta sigma
+            if DSig:
+                for fu, logp in funcs_DSt:
+                
+                    pos = pos_makerDSt(fu.__name__, nw=nw) 
+
+                    try:
+                        print(f'Usando {fu.__name__}')
+                        mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
+                                          nit=nit, ncores=ncores)
+
+                        print('Guardando...')
+                        guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
+                                        tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
+                        
+                    except ValueError:
+                        print('Error en la funcion log probability')
+                        print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+                        print('CONTINUANDO')
+                        print('----o----')
+
+
+# #### para ajustar los helper...
+#     for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
+#         for k, archivo in enumerate(['R']):
+
+#             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
+#                h = dat[0].header
+#                Rp = (dat[1].data.Rp).astype(float)
+#                B = dat[2].data
+#                C = dat[3].data
+
+#             rho_mean = pm(h['z_mean'])
+
+#             S = (B.Sigma.reshape(101,60)[0]).astype(float)
+#             covS = (C.covS.reshape(60,60)).astype(float)
+#             eS = np.sqrt(np.diag(covS))
+
+#             DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
+#             covDSt = (C.covDSt.reshape(60,60)).astype(float)
+#             eDSt = np.sqrt(np.diag(covDSt))
+
+#             print(f'Ajustando perfil {carpeta}{archivo}')
+
+#             pos = np.array([
+#                 np.random.uniform(-0.9, -0.1, nw),  # dc
+#                 np.random.uniform(5., 9., nw),      # b
+#                 np.random.uniform(-1, 1., nw),      # x
+#             ]).T
+
+#             for fu, logp in funcs_hS:
+#                 try:
+#                     print(f'Usando {fu.__name__}')
+#                     mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
+#                                       nit=nit, ncores=ncores)
                     
-                    nit, nw, ndim = mcmc_out.shape
-                    t = int(tirar*nit)
-                    print(f'{t} iteraciones descartadas')
+#                     nit, nw, ndim = mcmc_out.shape
+#                     t = int(tirar*nit)
+#                     print(f'{t} iteraciones descartadas')
 
-                    dc = np.percentile(mcmc_out[t:,:,0], [16, 50, 84])
-                    b  = np.percentile(mcmc_out[t:,:,1], [16, 50, 84])
-                    x  = np.percentile(mcmc_out[t:,:,2], [16, 50, 84])
-                    chi = chi_red(h1S(Rp, dc=dc[1], b=b[1], x=x[1]), S, eS, 3)
-                    table_opt = np.array([
-                                            fits.Column(name='dc',format='D',array=mcmc_out[:,:,0].flatten()),
-                                            fits.Column(name='b' ,format='D',array=mcmc_out[:,:,1].flatten()),
-                                            fits.Column(name='x' ,format='D',array=mcmc_out[:,:,2].flatten()),
-                                        ])
-                    hdu = fits.Header()
-                    hdu.append(('dc',dc[1]))
-                    hdu.append(('b',b[1]))
-                    hdu.append(('x',x[1]))
+#                     dc = np.percentile(mcmc_out[t:,:,0], [16, 50, 84])
+#                     b  = np.percentile(mcmc_out[t:,:,1], [16, 50, 84])
+#                     x  = np.percentile(mcmc_out[t:,:,2], [16, 50, 84])
+#                     chi = chi_red(h1S(Rp, dc=dc[1], b=b[1], x=x[1]), S, eS, 3)
+#                     table_opt = np.array([
+#                                             fits.Column(name='dc',format='D',array=mcmc_out[:,:,0].flatten()),
+#                                             fits.Column(name='b' ,format='D',array=mcmc_out[:,:,1].flatten()),
+#                                             fits.Column(name='x' ,format='D',array=mcmc_out[:,:,2].flatten()),
+#                                         ])
+#                     hdu = fits.Header()
+#                     hdu.append(('dc',dc[1]))
+#                     hdu.append(('b',b[1]))
+#                     hdu.append(('x',x[1]))
 
-                    hdu.append(('nw',nw))
-                    hdu.append(('ndim',ndim))
-                    hdu.append(('nit',nit))
-                    hdu.append(('chi_red',chi))
+#                     hdu.append(('nw',nw))
+#                     hdu.append(('ndim',ndim))
+#                     hdu.append(('nit',nit))
+#                     hdu.append(('chi_red',chi))
 
-                    primary_hdu = fits.PrimaryHDU(header=hdu)
-                    tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
-                    hdul = fits.HDUList([primary_hdu, tbhdu1])
-                    carpeta_out = carpeta.split('/')[0]
+#                     primary_hdu = fits.PrimaryHDU(header=hdu)
+#                     tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+#                     hdul = fits.HDUList([primary_hdu, tbhdu1])
+#                     carpeta_out = carpeta.split('/')[0]
 
-                    outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{fu.__name__}_{sample}.fits'
+#                     outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{fu.__name__}_{sample}.fits'
 
-                    print(f'Guardado en {outfile}')
-                    hdul.writeto(outfile, overwrite=True)
+#                     print(f'Guardado en {outfile}')
+#                     hdul.writeto(outfile, overwrite=True)
 
 
                     
-                except ValueError:
-                    print('Error en la funcion log probability')
-                    print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
-                    print('CONTINUANDO')
-                    print('----o----')                
+#                 except ValueError:
+#                     print('Error en la funcion log probability')
+#                     print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+#                     print('CONTINUANDO')
+#                     print('----o----')                
 
 
     
