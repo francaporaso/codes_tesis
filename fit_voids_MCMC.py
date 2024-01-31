@@ -370,7 +370,7 @@ def log_probability_DSt_hamaus(theta, r, y, yerr):
 ### ---
 ## helpers funciones para dejar fijo algun parametro
 def h1S(r,dc,b,x):
-    return sigma_hamaus(r=r,rs=np.inf,rv=1.,dc=dc,a=1,b=b,x=x)
+    return sigma_hamaus(r=r,rs=np.inf,dc=dc,a=1,b=b,x=x)
 
 def log_likelihood_h1S(theta, r, y, yerr):
     '''
