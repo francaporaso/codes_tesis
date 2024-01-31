@@ -818,6 +818,22 @@ if __name__ == '__main__':
                     hdu.append(('b',b[1]))
                     hdu.append(('x',x[1]))
 
+                    hdu.append(('nw',nw))
+                    hdu.append(('ndim',ndim))
+                    hdu.append(('nit',nit))
+                    hdu.append(('chi_red',chi))
+
+                    primary_hdu = fits.PrimaryHDU(header=hdu)
+                    tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+                    hdul = fits.HDUList([primary_hdu, tbhdu1])
+                    carpeta_out = carpeta.split('/')[0]
+
+                    outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{fu.__name__}_{sample}.fits'
+
+                    print(f'Guardado en {outfile}')
+                    hdul.writeto(outfile, overwrite=True)
+
+
                     
                 except ValueError:
                     print('Error en la funcion log probability')
