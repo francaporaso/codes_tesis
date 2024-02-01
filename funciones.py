@@ -54,7 +54,7 @@ def sigma_higuchi(R,reds,R2,dc,d2,x):
     den_integrada[m2] = d2*np.sqrt(R2[m2]**2-R[m2]**2)
 
     rho_mean = pm(reds)
-    sigma = 2*rho_mean*den_integrada/Rv + x
+    sigma = rho_mean*den_integrada/Rv + x
     return sigma
 
 def sigma_clampitt(R,reds,R2,dc,d2,x):
@@ -145,7 +145,7 @@ def Shi(y,reds,R2,dc,d2,x):
         return x
     else:
         f2 = d2*np.sqrt(R2**2-y**2)
-        return rho_mean*f2/Rv+x
+        return 2*rho_mean*f2/Rv+x
 
     
 def delta_sigma_higuchi(R,reds,R2,dc,d2):
