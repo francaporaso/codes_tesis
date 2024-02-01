@@ -682,8 +682,8 @@ if __name__ == '__main__':
 
 
     funcs_S = np.array([
-                        # (sigma_higuchi, log_probability_sigma_higuchi),
-                        (sigma_clampitt, log_probability_sigma_clampitt),
+                        (sigma_higuchi, log_probability_sigma_higuchi),
+                        # (sigma_clampitt, log_probability_sigma_clampitt),
                         # (sigma_hamaus, log_probability_sigma_hamaus),
                       ])
     
