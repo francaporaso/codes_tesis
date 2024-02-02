@@ -5,7 +5,7 @@ import emcee
 import time
 import corner
 import argparse
-# import h5py
+import h5py
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 from astropy.coordinates import SkyCoord, Angle
