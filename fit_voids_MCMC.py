@@ -5,6 +5,7 @@ import emcee
 import time
 import corner
 import argparse
+# import h5py
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 from astropy.coordinates import SkyCoord, Angle
@@ -357,7 +358,7 @@ def log_likelihood_DSt_hamaus(theta, r, y, yerr):
 
 def log_prior_DSt_hamaus(theta):
     rs,dc,a,b = theta
-    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.):
+    if (0. <= rs <= 2.)&(-1. <= dc <= 0.)&(1. <= a <= 5.)&(1. <= b <= 20.):
         return 0.0
     return -np.inf
 
@@ -423,9 +424,11 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
         yerr = np.linalg.inv(ycov)
         print('Usando matriz de covarianza')
 
+    backend = emcee.backends.HDFBackend('emcee_backends.h5')
+    backend.reset(nwalkers,ndim)
 
     with Pool(processes=ncores) as pool:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool, backend=backend)
         sampler.run_mcmc(pos, nit, progress=True)
 
     mcmc_out = sampler.get_chain()
@@ -623,8 +626,8 @@ def pos_makerDSt(func, nw=32):
     r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.2, 2.8, nw)
-    apos = np.random.uniform(0.5, 4.9, nw)
+    rspos = np.random.uniform(0.2, 1.9, nw)
+    apos = np.random.uniform(1.1, 4.9, nw)
     bpos = np.random.uniform(5., 9., nw)
 
     if func=='delta_sigma_hamaus':
