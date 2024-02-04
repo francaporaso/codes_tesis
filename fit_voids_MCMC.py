@@ -474,6 +474,7 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
 
     if continue_run:
         print('continuando desde backend...')
+        nit = nit - backend.iteration
         sampler.run_mcmc(None, nit, progress=True)
     else:
         backend.reset(nwalkers, ndim)
