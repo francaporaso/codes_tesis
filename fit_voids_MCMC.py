@@ -465,14 +465,14 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
     backend = emcee.backends.HDFBackend('emcee_backends.h5')
     backend.reset(nwalkers,ndim)
 
-    with Pool(processes=ncores) as pool:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool, backend=backend)
-        sampler.run_mcmc(pos, nit, progress=True)
+    # with Pool(processes=ncores) as pool:
+    #     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool, backend=backend)
+    #     sampler.run_mcmc(pos, nit, progress=True)
 
 
     ### PARA HAMAUS -> COMO LA FUNC ESTÁ PARALELIZADA NO PUEDE SER PARALELO EL AJUSTE
-    # sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), backend=backend)
-    # sampler.run_mcmc(pos, nit, progress=True)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), backend=backend)
+    sampler.run_mcmc(pos, nit, progress=True)
 
     mcmc_out = sampler.get_chain()
 
