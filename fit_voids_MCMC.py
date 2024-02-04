@@ -759,6 +759,7 @@ if __name__ == '__main__':
             cont_run = False
             if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
                 cont_run = True
+                print(cont_run)
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
