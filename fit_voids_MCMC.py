@@ -186,7 +186,7 @@ def DSt_hamaus(r,rs,dc,a,b):
         return sigma_hamaus(y,rs,dc,a,b,x=0)*y
 
     anillo = sigma_hamaus(r,rs,dc,a,b,x=0)
-    disco = 2./r**2 * quad(integrand, 0., r)[0]
+    disco = 2./r**2 * quad(integrand, 0., r, epsrel=1e-3)[0]
 
     return disco-anillo
 
@@ -195,36 +195,21 @@ def DSt_hamaus_unpack(dat):
 
 def DSt_hamaus_paralelo(r,rs,dc,a,b):
 
-    ncores = len(r)
-    if ncores > 128:
-        ncores=128
+    ncores = 60
+      
+    rs_arr = np.full(ncores, rs)
+    dc_arr = np.full(ncores, dc)
+    a_arr = np.full(ncores, a)
+    b_arr = np.full(ncores, b)
     
-    bins = int(round(len(r)/float(ncores), 0))
-    slices = ((np.arange(bins)+1)*ncores).astype(int)
-    slices = slices[(slices < len(r))]
+    entrada = np.array([r,rs_arr,dc_arr,a_arr,b_arr]).T
+    # print(entrada)
+    with Pool(processes=ncores) as pool:
+        salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
+        pool.close()
+        pool.join()
     
-    r_split = np.split(r, slices)
-    
-    dst = np.array([])
-    
-    for i,ri in enumerate(r_split):
-        num = len(ri)
-    
-        rs_arr = np.full(num, rs)
-        dc_arr = np.full(num, dc)
-        a_arr = np.full(num, a)
-        b_arr = np.full(num, b)
-        
-        entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
-        # print(entrada)
-        with Pool(processes=ncores) as pool:
-            salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
-            pool.close()
-            pool.join()
-            
-        dst = np.append(dst,salida)
-    
-    return dst
+    return salida
 
 ## chi reducido
 def chi_red(ajuste,data,err,gl):
