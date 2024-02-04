@@ -173,6 +173,59 @@ def delta_sigma_hamaus(r,rs,dc,a,b):
 
     return disco-anillo
 
+
+## DSt hamaus paralelo
+
+def DSt_hamaus(r,rs,dc,a,b):
+    '''
+    funcion de ayuda
+    identica a delta_sigma_hamaus, pero solo acepta r:float
+    '''
+    rv = 1.
+    def integrand(y):
+        return sigma_hamaus(y,rs,dc,a,b,x=0)*y
+
+    anillo = sigma_hamaus(r,rs,dc,a,b,x=0)
+    disco = 2./r**2 * quad(integrand, 0., r)[0]
+
+    return disco-anillo
+
+def DSt_hamaus_unpack(dat):
+    return DSt_hamaus(*dat)
+
+def DSt_hamaus_paralelo(r,rs,dc,a,b):
+
+    ncores = len(r)
+    if ncores > 128:
+        ncores=128
+    
+    bins = int(round(len(r)/float(ncores), 0))
+    slices = ((np.arange(bins)+1)*ncores).astype(int)
+    slices = slices[(slices < len(r))]
+    
+    r_split = np.split(r, slices)
+    
+    dst = np.array([])
+    
+    for i,ri in enumerate(r_split):
+        num = len(ri)
+    
+        rs_arr = np.full(num, rs)
+        dc_arr = np.full(num, dc)
+        a_arr = np.full(num, a)
+        b_arr = np.full(num, b)
+        
+        entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
+        # print(entrada)
+        with Pool(processes=ncores) as pool:
+            salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
+            pool.close()
+            pool.join()
+            
+        dst = np.append(dst,salida)
+    
+    return dst
+
 ## chi reducido
 def chi_red(ajuste,data,err,gl):
 	'''
@@ -346,7 +399,7 @@ def log_likelihood_DSt_hamaus(theta, r, y, yerr):
     yerr: error en los datos -> L_S utiliza yerr como la inversa de la mat de cov
     '''
     rs,dc,a,b = theta
-    modelo = delta_sigma_hamaus(r, rs, dc, a, b)
+    modelo = DSt_hamaus_paralelo(r, rs, dc, a, b)
     
     # sigma2 = yerr**2
     # return -0.5 * np.sum(((y - model)**2 )/sigma2 + np.log(sigma2))
