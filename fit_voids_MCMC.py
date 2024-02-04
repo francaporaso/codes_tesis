@@ -444,7 +444,7 @@ def log_probability_h1S(theta, r, y, yerr):
 ## ajuste
 
 def ajuste(xdata, ydata, ycov, pos, log_probability,
-           nit=1000, ncores=32):
+           nit=1000, ncores=32, continue_run=False):
     
     '''
     ajuste con mcmc
@@ -463,7 +463,6 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
         print('Usando matriz de covarianza')
 
     backend = emcee.backends.HDFBackend('emcee_backends.h5')
-    backend.reset(nwalkers,ndim)
 
     # with Pool(processes=ncores) as pool:
     #     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), pool=pool, backend=backend)
@@ -472,7 +471,13 @@ def ajuste(xdata, ydata, ycov, pos, log_probability,
 
     ### PARA HAMAUS -> COMO LA FUNC ESTÁ PARALELIZADA NO PUEDE SER PARALELO EL AJUSTE
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(xdata,ydata,yerr), backend=backend)
-    sampler.run_mcmc(pos, nit, progress=True)
+
+    if continue_run:
+        print('continuando desde backend...')
+        sampler.run_mcmc(None, nit, progress=True)
+    else:
+        backend.reset(nwalkers, ndim)
+        sampler.run_mcmc(pos, nit, progress=True)
 
     mcmc_out = sampler.get_chain()
 
@@ -751,6 +756,9 @@ if __name__ == '__main__':
             # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
             #     print(f'Salteado {carpeta}{archivo}')
             #     continue
+            cont_run = False
+            if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
+                cont_run = True
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
@@ -779,7 +787,7 @@ if __name__ == '__main__':
                     try:
                         print(f'Usando {fu.__name__}')
                         mcmc_out = ajuste(xdata=Rp, ydata=S, ycov=covS, pos=pos,log_probability=logp,
-                                          nit=nit, ncores=ncores)
+                                          nit=nit, ncores=ncores, continue_run=cont_run)
 
                         print('Guardando...')
                         guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
@@ -799,7 +807,7 @@ if __name__ == '__main__':
                     try:
                         print(f'Usando {fu.__name__}')
                         mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-                                          nit=nit, ncores=ncores)
+                                          nit=nit, ncores=ncores, continue_run=cont_run)
 
                         print('Guardando...')
                         guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
