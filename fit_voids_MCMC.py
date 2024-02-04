@@ -358,7 +358,7 @@ def log_likelihood_DSt_hamaus(theta, r, y, yerr):
 
 def log_prior_DSt_hamaus(theta):
     rs,dc,a,b = theta
-    if (0. <= rs <= 2.)&(-1. <= dc <= 0.)&(1. <= a <= 5.)&(1. <= b <= 20.):
+    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.):
         return 0.0
     return -np.inf
 
@@ -621,14 +621,14 @@ def pos_makerS(func, nw=32):
 def pos_makerDSt(func, nw=32):
 
     # comunes
-    dcpos = np.random.uniform(-0.9, -0.1, nw)
+    dcpos = np.random.uniform(-0.99, -0.01, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
     r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.2, 1.9, nw)
-    apos = np.random.uniform(1.1, 4.9, nw)
-    bpos = np.random.uniform(5., 9., nw)
+    rspos = np.random.uniform(0.1, 2.9, nw)
+    apos = np.random.uniform(0.1, 4.9, nw)
+    bpos = np.random.uniform(5., 15., nw)
 
     if func=='delta_sigma_hamaus':
         pos = np.array([
@@ -695,9 +695,9 @@ if __name__ == '__main__':
                        ])
     
     funcs_DSt = np.array([
-                          (delta_sigma_higuchi, log_probability_DSt_higuchi),
-                          (delta_sigma_clampitt, log_probability_DSt_clampitt),
-                        #   (delta_sigma_hamaus, log_probability_DSt_hamaus),
+                        #   (delta_sigma_higuchi, log_probability_DSt_higuchi),
+                        #   (delta_sigma_clampitt, log_probability_DSt_clampitt),
+                          (delta_sigma_hamaus, log_probability_DSt_hamaus),
                         ])
 
     for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
