@@ -694,7 +694,7 @@ def pos_makerDSt(func, nw=32):
     apos = np.random.uniform(0.1, 4.9, nw)
     bpos = np.random.uniform(5., 15., nw)
 
-    if func=='delta_sigma_hamaus':
+    if func=='DSt_hamaus_paralelo':
         pos = np.array([
                         rspos,     # rs
                         dcpos,     # dc
