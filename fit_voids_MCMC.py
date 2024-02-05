@@ -195,7 +195,7 @@ def DSt_hamaus_unpack(dat):
 
 def DSt_hamaus_paralelo(r,rs,dc,a,b):
 
-    ncores = 60
+    ncores = 32
       
     rs_arr = np.full(ncores, rs)
     dc_arr = np.full(ncores, dc)
