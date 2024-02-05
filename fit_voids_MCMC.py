@@ -193,38 +193,57 @@ def DSt_hamaus(r,rs,dc,a,b):
 def DSt_hamaus_unpack(dat):
     return DSt_hamaus(*dat)
 
-def DSt_hamaus_paralelo(r,rs,dc,a,b):
+# def DSt_hamaus_paralelo(r,rs,dc,a,b):
 
-    ncores = len(r)
-    if ncores > 32:
-        ncores=32
+#     ncores = len(r)
+#     if ncores > 32:
+#         ncores=32
     
-    bins = int(round(len(r)/float(ncores), 0))
-    slices = ((np.arange(bins)+1)*ncores).astype(int)
-    slices = slices[(slices < len(r))]
+#     bins = int(round(len(r)/float(ncores), 0))
+#     slices = ((np.arange(bins)+1)*ncores).astype(int)
+#     slices = slices[(slices < len(r))]
     
-    r_split = np.split(r, slices)
+#     r_split = np.split(r, slices)
     
-    dst = np.array([])
+#     dst = np.array([])
     
-    for i,ri in enumerate(r_split):
-        num = len(ri)
+#     for i,ri in enumerate(r_split):
+#         num = len(ri)
     
-        rs_arr = np.full(num, rs)
-        dc_arr = np.full(num, dc)
-        a_arr = np.full(num, a)
-        b_arr = np.full(num, b)
+#         rs_arr = np.full(num, rs)
+#         dc_arr = np.full(num, dc)
+#         a_arr = np.full(num, a)
+#         b_arr = np.full(num, b)
         
-        entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
-        # print(entrada)
-        with Pool(processes=ncores) as pool:
-            salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
-            pool.close()
-            pool.join()
+#         entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
+#         # print(entrada)
+#         with Pool(processes=ncores) as pool:
+#             salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
+#             pool.close()
+#             pool.join()
             
-        dst = np.append(dst,salida)
+#         dst = np.append(dst,salida)
     
-    return dst
+#     return dst
+
+def DSt_hamaus_paralelo(r,rs,dc,a,b):
+    '''funciona SOLO con len(r)=32'''
+    ncores = 60
+    
+    rs_arr = np.full(ncores, rs)
+    dc_arr = np.full(ncores, dc)
+    a_arr = np.full(ncores, a)
+    b_arr = np.full(ncores, b)
+    
+    entrada = np.array([r,rs_arr,dc_arr,a_arr,b_arr]).T
+    # print(entrada)
+    with Pool(processes=ncores) as pool:
+        salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
+        pool.close()
+        pool.join()
+        
+    return salida
+
 
 ## chi reducido
 def chi_red(ajuste,data,err,gl):
