@@ -195,21 +195,36 @@ def DSt_hamaus_unpack(dat):
 
 def DSt_hamaus_paralelo(r,rs,dc,a,b):
 
-    ncores = 32
-      
-    rs_arr = np.full(ncores, rs)
-    dc_arr = np.full(ncores, dc)
-    a_arr = np.full(ncores, a)
-    b_arr = np.full(ncores, b)
+    ncores = len(r)
+    if ncores > 32:
+        ncores=32
     
-    entrada = np.array([r,rs_arr,dc_arr,a_arr,b_arr]).T
-    # print(entrada)
-    with Pool(processes=ncores) as pool:
-        salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
-        pool.close()
-        pool.join()
+    bins = int(round(len(r)/float(ncores), 0))
+    slices = ((np.arange(bins)+1)*ncores).astype(int)
+    slices = slices[(slices < len(r))]
     
-    return salida
+    r_split = np.split(r, slices)
+    
+    dst = np.array([])
+    
+    for i,ri in enumerate(r_split):
+        num = len(ri)
+    
+        rs_arr = np.full(num, rs)
+        dc_arr = np.full(num, dc)
+        a_arr = np.full(num, a)
+        b_arr = np.full(num, b)
+        
+        entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
+        # print(entrada)
+        with Pool(processes=ncores) as pool:
+            salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
+            pool.close()
+            pool.join()
+            
+        dst = np.append(dst,salida)
+    
+    return dst
 
 ## chi reducido
 def chi_red(ajuste,data,err,gl):
@@ -676,7 +691,7 @@ def pos_makerDSt(func, nw=32):
 
     # hamaus
     rspos = np.random.uniform(0.1, 2.9, nw)
-    apos = np.random.uniform(0.1, 4.9, nw)
+    apos = np.random.uniform(0.1, 7.9, nw)
     bpos = np.random.uniform(5., 15., nw)
 
     if func=='delta_sigma_hamaus':
@@ -746,21 +761,22 @@ if __name__ == '__main__':
     funcs_DSt = np.array([
                         #   (delta_sigma_higuchi, log_probability_DSt_higuchi),
                         #   (delta_sigma_clampitt, log_probability_DSt_clampitt),
-                          (delta_sigma_hamaus, log_probability_DSt_hamaus),
+                          (DSt_hamaus_paralelo, log_probability_DSt_hamaus),
                         ])
 
     for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
         # for k, archivo in enumerate(['tot', 'R', 'S']):
-        for k, archivo in enumerate(['S']):
+        for k, archivo in enumerate(['tot','S']):
 
             # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
             #     print(f'Salteado {carpeta}{archivo}')
             #     continue
+            
             cont_run = False
-            if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
-                cont_run = True
-                print(cont_run)
+            # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
+            #     cont_run = True
+            #     print(cont_run)
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
