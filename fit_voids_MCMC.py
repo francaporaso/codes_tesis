@@ -691,7 +691,7 @@ def pos_makerDSt(func, nw=32):
 
     # hamaus
     rspos = np.random.uniform(0.1, 2.9, nw)
-    apos = np.random.uniform(0.1, 7.9, nw)
+    apos = np.random.uniform(0.1, 4.9, nw)
     bpos = np.random.uniform(5., 15., nw)
 
     if func=='delta_sigma_hamaus':
