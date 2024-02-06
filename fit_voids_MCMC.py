@@ -611,13 +611,13 @@ def guardar_perfil_deltasigma(mcmc_out, xdata, ydata, yerr, func,
     tirar = int(tirar*nit)
     print(f'{tirar} iteraciones descartadas')
 
-    if func.__name__ == 'delta_sigma_hamaus':
+    if func.__name__ == 'DSt_hamaus_paralelo':
         rs = np.percentile(mcmc_out[tirar:,:,0], [16, 50, 84])
         dc = np.percentile(mcmc_out[tirar:,:,1], [16, 50, 84])
         a  = np.percentile(mcmc_out[tirar:,:,2], [16, 50, 84])
         b  = np.percentile(mcmc_out[tirar:,:,3], [16, 50, 84])
 
-        chi = chi_red(delta_sigma_hamaus(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1]), ydata, yerr, 4)
+        chi = chi_red(DSt_hamaus_paralelo(xdata, rs=rs[1], dc=dc[1], a=a[1], b=b[1]), ydata, yerr, 4)
 
         table_opt = np.array([
                                 fits.Column(name='rs',format='D',array=mcmc_out[:,:,0].flatten()),
@@ -795,9 +795,9 @@ if __name__ == '__main__':
             #     continue
             
             cont_run = False
-            # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
-            #     cont_run = True
-            #     print(cont_run)
+            if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot'):
+                cont_run = True
+                print(cont_run)
 
             with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
                h = dat[0].header
