@@ -195,10 +195,12 @@ def DSt_hamaus_unpack(dat):
 
 def DSt_hamaus_paralelo(r,rs,dc,a,b):
 
-    ncores = len(r)
-    if ncores > 32:
-        ncores=32
+    # ncores = len(r)
+    # if ncores > 32:
+    #     ncores=32
     
+    ncores=32
+
     bins = int(round(len(r)/float(ncores), 0))
     slices = ((np.arange(bins)+1)*ncores).astype(int)
     slices = slices[(slices < len(r))]
