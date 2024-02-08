@@ -803,7 +803,6 @@ if __name__ == '__main__':
     
     funcs_hS = np.array([
                         #  (h1S, log_probability_h1S),
-                         (h2DS, log_probability_h2DS),
                        ])
     
     funcs_DSt = np.array([
@@ -811,6 +810,10 @@ if __name__ == '__main__':
                         #   (delta_sigma_clampitt, log_probability_DSt_clampitt),
                           (DSt_hamaus_paralelo, log_probability_DSt_hamaus),
                         ])
+    
+    funcs_hDS = np.array([
+                         (h2DS, log_probability_h2DS),
+                       ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
     # # for j,carpeta in enumerate(['Rv_6-10/rvchico_']):
@@ -911,48 +914,47 @@ if __name__ == '__main__':
             np.random.uniform(5., 9., nw),      # b
         ]).T
         
-        for fu, logp in funcs_hS:
-            try:
-                print(f'Usando {fu.__name__}')
-                mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
-                                  nit=nit, ncores=ncores)
-
-                nit, nw, ndim = mcmc_out.shape
-                t = int(tirar*nit)
-                print(f'{t} iteraciones descartadas')
-        
-                dc = np.percentile(mcmc_out[t:,:,0], [16, 50, 84])
-                b  = np.percentile(mcmc_out[t:,:,1], [16, 50, 84])
-                # x  = np.percentile(mcmc_out[t:,:,2], [16, 50, 84])
-        
-                chi = chi_red(h2DS(Rp, dc=dc[1], b=b[1]), DSt, eDSt, 2)
-                table_opt = np.array([
-                                        fits.Column(name='dc',format='D',array=mcmc_out[:,:,0].flatten()),
-                                        fits.Column(name='b' ,format='D',array=mcmc_out[:,:,1].flatten()),
-                                        # fits.Column(name='x' ,format='D',array=mcmc_out[:,:,2].flatten()),
-                                    ])
-        
-                hdu = fits.Header()
-                hdu.append(('dc',dc[1]))
-                hdu.append(('b',b[1]))
-                # hdu.append(('x',x[1]))
-                hdu.append(('nw',nw))
-                hdu.append(('ndim',ndim))
-                hdu.append(('nit',nit))
-                hdu.append(('chi_red',chi))
-                primary_hdu = fits.PrimaryHDU(header=hdu)
-                tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
-                hdul = fits.HDUList([primary_hdu, tbhdu1])
-        
-                carpeta_out = carpeta.split('/')[0]
-                outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{fu.__name__}_{sample}.fits'
-                print(f'Guardado en {outfile}')
-                hdul.writeto(outfile, overwrite=True)
-
-            except ValueError:
-                print('Error en la funcion log probability')
-                print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
-                print('CONTINUANDO')
-                print('----o----')                
+        for fu, logp in funcs_hDS:
+            # try:
+            print(f'Usando {fu.__name__}')
+            mcmc_out = ajuste(xdata=Rp, ydata=DSt, ycov=covDSt, pos=pos,log_probability=logp,
+                              nit=nit, ncores=ncores)
+            nit, nw, ndim = mcmc_out.shape
+            t = int(tirar*nit)
+            print(f'{t} iteraciones descartadas')
+    
+            dc = np.percentile(mcmc_out[t:,:,0], [16, 50, 84])
+            b  = np.percentile(mcmc_out[t:,:,1], [16, 50, 84])
+            # x  = np.percentile(mcmc_out[t:,:,2], [16, 50, 84])
+    
+            chi = chi_red(h2DS(Rp, dc=dc[1], b=b[1]), DSt, eDSt, 2)
+            table_opt = np.array([
+                                    fits.Column(name='dc',format='D',array=mcmc_out[:,:,0].flatten()),
+                                    fits.Column(name='b' ,format='D',array=mcmc_out[:,:,1].flatten()),
+                                    # fits.Column(name='x' ,format='D',array=mcmc_out[:,:,2].flatten()),
+                                ])
+    
+            hdu = fits.Header()
+            hdu.append(('dc',dc[1]))
+            hdu.append(('b',b[1]))
+            # hdu.append(('x',x[1]))
+            hdu.append(('nw',nw))
+            hdu.append(('ndim',ndim))
+            hdu.append(('nit',nit))
+            hdu.append(('chi_red',chi))
+            primary_hdu = fits.PrimaryHDU(header=hdu)
+            tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
+            hdul = fits.HDUList([primary_hdu, tbhdu1])
+    
+            carpeta_out = carpeta.split('/')[0]
+            outfile = f'../profiles/voids/{carpeta_out}/fit/fit_mcmc_{archivo}_{fu.__name__}_{sample}.fits'
+            print(f'Guardado en {outfile}')
+            hdul.writeto(outfile, overwrite=True)
+    
+            # except ValueError:
+            #     print('Error en la funcion log probability')
+            #     print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+            #     print('CONTINUANDO')
+            #     print('----o----')                
     
     print('Terminado!')
