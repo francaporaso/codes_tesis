@@ -201,7 +201,7 @@ def DSt_hamaus_paralelo(r,reds,rs,dc,a,b):
     # if ncores > 32:
     #     ncores=32
     
-    ncores=32
+    ncores=8
 
     bins = int(round(len(r)/float(ncores), 0))
     slices = ((np.arange(bins)+1)*ncores).astype(int)
@@ -230,6 +230,9 @@ def DSt_hamaus_paralelo(r,reds,rs,dc,a,b):
         dst = np.append(dst,salida)
     
     return dst
+
+def h2DS(r,dc,b):
+    return DSt_hamaus_paralelo(r=r,rs=np.inf,dc=dc,a=1,b=b)
 
 # def DSt_hamaus_paralelo(r,rs,dc,a,b):
 #     '''funciona SOLO con len(r)=60'''
