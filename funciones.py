@@ -3,6 +3,7 @@
 import numpy as np
 from astropy.cosmology import LambdaCDM
 from scipy.integrate import quad, quad_vec
+from multiprocessing import Pool
 
 def pm(z):
     '''densidad media en Msun/(pc**2 Mpc)'''
@@ -177,16 +178,16 @@ def delta_sigma_hamaus(r,reds,rs,dc,a,b):
 
 ## DSt hamaus paralelo
 
-def DSt_hamaus(r,rs,dc,a,b):
+def DSt_hamaus(r,reds,rs,dc,a,b):
     '''
     funcion de ayuda
     identica a delta_sigma_hamaus, pero solo acepta r:float
     '''
     rv = 1.
     def integrand(y):
-        return sigma_hamaus(y,rs,dc,a,b,x=0)*y
+        return sigma_hamaus(y,reds,rs,dc,a,b,x=0)*y
 
-    anillo = sigma_hamaus(r,rs,dc,a,b,x=0)
+    anillo = sigma_hamaus(r,reds,rs,dc,a,b,x=0)
     disco = 2./r**2 * quad(integrand, 0., r, epsrel=1e-3)[0]
 
     return disco-anillo
@@ -194,7 +195,7 @@ def DSt_hamaus(r,rs,dc,a,b):
 def DSt_hamaus_unpack(dat):
     return DSt_hamaus(*dat)
 
-def DSt_hamaus_paralelo(r,rs,dc,a,b):
+def DSt_hamaus_paralelo(r,reds,rs,dc,a,b):
 
     # ncores = len(r)
     # if ncores > 32:
@@ -217,8 +218,9 @@ def DSt_hamaus_paralelo(r,rs,dc,a,b):
         dc_arr = np.full(num, dc)
         a_arr = np.full(num, a)
         b_arr = np.full(num, b)
+        z_arr = np.full(num, reds)
         
-        entrada = np.array([ri,rs_arr,dc_arr,a_arr,b_arr]).T
+        entrada = np.array([ri,z_arr,rs_arr,dc_arr,a_arr,b_arr]).T
         # print(entrada)
         with Pool(processes=ncores) as pool:
             salida = np.array(pool.map(DSt_hamaus_unpack,entrada))
