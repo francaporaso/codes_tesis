@@ -739,7 +739,7 @@ def pos_makerDSt(func, nw=32):
     # hamaus
     rspos = np.random.uniform(0.5, 2., nw)
     apos = np.random.uniform(1., 4., nw)
-    bpos = np.random.uniform(5., 10., nw)
+    bpos = np.random.uniform(3., 14.8, nw)
 
     if func=='DSt_hamaus_paralelo':
         pos = np.array([
