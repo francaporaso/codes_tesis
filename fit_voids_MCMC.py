@@ -432,7 +432,7 @@ def log_likelihood_DSt_hamaus(theta, r, y, yerr):
 
 def log_prior_DSt_hamaus(theta):
     rs,dc,a,b = theta
-    if (0. <= rs <= 3.)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 20.):
+    if (0.1 <= rs <= 2.3)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 15.):
         return 0.0
     return -np.inf
 
@@ -737,9 +737,9 @@ def pos_makerDSt(func, nw=32):
     r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.1, 2.9, nw)
-    apos = np.random.uniform(0.1, 4.9, nw)
-    bpos = np.random.uniform(5., 15., nw)
+    rspos = np.random.uniform(0.5, 2., nw)
+    apos = np.random.uniform(1., 4., nw)
+    bpos = np.random.uniform(5., 10., nw)
 
     if func=='DSt_hamaus_paralelo':
         pos = np.array([
