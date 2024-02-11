@@ -432,7 +432,7 @@ def log_likelihood_DSt_hamaus(theta, r, y, yerr):
 
 def log_prior_DSt_hamaus(theta):
     rs,dc,a,b = theta
-    if (0.1 <= rs <= 2.3)&(-1. <= dc <= 0.)&(0. <= a <= 10.)&(1. <= b <= 15.):
+    if (0.5 <= rs <= 1.5)&(-1. <= dc <= -0.4)&(1. <= a <= 4.)&(5. <= b <= 10.):
         return 0.0
     return -np.inf
 
