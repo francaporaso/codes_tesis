@@ -732,14 +732,14 @@ def pos_makerS(func, nw=32):
 def pos_makerDSt(func, nw=32):
 
     # comunes
-    dcpos = np.random.uniform(-0.99, -0.01, nw)
+    dcpos = np.random.uniform(-0.9, -0.5, nw)
     d2pos = np.random.uniform(-0.5, 0.5, nw)
     r2pos = np.random.uniform(2.1, 2.9, nw)
 
     # hamaus
-    rspos = np.random.uniform(0.5, 2., nw)
-    apos = np.random.uniform(1., 4., nw)
-    bpos = np.random.uniform(3., 14.8, nw)
+    rspos = np.random.uniform(0.6, 1.3, nw)
+    apos = np.random.uniform(1.5, 3.5, nw)
+    bpos = np.random.uniform(6., 9., nw)
 
     if func=='DSt_hamaus_paralelo':
         pos = np.array([
