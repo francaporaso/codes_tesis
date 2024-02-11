@@ -862,6 +862,7 @@ if __name__ == '__main__':
                         guardar_perfil_sigma(mcmc_out=mcmc_out, xdata=Rp, ydata=S, yerr=eS, func=fu,
                                         tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
                     except ValueError:
+                        ### si no arranca y entra acá, revisar q NO exista un archivo 'emcee_backend.h5', si lo hay BORRARLO
                         print('Error en la funcion log probability')
                         print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
                         print('CONTINUANDO')
@@ -882,9 +883,9 @@ if __name__ == '__main__':
                         guardar_perfil_deltasigma(mcmc_out=mcmc_out, xdata=Rp, ydata=DSt, yerr=eDSt, func=fu,
                                         tirar=tirar, carpeta=carpeta, archivo=archivo, sample=sample)
                         
-                    except ValueError:
-                        print('Error en la funcion log probability')
-                        print(F'{carpeta}{archivo} no ajustó para {fu.__name__}')
+                    except Exception as error:
+                        print(f'Error: {error}')
+                        print(f'{carpeta}{archivo} no ajustó para {fu.__name__}')
                         print('CONTINUANDO')
                         print('----o----')
 
