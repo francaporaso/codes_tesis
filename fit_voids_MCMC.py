@@ -829,7 +829,7 @@ if __name__ == '__main__':
             #     cont_run = True
             #     print(cont_run)
 
-            with fits.open(f'/home/fcaporaso/profiles/voids/{carpeta}/lensing_{carpeta}_z02-04_type{archivo}_RMAX5.fits') as dat:
+            with fits.open(f'/home/fcaporaso/profiles/voids/{carpeta}/lensing_Rv{carpeta.split('_')[0]}_z02-04_type{archivo}_RMAX5.fits') as dat:
                h = dat[0].header
                Rp = (dat[1].data.Rp).astype(float)
                B = dat[2].data
