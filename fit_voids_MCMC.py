@@ -816,9 +816,9 @@ if __name__ == '__main__':
                        ])
 
     # for j,carpeta in enumerate(['Rv_6-10/rvchico_','Rv_10-50/rvalto_']):
-    for j,carpeta in enumerate(['Rv_10-50/rvalto_']):
+    for j,carpeta in enumerate(['Rv_6-10','Rv_10-50']):
         # for k, archivo in enumerate(['tot', 'R', 'S']):
-        for k, archivo in enumerate(['tot']):
+        for k, archivo in enumerate(['all','R','S']):
 
             # if (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_tot') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_R') or (f'{carpeta}{archivo}'=='Rv_6-10/rvchico_S'):
             #     print(f'Salteado {carpeta}{archivo}')
@@ -829,7 +829,7 @@ if __name__ == '__main__':
             #     cont_run = True
             #     print(cont_run)
 
-            with fits.open(f'../profiles/voids/{carpeta}{archivo}.fits') as dat:
+            with fits.open(f'../profiles/voids/{carpeta}/lensing_{carpeta}_z02-04_type{archivo}_RMAX5.fits') as dat:
                h = dat[0].header
                Rp = (dat[1].data.Rp).astype(float)
                B = dat[2].data
