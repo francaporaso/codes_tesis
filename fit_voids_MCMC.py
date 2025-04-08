@@ -797,8 +797,8 @@ if __name__ == '__main__':
 
     funcs_S = np.array([
                         (sigma_higuchi, log_probability_sigma_higuchi),
-                        # (sigma_clampitt, log_probability_sigma_clampitt),
-                        # (sigma_hamaus, log_probability_sigma_hamaus),
+                        (sigma_clampitt, log_probability_sigma_clampitt),
+                        (sigma_hamaus, log_probability_sigma_hamaus),
                       ])
     
     funcs_hS = np.array([
@@ -806,8 +806,8 @@ if __name__ == '__main__':
                        ])
     
     funcs_DSt = np.array([
-                        #   (delta_sigma_higuchi, log_probability_DSt_higuchi),
-                        #   (delta_sigma_clampitt, log_probability_DSt_clampitt),
+                          (delta_sigma_higuchi, log_probability_DSt_higuchi),
+                          (delta_sigma_clampitt, log_probability_DSt_clampitt),
                           (DSt_hamaus_paralelo, log_probability_DSt_hamaus),
                         ])
     
@@ -829,7 +829,7 @@ if __name__ == '__main__':
             #     cont_run = True
             #     print(cont_run)
 
-            with fits.open(f'../profiles/voids/{carpeta}/lensing_{carpeta}_z02-04_type{archivo}_RMAX5.fits') as dat:
+            with fits.open(f'/home/fcaporaso/profiles/voids/{carpeta}/lensing_{carpeta}_z02-04_type{archivo}_RMAX5.fits') as dat:
                h = dat[0].header
                Rp = (dat[1].data.Rp).astype(float)
                B = dat[2].data
