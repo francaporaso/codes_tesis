@@ -837,12 +837,12 @@ if __name__ == '__main__':
 
             rho_mean = pm(h['z_mean'])
 
-            S = (B.Sigma.reshape(101,60)[0]).astype(float)
-            covS = (C.covS.reshape(60,60)).astype(float)
+            S = (B.Sigma.reshape(101,100)[0]).astype(float)
+            covS = (C.covS.reshape(100,100)).astype(float)
             eS = np.sqrt(np.diag(covS))
 
-            DSt = (B.DSigma_T.reshape(101,60)[0]).astype(float)
-            covDSt = (C.covDSt.reshape(60,60)).astype(float)
+            DSt = (B.DSigma_T.reshape(101,100)[0]).astype(float)
+            covDSt = (C.covDSt.reshape(100,100)).astype(float)
             eDSt = np.sqrt(np.diag(covDSt))
             
             print(f'Ajustando perfil {carpeta}{archivo}')
