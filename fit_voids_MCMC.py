@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 from astropy.coordinates import SkyCoord, Angle
 from astropy.constants import G,c,M_sun,pc
-from scipy.integrate import quad, romberg, fixed_quad, quad_vec
+from scipy.integrate import quad, fixed_quad, quad_vec
 from multiprocessing import Pool
 
 h = 1.
