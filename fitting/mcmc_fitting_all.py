@@ -1,16 +1,15 @@
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
 from scipy.integrate import simpson
-# from scipy.optimize import curve_fit
 import emcee
 from astropy.io import fits
 from astropy.cosmology import LambdaCDM
-from time import time
-from scipy.integrate import quad, quad_vec
-# import matplotlib.pylab as pylab
-# import corner
+import time
 from multiprocessing import Pool
+# import matplotlib.pyplot as plt
+# import matplotlib.pylab as pylab
+# from scipy.optimize import curve_fit
+# import corner
 
 h = 1.0
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
