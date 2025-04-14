@@ -72,8 +72,8 @@ class Likelihood:
     
 class HSW:
     def __init__(self):
-        self.limits_S = {'dc':(-1.0,0.0), 'rs':(0.1,5.0), 'a':(1.0,10.0), 'b':(1.0,20.0), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'dc':(-1.0,0.0), 'rs':(0.1,5.0), 'a':(1.0,10.0), 'b':(1.0,20.0)}
+        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
         
     def h_integrand(self, chi, R, dc, rs, a, b):
         r = np.sqrt(R**2 + chi**2)
@@ -243,7 +243,7 @@ if __name__ == '__main__':
                 fitted_params[param] = percentil[1]
                 error_params[param] = tuple(percentil[[0,2]]-percentil[1])
 
-            red_chisq = chi_red(hsw.sigma(l.r, **fitted_params), l.y, l.yerr, len(l.params))
+            red_chisq = chi_red(l.func(l.r, **fitted_params)*l.rhomean, l.y, l.yerr, len(l.params))
             print('Reduced chi: '.ljust(10,'.'), red_chisq)
             
             table_opt = np.array([
@@ -264,7 +264,7 @@ if __name__ == '__main__':
             tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
             hdul = fits.HDUList([primary_hdu, tbhdu1])
             
-            outfile = folder+f'Rv_{radius}/fit/{sample}_MCMC_lensing_Sigma_Rv{radius}_type{tipo}_5RMAX.fits'
+            outfile = folder+f'Rv_{radius}/fit/{sample}_MCMC_lensing_Sigma_Rv{radius}_type{tipo}_5RMAX_dim{nit}x{nwalkers}.fits'
             print(f'Guardado en {outfile}')
             hdul.writeto(outfile, overwrite=True)
             
