@@ -128,6 +128,20 @@ class TopHat:
         sigma = den_integrada/Rv + off
         return sigma
 
+    def mean_sigma(self, R_vals, rs, dc, d2):
+        x_grid = np.linspace(0.001, R_vals.max(), 700)
+        f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
+        F_vals = np.array([
+            simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
+            for R in R_vals
+        ])
+        return F_vals
+    
+    def delta_sigma(self, R, rs, dc, d2):
+        anillo = self.sigma(R, rs, dc, d2, off=0.0)
+        disco = self.mean_sigma(R, rs, dc, d2)
+        return (2 / R**2) * disco - anillo
+
 class modifiedLW:
     def __init__(self):
         self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
@@ -156,6 +170,20 @@ class modifiedLW:
         )
         sigma = den_integrada/Rv + off
         return sigma
+
+    def mean_sigma(self, R_vals, rs, dc, d2):
+        x_grid = np.linspace(0.001, R_vals.max(), 700)
+        f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
+        F_vals = np.array([
+            simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
+            for R in R_vals
+        ])
+        return F_vals
+    
+    def delta_sigma(self, R, rs, dc, d2):
+        anillo = self.sigma(R, rs, dc, d2, off=0.0)
+        disco = self.mean_sigma(R, rs, dc, d2)
+        return (2 / R**2) * disco - anillo
 
 
 
