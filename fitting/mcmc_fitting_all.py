@@ -153,7 +153,7 @@ class modifiedLW:
         '''
         return np.where(r < rv, dc+(d2-dc)*(r/rv)**3, np.where(r > rs, 0.0, d2))
 
-    def sigma(R, rs, dc, d2, off):
+    def sigma(self, R, rs, dc, d2, off):
         Rv = 1.
         if Rv>rs:
             return np.inf
