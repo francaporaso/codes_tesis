@@ -80,14 +80,14 @@ class HSW:
         r = np.sqrt(R**2 + chi**2)
         return dc * (1 - (r / rs)**a) / (1 + r**b)
     
-    def sigma(self, R, dc, rs, a, b):
+    def sigma(self, R, dc, rs, a, b, off):
         chi = np.linspace(0.001, 200.0, 700)
         h_vals = self.h_integrand(chi=chi[:, None], R=R[None, :], dc=dc, rs=rs, a=a, b=b)
-        return 2.0*simpson(h_vals, x=chi, axis=0)
+        return 2.0*simpson(h_vals, x=chi, axis=0) + off
     
     def mean_sigma(self, R_vals, dc, rs, a, b):
         x_grid = np.linspace(0.001, R_vals.max(), 700)
-        f_grid = self.sigma(x_grid, dc, rs, a, b)
+        f_grid = self.sigma(x_grid, dc, rs, a, b, off=0.0)
         F_vals = np.array([
             simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
             for R in R_vals
@@ -95,7 +95,7 @@ class HSW:
         return F_vals
     
     def delta_sigma(self, R, dc, rs, a, b):
-        anillo = self.sigma(R, dc, rs, a, b)
+        anillo = self.sigma(R, dc, rs, a, b, off=0.0)
         disco = self.mean_sigma(R, dc, rs, a, b)
         return (2 / R**2) * disco - anillo
 
