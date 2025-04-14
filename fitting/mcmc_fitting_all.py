@@ -71,7 +71,8 @@ class Likelihood:
         return lp + self.log_likelihood(theta)
     
 class HSW:
-    def __init__(self):
+    def __init__(self, fix_off=False):
+        self.fix_off = fix_off
         self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
         self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
         
@@ -80,6 +81,8 @@ class HSW:
         return dc * (1 - (r / rs)**a) / (1 + r**b)
     
     def sigma(self, R, dc, rs, a, b, off):
+        if self.fix_off:
+            off = 0.0
         chi = np.linspace(0.001, 200.0, 700)
         h_vals = self.h_integrand(chi=chi[:, None], R=R[None, :], dc=dc, rs=rs, a=a, b=b)
         return 2.0*simpson(h_vals, x=chi, axis=0) + off
