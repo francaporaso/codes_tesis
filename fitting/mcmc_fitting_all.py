@@ -10,6 +10,8 @@ from multiprocessing import Pool
 # import matplotlib.pylab as pylab
 # from scipy.optimize import curve_fit
 # import corner
+### TODO
+# implementar el modelo de Dante, ver notas de BCN
 
 h = 1.0
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
