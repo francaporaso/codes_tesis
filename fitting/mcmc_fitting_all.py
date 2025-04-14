@@ -80,7 +80,7 @@ class HSW:
         r = np.sqrt(R**2 + chi**2)
         return dc * (1 - (r / rs)**a) / (1 + r**b)
     
-    def sigma(self, R, dc, rs, a, b, off):
+    def sigma(self, R, dc, rs, a, b, off=0.0):
         if self.fix_off:
             off = 0.0
         chi = np.linspace(0.001, 200.0, 700)
