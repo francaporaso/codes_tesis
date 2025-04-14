@@ -220,7 +220,7 @@ if __name__ == '__main__':
                 y=p[radius][tipo].S.to_numpy(), 
                 # yerr=np.linalg.inv(cov[radius][tipo]['covS']), ## No fittea con la cov completa
                 yerr=p[radius][tipo].eS.to_numpy(), 
-                lims=hsw.limits_S, 
+                limits=hsw.limits_S, 
                 redshift=f[radius][tipo][0].header['Z_MEAN']
             )
             ## el orden es importante! -> chequear con hsw.sigma
@@ -281,7 +281,7 @@ if __name__ == '__main__':
                 y=p[radius][tipo].DSt.to_numpy(), 
                 # yerr=np.linalg.inv(cov[radius][tipo]['covS']), ## No fittea con la cov completa
                 yerr=p[radius][tipo].eDSt.to_numpy(), 
-                lims=hsw.limits_DSt, 
+                limits=hsw.limits_DSt, 
                 redshift=f[radius][tipo][0].header['Z_MEAN']
             )
             ## el orden es importante! -> chequear con hsw.sigma
