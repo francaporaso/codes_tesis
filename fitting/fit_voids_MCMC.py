@@ -114,12 +114,12 @@ def Scl(y,Rv,R2,dc,d2,x):
         s2 = np.sqrt(R2**2 - y**2)
         arg = np.sqrt((Rv/y)**2 - 1)
         f1 = 2*(dc*s2 + (d2-dc)*(sv*(5/8*(y/Rv)**2 - 1) + s2 + 3/8*(y**4/Rv**3)*np.arcsinh(arg)))
-        return rho_mean*f1/Rv+x
+        return f1/Rv+x
     elif y>R2:
         return x
     else:
         f2 = 2*(d2*np.sqrt(R2**2-y**2))
-        return rho_mean*f2/Rv+x
+        return f2/Rv+x
 
 def delta_sigma_clampitt(R,R2,dc,d2):
     Rv = 1.
@@ -141,12 +141,12 @@ def Shi(y,Rv,R2,dc,d2,x):
     
     if y<=Rv:
         f1 = (np.sqrt(Rv**2-y**2)*(dc-d2) + d2*np.sqrt(R2**2-y**2))
-        return rho_mean*f1/Rv+x
+        return f1/Rv+x
     elif y>R2:
         return x
     else:
         f2 = d2*np.sqrt(R2**2-y**2)
-        return rho_mean*f2/Rv+x
+        return f2/Rv+x
     
 def delta_sigma_higuchi(R,R2,dc,d2):
     Rv = 1.
