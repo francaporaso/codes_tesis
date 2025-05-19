@@ -65,7 +65,7 @@ def sigma_higuchi(R,R2,dc,d2,x):
     den_integrada[m1] = (np.sqrt(Rv[m1]**2-R[m1]**2)*(dc-d2) + d2*np.sqrt(R2[m1]**2-R[m1]**2))
     den_integrada[m2] = d2*np.sqrt(R2[m2]**2-R[m2]**2)
 
-    sigma = rho_mean*den_integrada/Rv + x
+    sigma = den_integrada/Rv + x
     return sigma
 
 def sigma_clampitt(R,R2,dc,d2,x):
@@ -88,7 +88,7 @@ def sigma_clampitt(R,R2,dc,d2,x):
     den_integrada[m1] = 2*(dc*s2 + (d2-dc)*(sv*(5/8*(R[m1]/Rv[m1])**2 - 1) + s2 + 3/8*(R[m1]**4/Rv[m1]**3)*np.arcsinh(arg)))   
     den_integrada[m2] = 2*(d2*np.sqrt(R2[m2]**2-R[m2]**2))
 
-    sigma = rho_mean*den_integrada/Rv + x
+    sigma = den_integrada/Rv + x
     return sigma
 
 def sigma_hamaus(r,rs,dc,a,b,x):
@@ -98,7 +98,7 @@ def sigma_hamaus(r,rs,dc,a,b,x):
   
     den_integrada = quad_vec(integrand, -1e3, 1e3, args=(r,), epsrel=1e-3)[0]
 
-    sigma = rho_mean*den_integrada/rv + x
+    sigma = den_integrada/rv + x
     
     return sigma
 
