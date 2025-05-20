@@ -73,7 +73,7 @@ if __name__ == '__main__':
     rv_list, vsf, e_vsf = VSF(a['rvmin'], a['rvmax'], a['zmin'], a['zmax'],
                                 a['n_rv'], a['n_z'])
         
-    np.savetxt('/home/franco/ICE/modified_gravity/statistics/results/'+'vsf_'+'MICE'+f'z_n{a["n_z"]}_{int(10*a["zmin"])}-{int(10*a["zmax"])}'+'.csv',
+    np.savetxt('/home/franco/FAMAF/Lensing/vsf_results/'+'vsf_MICE'+f'z_n{a["n_z"]}_{int(10*a["zmin"])}-{int(10*a["zmax"])}'+'.csv',
                 np.column_stack([rv_list, vsf, e_vsf]),
                 delimiter=',')
 
