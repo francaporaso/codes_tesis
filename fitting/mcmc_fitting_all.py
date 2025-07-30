@@ -6,6 +6,7 @@ from astropy.io import fits
 from astropy.cosmology import LambdaCDM
 import time
 from multiprocessing import Pool
+from scipy.special import erf
 # import matplotlib.pyplot as plt
 # import matplotlib.pylab as pylab
 # from scipy.optimize import curve_fit
@@ -71,7 +72,60 @@ class Likelihood:
         if not np.isfinite(lp):
             return -np.inf
         return lp + self.log_likelihood(theta)
+
+class Profile:
+    def __init__(self):
+        pass
+
+    def sigma(self, R, *params):
+        chi = np.linspace(0.001, 200.0, 1000)
+        vals = self.model(R[None, :], chi[:,None], *params)
+        return 2.0*simpson(vals, x=chi, axis=0)
     
+    def mean_sigma(self, R, *params):
+        x_grid = np.linspace(1e-5, R.max(), 1000)
+        f_grid = self.sigma(x_grid, *params)
+        F_vals = np.array([
+            simpson(x_grid[x_grid <= Ri] * f_grid[x_grid <= Ri], x=x_grid[x_grid <= Ri])
+            for Ri in R
+        ])
+        return F_vals
+    
+    def delta_sigma(self, R, *params):
+        anillo = self.sigma(R, *params)
+        disco = self.mean_sigma(R, *params)
+        return (2 / R**2) * disco - anillo
+
+class newHSW(Profile):
+    def __init__(self):
+        super().__init__()
+        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+
+    def model(self, R, chi, dc, rs, a, b):
+        r = np.hypot(R, chi)
+        return dc*(1-(r/rs)**a)/(1+r**b)
+
+class ErrFunc(Profile):
+    def __init__(self):
+        super().__init__()
+        self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
+        self.limits_DSt = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
+    
+    def model(self, R, chi, S, Rs, P, W):
+        "chequear notas en cuadernito de cosmosur"
+        
+        r = np.hypot(R, chi)
+        Theta_sq = np.where(r<Rs, 1/(2*S), 1/(2*W))
+        # Theta_cube = np.where(r<Rs, (2*S)**(-3/2), (2*W)**(-3/2))
+        # Theta_prime = np.where(r==Rs, 2**(-1/2)*(np.sqrt(S)+np.sqrt(W))/np.sqrt(S*W), 0)
+        x = np.log(r/Rs)
+        t1 = S*np.exp(-(S*x)**2)/(np.sqrt(np.pi)*r)
+        t2 = -P*np.exp(-x**2/(2*Theta_sq))*(x/(r*Theta_sq)) # - x**2*Theta_prime/Theta_cube dentro del parentesis... pero tiene una delta de dirac...
+        Delta_prime = t1+t2
+        Delta = 0.5*(erf(S*x)-1) + P*np.exp(-0.5*x**2/Theta_sq)
+        return Delta+1/3*r*Delta_prime
+
 class HSW:
     def __init__(self, fix_off=False):
         self.fix_off = fix_off
