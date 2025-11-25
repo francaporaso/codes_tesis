@@ -16,7 +16,7 @@ from multiprocessing import Pool
 h = 1.
 Om0 = 0.3
 cosmo = LambdaCDM(H0=100*h, Om0=Om0, Ode0=0.7)
-
+rho_mean=1
 ### funciones de delta, sigma y delta sigma
 
 def pm(z):
