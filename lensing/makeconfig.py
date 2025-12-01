@@ -51,7 +51,7 @@ i = 0
 for rv in radii:
     for zs in redshift:
         for d in delta:
-            
+
             config = {
                 'NCORES':16,
                 'NK':100,
@@ -70,12 +70,12 @@ for rv in radii:
                     'delta_max':float(d[1])
                 },
                 'lens':{
-                    'name':'voids_MICE.dat',
+                    'name':'MICE/voids_MICE.dat',
                 },
                 'source':{
                     'name':'MICE_sources_HSN_withextra.fits',
                     'nback':nback
-                }    
+                }
             }
 
             with open(f'config_{i}.toml', 'w') as f:

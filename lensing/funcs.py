@@ -12,17 +12,17 @@ import healpy as hp
 # Msun = M_sun.value # Solar mass (kg)
 
 def cov_matrix(array):
-        
+
     K = len(array)
     Kmean = np.average(array,axis=0)
     bins = array.shape[1]
-    
+
     COV = np.zeros((bins,bins))
-    
+
     for k in range(K):
         dif = (array[k]- Kmean)
-        COV += np.outer(dif,dif)        
-    
+        COV += np.outer(dif,dif)
+
     COV *= (K-1)/K
     return COV
 
@@ -61,12 +61,12 @@ def lenscat_load(name,
     ## 0:Rv, 1:ra, 2:dec, 3:z, 4:xv, 5:yv, 6:zv, 7:rho1, 8:rho2, 9:logp, 10:diff CdM y CdV, 11:flag
     ## CdM: centro de masa
     ## CdV: centro del void
-    try: 
-        L = np.loadtxt("/home/fcaporaso/cats/L768/"+name, dtype='f4').T
+    try:
+        L = np.loadtxt("/home/fcaporaso/cats/"+name, dtype='f4').T
     except:
         L = np.loadtxt(name, dtype='f4').T
-    
-    if octant: 
+
+    if octant:
         print(' Using octant '.center(40,'#'), flush=True)
         # selecciono los void en un octante
         eps = 6.0 ## sale de tomar el angulo substendido por el void más grande al redshift más bajo
@@ -85,10 +85,10 @@ def lenscat_load(name,
     ddec   = ((np.max(cdec)+1.e-5) - decmin)/sqrt_NK
 
     c = 1
-    for a in range(sqrt_NK): 
-        for d in range(sqrt_NK): 
-            mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra) 
-            mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec) 
+    for a in range(sqrt_NK):
+        for d in range(sqrt_NK):
+            mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra)
+            mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec)
             K[c] = ~(mra&mdec)
             c += 1
 
@@ -113,18 +113,18 @@ def lenscat_load(name,
     return L, K, nvoids
 
 def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
-    
+
     folder = '/mnt/simulations/MICE/'
     S = Table.read(folder+name, memmap=True, format='fits')
-    
-    # nback :: number density of background sources [arcsec^-2] 
+
+    # nback :: number density of background sources [arcsec^-2]
     if nback<=30.0:
         rng = np.random.default_rng(seed)
         # octant surface = 5157.0 deg^2
         n_select = int(nback*5157.0*3600.0)
         j = rng.choice(range(len(S)), n_select, dtype=bool)
         return S[j]
-    
+
     return S
 
 
@@ -141,7 +141,7 @@ def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
 
 #     mask_z = _S['true_redshift_gal']>z0+0.1
 #     mask_field = (cos_dec0*np.cos(ra0_rad)*_S['cos_dec_gal']*_S['cos_ra_gal']
-#                 + cos_dec0*np.sin(ra0_rad)*_S['cos_dec_gal']*_S['sin_ra_gal'] 
+#                 + cos_dec0*np.sin(ra0_rad)*_S['cos_dec_gal']*_S['sin_ra_gal']
 #                 + np.sin(dec0_rad)*_S['sin_dec_gal'] >= np.sqrt(1-np.sin(np.deg2rad(psi))**2))
-    
+
 #     return _S[mask_field&mask_z]
