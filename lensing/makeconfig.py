@@ -70,7 +70,7 @@ for rv in radii:
                     'delta_max':float(d[1])
                 },
                 'lens':{
-                    'name':'MICE/voids_MICE.dat',
+                    'name':'/mnt/simulations/MICE/voids_MICE.dat',
                 },
                 'source':{
                     'name':'MICE_sources_HSN_withextra.fits',
