@@ -251,7 +251,7 @@ def execute_single_simu(config, args):
         NCORES = config['NCORES'],
         binning = config['BIN'],
         name = args.sample,
-        noise = args.addnoise
+        addnoise = args.addnoise
     )
 
     if lens_args['delta_max']<=0:
@@ -361,7 +361,7 @@ def main():
 
     if config['NCORES'] <= args.NCORES:
         config['NCORES'] = args.NCORES
-    
+
     execute_single_simu(config, args)
 
 if __name__ == '__main__':
