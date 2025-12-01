@@ -122,7 +122,7 @@ def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
         rng = np.random.default_rng(seed)
         # octant surface = 5157.0 deg^2
         n_select = int(nback*5157.0*3600.0)
-        j = rng.choice(range(len(S)), n_select, dtype=bool)
+        j = rng.choice(len(S), n_select, replace=False)
         return S[j]
 
     return S
