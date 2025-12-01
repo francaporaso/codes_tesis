@@ -282,7 +282,7 @@ def execute_single_simu(config, args):
     print(' N '+f'{": ":.>17}{profile_args["N"]:<2d}')
     print(' NK '+f'{": ":.>16}{profile_args["NK"]:<2d}')
     print(' Binning '+f'{": ":.>11}{profile_args["binning"]}')
-    print(' Shape Noise '+f'{": ":.>7}{profile_args["noise"]}\n')
+    print(' Shape Noise '+f'{": ":.>7}{profile_args["addnoise"]}\n')
 
     # === lens arguments
     print(f' {" Void sample ":=^60}')
