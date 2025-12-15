@@ -73,7 +73,7 @@ for rv in radii:
                     'name':'/mnt/simulations/MICE/voids_MICE.dat',
                 },
                 'source':{
-                    'name':'../../cats/MICE/MICE_sources_HSN_withextra.fits',
+                    'name':'../../cats/MICE/MICE_sources_HSN_withextra_w-pix64.fits',
                     'nback':nback
                 }
             }
