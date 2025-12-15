@@ -3,6 +3,7 @@ from astropy.cosmology import Planck18 as cosmo
 from astropy.constants import G,c,M_sun,pc
 from astropy.io import fits
 from astropy.table import Table
+from collections import defaultdict
 import healpy as hp
 from multiprocessing import Pool
 import numpy as np
@@ -21,7 +22,7 @@ _N : int      = None
 _NK : int     = None
 _NCORES : int = None
 _S : Table    = None
-_PIX_TO_IDX : dict = {}
+_PIX_TO_IDX : defaultdict = defaultdict(list)
 _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
@@ -115,6 +116,10 @@ def partial_profile(inp):
 
     #catdata = _get_masked_data(psi, ra0, dec0, z0)
     idx = _get_masked_idx_fast(psi, ra0, dec0, z0)
+    if len(idx) == 0:
+        print(' No sources found '.ljust(30, '/'), flush=True)
+        return Sigma_wsum, DSigma_t_wsum, DSigma_x_wsum, N_inbin
+
     catdata = _S[idx]
 
     sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
