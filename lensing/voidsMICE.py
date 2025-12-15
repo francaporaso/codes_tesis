@@ -26,7 +26,7 @@ _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
 
-REDSHIFT = "z_cgal_v"
+REDSHIFT = "z_cgal_v" # name of the redshift column in the source file
 
 def _init_globals(source_args, profile_args):
 
@@ -49,9 +49,6 @@ def _init_globals(source_args, profile_args):
     #             "log": lambda s, e, n: np.logspace(np.log10(s), np.log10(e), n)}[profile_args['binning']]
 
     _S = sourcecat_load(**source_args)
-
-    if "true_redshift_gal" not in _S.columns:
-        REDSHIFT = "redshift_gal"
 
     ## making a dict of healpix idx for fast query
     upix, split_idx = np.unique(_S['pix'], return_index=True)
