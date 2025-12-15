@@ -26,7 +26,7 @@ _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
 
-REDSHIFT = "true_redshift_gal"
+REDSHIFT = "z_cgal_v"
 
 def _init_globals(source_args, profile_args):
 
@@ -79,18 +79,6 @@ def sigma_crit(z_l, z_s):
     d_s  = cosmo.angular_diameter_distance(z_s).value
     d_ls = cosmo.angular_diameter_distance_z1z2(z_l, z_s).value
     return SC_CONSTANT*(d_s/(d_ls*d_l))
-
-def _get_masked_data(psi, ra0, dec0, z0):
-    '''
-    objects are selected by pixel on a disc of rad=psi+pad.
-    pad = 0.1*psi
-    returns a copy of the data
-    '''
-
-    mask_z = _S[REDSHIFT]>z0+0.1
-    pix_idx = hp.query_disc(_NSIDE, vec=hp.ang2vec(ra0, dec0, lonlat=True), radius=np.deg2rad(psi*1.1))
-    mask = np.isin(_S['pix'], pix_idx, assume_unique=True)
-    return _S[mask&mask_z]
 
 def _get_masked_idx_fast(psi, ra0, dec0, z0):
     '''
@@ -188,15 +176,15 @@ def stacking(source_args, lens_args, profile_args):
 
     extradata = dict(
         nvoids=nvoids,
-        z_mean=L[3].mean(),
-        Rv_mean=L[0].mean(),
-        delta_mean=L[8].mean()
+        z_mean=L[4].mean(),
+        Rv_mean=L[1].mean(),
+        delta_mean=L[9].mean()
     )
 
     _init_globals(source_args=source_args, profile_args=profile_args)
 
     with Pool(processes=NCORES) as pool:
-        resmap = list(tqdm(pool.imap_unordered(partial_profile, L[[0,1,2,3]].T), total=nvoids))
+        resmap = list(tqdm(pool.imap_unordered(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print('Pool ended, stacking...', flush=True)
     for j,r in enumerate(np.array(resmap)):
