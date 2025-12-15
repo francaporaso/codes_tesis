@@ -90,14 +90,16 @@ def _get_masked_idx_fast(psi, ra0, dec0, z0):
         vec=hp.ang2vec(ra0, dec0, lonlat=True),
         radius=np.deg2rad(psi*1.1)
     )
-
-    idx_source = np.concatenate([
-        _PIX_TO_IDX[p] for p in pix_idx
+    
+    idx_arrays = np.concatenate([
+        _PIX_TO_IDX[p] 
+        for p in pix_idx 
+        if p in _PIX_TO_IDX
     ])
 
-    mask_z = _S[REDSHIFT][idx_source] > (z0+0.1)
+    mask_z = _S[REDSHIFT][idx_arrays] > (z0+0.1)
 
-    return idx_source[mask_z]
+    return idx_arrays[mask_z]
 
 ## TODO: chequear las unidades de distancia -> no falta un h?
 def partial_profile(inp):
