@@ -9,7 +9,7 @@ parser.add_argument('--z_max', action='store', type=float, default=0.3)
 parser.add_argument('--nRv', action='store', type=int, default=1)
 parser.add_argument('--Rv_min', action='store', type=float, default=8.0)
 parser.add_argument('--Rv_max', action='store', type=float, default=30.0)
-parser.add_argument('--voidtype', action='store', type=str, default='mix', choices=['mix', 'S', 'R'])
+parser.add_argument('--voidtype', action='store', type=str, default='mix', choices=['mixed', 'S', 'R'])
 parser.add_argument('--delta_min', action='store', type=float, default=-1.0)
 parser.add_argument('--delta_max', action='store', type=float, default=10.0)
 parser.add_argument('--RIN', action='store', type=float, default=0.01)
@@ -28,8 +28,8 @@ redshift = np.column_stack([zrange[:-1], zrange[1:]])
 
 if args.voidtype==None:
     delta = [(args.delta_min, args.delta_max)]
-elif args.voidtype=='mix':
-    delta = [(-1.0,0.0), (0.0,10.0)]
+elif args.voidtype=='mixed':
+    delta = [(-1.0,10.0)]
 elif args.voidtype=='S':
     delta = [(0.0,10.0)]
 elif args.voidtype=='R':
