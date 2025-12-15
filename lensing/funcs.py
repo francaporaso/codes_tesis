@@ -115,7 +115,10 @@ def lenscat_load(name,
 def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
 
     folder = '/mnt/simulations/MICE/'
-    S = Table.read(folder+name, memmap=True, format='fits')
+    try:
+        S = Table.read(folder+name, memmap=True, format='fits')
+    except:
+        S = Table.read(name, memmap=True, format='fits')
 
     # nback :: number density of background sources [arcsec^-2]
     if nback<=30.0:
