@@ -3,7 +3,6 @@ from astropy.cosmology import Planck18 as cosmo
 from astropy.constants import G,c,M_sun,pc
 from astropy.io import fits
 from astropy.table import Table
-from collections import defaultdict
 import healpy as hp
 from multiprocessing import Pool
 import numpy as np
@@ -22,7 +21,7 @@ _N : int      = None
 _NK : int     = None
 _NCORES : int = None
 _S : Table    = None
-_PIX_TO_IDX : defaultdict = defaultdict(list)
+_PIX_TO_IDX : dict = {}
 _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
