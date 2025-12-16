@@ -26,7 +26,7 @@ _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
 
-REDSHIFT = "z_cgal_v" # name of the redshift column in the source file
+REDSHIFT = "z_cgal" # name of the redshift column in the source file
 
 def _init_globals(source_args, profile_args):
 
