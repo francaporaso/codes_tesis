@@ -2,9 +2,9 @@
 import numpy as np
 from astropy.coordinates import angular_separation, position_angle
 #from astropy.constants import G,c,M_sun,pc
-#from astropy.io import fits
+from astropy.io import fits
 from astropy.table import Table
-import healpy as hp
+#import healpy as hp
 #parameters
 # cvel = c.value;    # Speed of light (m.s-1)
 # G    = G.value;    # Gravitational constant (m3.kg-1.s-2)
@@ -113,23 +113,20 @@ def lenscat_load(name,
     return L, K, nvoids
 
 def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
-
-    folder = '/mnt/simulations/MICE/'
-    try:
-        S = Table.read(folder+name, memmap=True, format='fits')
-    except:
-        S = Table.read(name, memmap=True, format='fits')
-
     # nback :: number density of background sources [arcsec^-2]
     if nback<=30.0:
         rng = np.random.default_rng(seed)
+        folder = '/mnt/simulations/MICE/'
         # octant surface = 5157.0 deg^2
         n_select = int(nback*5157.0*3600.0)
-        j = np.sort(rng.integers(len(S), size=n_select))
-        return S[j]
+        with fits.open(folder+name, memmap=True) as f:
+            NS = len(f[1].data)
+            j = np.sort(rng.choice(NS, size=n_select, shuffle=False, replace=False))
+            S = Table(f[1].data[j])
+    else:
+        S = Table.read(folder+name, memmap=True, format='fits')
 
     return S
-
 
 # ## Cuentas en drive 'IATE/sphere_plane_cut.pdf'
 # def get_masked_data_intersection(psi, ra0, dec0, z0):
