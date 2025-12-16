@@ -137,7 +137,7 @@ def partial_profile(inp):
     e1 = catdata['gamma1']
     e2 = -catdata['gamma2']
     if _SHAPENOISE:
-        e1 += catdata['eps1']
+        e1 -= catdata['eps1']
         e2 += catdata['eps2']
 
     #get tangential ellipticities
