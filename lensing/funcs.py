@@ -116,15 +116,14 @@ def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
     # nback :: number density of background sources [arcsec^-2]
     if nback<=30.0:
         rng = np.random.default_rng(seed)
-        folder = '/mnt/simulations/MICE/'
         # octant surface = 5157.0 deg^2
         n_select = int(nback*5157.0*3600.0)
-        with fits.open(folder+name, memmap=True) as f:
+        with fits.open(name, memmap=True) as f:
             NS = len(f[1].data)
             j = np.sort(rng.choice(NS, size=n_select, shuffle=False, replace=False))
             S = Table(f[1].data[j])
     else:
-        S = Table.read(folder+name, memmap=True, format='fits')
+        S = Table.read(name, memmap=True, format='fits')
 
     return S
 
