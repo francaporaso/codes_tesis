@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from astropy.cosmology import Planck18 as cosmo
+from astropy.cosmology import WMAP5 as cosmo ## MICE uses WMAP5
 from astropy.constants import G,c,M_sun,pc
 from astropy.io import fits
 from astropy.table import Table
@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix
 
+## TODO :: PROBLEMA CON LAS UNIDADES!!! REVISAR URGENTE !!!!
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
 
 _RIN : float  = None
@@ -100,6 +101,7 @@ def _get_masked_idx_fast(psi, ra0, dec0, z0):
 
     return idx_arrays[mask_z]
 
+
 ## TODO: chequear las unidades de distancia -> no falta un h?
 def partial_profile(inp):
 
@@ -115,11 +117,7 @@ def partial_profile(inp):
     DEGxMPC = cosmo.arcsec_per_kpc_proper(z0).to('deg/Mpc').value
     psi = DEGxMPC*_ROUT*Rv0
 
-    #catdata = _get_masked_data(psi, ra0, dec0, z0)
     idx = _get_masked_idx_fast(psi, ra0, dec0, z0)
-    if len(idx) == 0:
-        print(' No sources found '.ljust(30, '/'), flush=True)
-        return Sigma_wsum, DSigma_t_wsum, DSigma_x_wsum, N_inbin
 
     catdata = _S[idx]
 
@@ -133,12 +131,12 @@ def partial_profile(inp):
     ## Si cosmohub=[19532,19531,19260,19304], cambiarle el signo
     ## Si comoshub=[22833, 22834], el signo ya está cambiado
     ## Si MICE ('/mnt/simulations/MICE'), gamma1, -gamma2
-
     e1 = catdata['gamma1']
     e2 = -catdata['gamma2']
     if _SHAPENOISE:
-        e1 -= catdata['eps1']
-        e2 += catdata['eps2']
+        e1-=catdata['eps1']
+        e2+=catdata['eps2']
+    
 
     #get tangential ellipticities
     cos2t = np.cos(2.0*theta)
@@ -252,12 +250,15 @@ def execute_single_simu(config, args):
     else:
         voidtype = 'mixed'
 
-    output_file = (f'results/lensing_{profile_args["name"]}_LMICE_'
+    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{source_args['nback']:02.0f}'
                    f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
                    f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
-                   f'type{voidtype}_bin{profile_args["binning"]}.fits')
+                   f'type{voidtype}_bin{profile_args["binning"]}')
 
-    check_output_exists(output_file, overwrite=args.overwrite)
+    if args.addnoise:
+        output_file += 'w-noise'
+
+    check_output_exists(output_file+'.fits', overwrite=args.overwrite)
 
     # === program arguments
     print(f' {" Settings ":=^60}')
