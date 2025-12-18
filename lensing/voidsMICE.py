@@ -14,6 +14,10 @@ from tqdm import tqdm
 from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix
 
 ## TODO :: PROBLEMA CON LAS UNIDADES!!! REVISAR URGENTE !!!!
+# distances in astropy.cosmology are in physical units Mpc, not in Mpc/h -> need to convert
+# D_phys = D_mpch * h -> ex: D_phys = 100 Mpc -> D_mpch = 100*h Mpc/h
+# dist not coincide exactly bc of Omega_photon that depends on h... but are close: difference ≲10 Mpc/h
+
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
 
 _RIN : float  = None
@@ -71,8 +75,9 @@ def check_output_exists(output_file, overwrite=False):
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
     return True
 
+## WARNING::cosmo.distance is in physical units (ie Mpc)
+## need to divide out by littleh to get Mpc/h
 def sigma_crit(z_l, z_s):
-
     d_l  = cosmo.angular_diameter_distance(z_l).value
     d_s  = cosmo.angular_diameter_distance(z_s).value
     d_ls = cosmo.angular_diameter_distance_z1z2(z_l, z_s).value
@@ -121,7 +126,10 @@ def partial_profile(inp):
 
     catdata = _S[idx]
 
-    sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
+    #sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
+    ## dividing by cosmo.h gives the correct units! (Rv0 in Mpc/h but sigma_crit in physical Msun*pc^-2) 
+    ## factor of almost 1.5 difference!
+    sigma_c = sigma_crit(z0, catdata[REDSHIFT])/(Rv0*cosmo.h)
 
     rads, theta = eq2p2(
         np.deg2rad(catdata['ra_gal']), np.deg2rad(catdata['dec_gal']),
@@ -137,7 +145,6 @@ def partial_profile(inp):
         e1-=catdata['eps1']
         e2+=catdata['eps2']
     
-
     #get tangential ellipticities
     cos2t = np.cos(2.0*theta)
     sin2t = np.sin(2.0*theta)
