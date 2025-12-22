@@ -59,7 +59,7 @@ def check_output_exists(output_file, overwrite=False):
 
     if os.path.exists(output_file):
         if not overwrite:
-            raise FileExistsError(
+            raise OSError(
                 f'\n{"="*60}\n'
                 f'Output file already exists: {output_file}\n'
                 f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
