@@ -16,7 +16,7 @@ from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix
 ## TODO :: PROBLEMA CON LAS UNIDADES!!! REVISAR URGENTE !!!!
 # distances in astropy.cosmology are in physical units Mpc, not in Mpc/h -> need to convert
 # D_phys = D_mpch * h -> ex: D_phys = 100 Mpc -> D_mpch = 100*h Mpc/h
-# dist not coincide exactly bc of Omega_photon that depends on h... but are close: difference ≲10 Mpc/h
+# dist not coincide exactly bc of Omega_photon that depends on h... but are close: difference ≲10 ''Mpc/h
 
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
 
@@ -257,7 +257,7 @@ def execute_single_simu(config, args):
     else:
         voidtype = 'mixed'
 
-    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{source_args['nback']:02.0f}'
+    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{source_args["nback"]:02.0f}'
                    f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
                    f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
                    f'type{voidtype}_bin{profile_args["binning"]}')
