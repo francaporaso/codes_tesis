@@ -13,10 +13,6 @@ from tqdm import tqdm
 
 from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix
 
-## TODO :: PROBLEMA CON LAS UNIDADES!!! REVISAR URGENTE !!!!
-# distances in astropy.cosmology are in physical units Mpc, not in Mpc/h -> need to convert
-# D_phys = D_mpch * h -> ex: D_phys = 100 Mpc -> D_mpch = 100*h Mpc/h
-# dist not coincide exactly bc of Omega_photon that depends on h... but are close: difference ≲10 ''Mpc/h
 
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
 
@@ -50,8 +46,6 @@ def _init_globals(source_args, profile_args):
     _SHAPENOISE = profile_args['addnoise']
     _binspace = (np.linspace if profile_args['binning']=='lin' else
                 lambda start,end,n: np.logspace(np.log10(start), np.log10(end), n))
-    #_binspace = {"lin": lambda s, e, n: np.linspace(s, e, n),
-    #             "log": lambda s, e, n: np.logspace(np.log10(s), np.log10(e), n)}[profile_args['binning']]
 
     _S = sourcecat_load(**source_args)
 
@@ -179,7 +173,6 @@ def stacking(source_args, lens_args, profile_args):
     DSigma_x_wsum = np.zeros((NK+1, N))
 
     L, K, nvoids = lenscat_load(**lens_args)
-    K = K[:, :nvoids] # me quedo con los que voy a usar
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
     extradata = dict(
