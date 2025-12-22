@@ -257,8 +257,9 @@ def execute_single_simu(config, args):
 
     if args.addnoise:
         output_file += 'w-noise'
+    output_file += '.fits'
 
-    assert check_output_exists(output_file+'.fits', overwrite=args.overwrite)
+    assert check_output_exists(output_file, overwrite=args.overwrite)
 
     # === program arguments
     print(f' {" Settings ":=^60}')
