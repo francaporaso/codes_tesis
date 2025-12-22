@@ -48,9 +48,6 @@ def eq2p2(ra_gal, dec_gal, RA0,DEC0):
 
     return rad, theta
 
-def jackknife_equalarea(ramin, ramax, decmin, decmax):
-    pass
-
 def get_jackknife_naive(RA, DEC, NK, L):
 
     sqrt_NK = int(np.sqrt(NK))
@@ -80,7 +77,7 @@ def get_jackknife_kmeans(L, nvoids, NK):
     K = np.zeros((NK+1, nvoids), dtype=bool)
     K[0] = np.ones(nvoids, dtype=bool)
     
-    km = kmeans_sample(L[[1,2]].T, ncen=NK)
+    km = kmeans_sample(L[[1,2]].T, ncen=NK, verbose=0)
     labels = km.find_nearest(L[[1,2]].T)
 
     for j in range(1, NK+1):
