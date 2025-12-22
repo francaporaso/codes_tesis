@@ -4,6 +4,7 @@ from astropy.coordinates import angular_separation, position_angle
 #from astropy.constants import G,c,M_sun,pc
 from astropy.io import fits
 from astropy.table import Table
+from kmeans_radec import kmeans_sample
 #import healpy as hp
 #parameters
 # cvel = c.value;    # Speed of light (m.s-1)
@@ -50,6 +51,43 @@ def eq2p2(ra_gal, dec_gal, RA0,DEC0):
 def jackknife_equalarea(ramin, ramax, decmin, decmax):
     pass
 
+def get_jackknife_naive(RA, DEC, NK, L):
+
+    sqrt_NK = int(np.sqrt(NK))
+    NNN = len(L[0]) ##total number of voids
+    ra,dec = L[RA],L[DEC]
+    K    = np.zeros((NK+1,NNN), dtype=bool)
+    K[0] = np.ones(NNN, dtype=bool)
+
+    ramin  = np.min(ra)
+    cdec   = np.sin(np.deg2rad(dec))
+    decmin = np.min(cdec)
+    dra    = ((np.max(ra)+1.e-5) - ramin)/sqrt_NK
+    ddec   = ((np.max(cdec)+1.e-5) - decmin)/sqrt_NK
+
+    c = 1
+    for a in range(sqrt_NK):
+        for d in range(sqrt_NK):
+            mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra)
+            mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec)
+            K[c] = ~(mra&mdec)
+            c += 1
+
+    return K
+
+def get_jackknife_kmeans(L, nvoids, NK):
+    
+    K = np.zeros((NK+1, nvoids), dtype=bool)
+    K[0] = np.ones(nvoids, dtype=bool)
+    
+    km = kmeans_sample(L[[1,2]].T, ncen=NK)
+    labels = km.find_nearest(L[[1,2]].T)
+
+    for j in range(1, NK+1):
+        K[j] = ~(labels==j-1)
+
+    return K
+
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
                  NCHUNKS:int=1, NK:int=1, octant=False, MICE=False, fullshape=True):
@@ -72,26 +110,6 @@ def lenscat_load(name,
         eps = 6.0 ## sale de tomar el angulo substendido por el void más grande al redshift más bajo
         L = L[:, (L[RA] >= 0.0+eps) & (L[RA] <= 90.0-eps) & (L[DEC]>= 0.0+eps) & (L[DEC] <= 90.0-eps)]
 
-    sqrt_NK = int(np.sqrt(NK))
-    NNN = len(L[0]) ##total number of voids
-    ra,dec = L[RA],L[DEC]
-    K    = np.zeros((NK+1,NNN), dtype=bool)
-    K[0] = np.ones(NNN, dtype=bool)
-
-    ramin  = np.min(ra)
-    cdec   = np.sin(np.deg2rad(dec))
-    decmin = np.min(cdec)
-    dra    = ((np.max(ra)+1.e-5) - ramin)/sqrt_NK
-    ddec   = ((np.max(cdec)+1.e-5) - decmin)/sqrt_NK
-
-    c = 1
-    for a in range(sqrt_NK):
-        for d in range(sqrt_NK):
-            mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra)
-            mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec)
-            K[c] = ~(mra&mdec)
-            c += 1
-
     mask = (L[RV] >= Rv_min) & (L[RV] < Rv_max) & (L[Z] >= z_min) & (L[Z] < z_max) & (
             L[R1] >= rho1_min) & (L[R1] < rho1_max) & (L[R2] >= delta_min) & (L[R2] < delta_max) & (L[11] >= flag)
 
@@ -100,6 +118,8 @@ def lenscat_load(name,
         L = L[:, mask]
     else:
         L = L[[RV,RA,DEC,Z]][:, mask]
+
+    K = get_jackknife_kmeans(L, nvoids=nvoids, NK=NK)
 
     if bool(NCHUNKS-1):
         if NCHUNKS > nvoids:
