@@ -250,7 +250,7 @@ def execute_single_simu(config, args):
     else:
         voidtype = 'mixed'
 
-    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{source_args["nback"]:02.0f}'
+    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{source_args["nback"]:02.0f}_'
                    f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
                    f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
                    f'type{voidtype}_bin{profile_args["binning"]}')
@@ -258,7 +258,7 @@ def execute_single_simu(config, args):
     if args.addnoise:
         output_file += 'w-noise'
 
-    check_output_exists(output_file+'.fits', overwrite=args.overwrite)
+    assert check_output_exists(output_file+'.fits', overwrite=args.overwrite)
 
     # === program arguments
     print(f' {" Settings ":=^60}')
