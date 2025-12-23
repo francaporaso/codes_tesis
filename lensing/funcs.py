@@ -72,18 +72,20 @@ def get_jackknife_naive(RA, DEC, NK, L):
 
     return K
 
-def get_jackknife_kmeans(L, nvoids, NK, RA, DEC):
+def get_jackknife_kmeans(ra_v, dec_v, nvoids, NK):
     
     K = np.zeros((NK+1, nvoids), dtype=bool)
     K[0] = np.ones(nvoids, dtype=bool)
     
-    km = kmeans_sample(L[[RA,DEC]].T, ncen=NK, verbose=0)
-    labels = km.find_nearest(L[[RA,DEC]].T)
+    L = np.column_stack([ra_v, dec_v])
+
+    km = kmeans_sample(L, ncen=NK, verbose=0)
+    labels = km.find_nearest(L)
 
     for j in range(1, NK+1):
         K[j] = ~(labels==j-1)
 
-    return K
+    return K, labels
 
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
@@ -116,7 +118,7 @@ def lenscat_load(name,
     else:
         L = L[[RV,RA,DEC,Z]][:, mask]
 
-    K = get_jackknife_kmeans(L, nvoids=nvoids, NK=NK, RA=RA, DEC=DEC)
+    #K = get_jackknife_kmeans(L, nvoids=nvoids, NK=NK, RA=RA, DEC=DEC)
 
     if bool(NCHUNKS-1):
         if NCHUNKS > nvoids:
@@ -125,9 +127,9 @@ def lenscat_load(name,
         slices = (np.arange(lbins)+1)*NCHUNKS
         slices = slices[(slices < nvoids)]
         L = np.split(L.T, slices)
-        K = np.split(K.T, slices)
+        #K = np.split(K.T, slices)
 
-    return L, K, nvoids
+    return L, nvoids
 
 def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
     # nback :: number density of background sources [arcsec^-2]
