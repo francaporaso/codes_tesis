@@ -188,6 +188,7 @@ def stacking(source_args, lens_args, profile_args):
         resmap = list(tqdm(pool.imap_unordered(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print('Pool ended, stacking...', flush=True)
+    ## TODO:: check if this is working...
     for j,r in enumerate(np.array(resmap)):
         km = np.tile(K[:,j], (N,1)).T
         N_inbin += np.tile(r[-1], (NK+1,1))*km
@@ -254,7 +255,6 @@ def execute_single_simu(config, args):
                    f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
                    f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
                    f'type{voidtype}_bin{profile_args["binning"]}')
-
     if args.addnoise:
         output_file += 'w-noise'
     output_file += '.fits'
