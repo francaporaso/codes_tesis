@@ -11,7 +11,7 @@ import time
 import toml
 from tqdm import tqdm
 
-from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix
+from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix, get_jackknife_kmeans
 
 
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
