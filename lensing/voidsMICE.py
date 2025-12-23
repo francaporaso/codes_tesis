@@ -185,9 +185,9 @@ def stacking(source_args, lens_args, profile_args):
     _init_globals(source_args=source_args, profile_args=profile_args)
 
     with Pool(processes=NCORES) as pool:
-        resmap = list(tqdm(pool.imap_unordered(partial_profile, L[[1,2,3,4]].T), total=nvoids))
+        resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
-    print('Pool ended, stacking...', flush=True)
+    print(' Pool ended, stacking...', flush=True)
     ## TODO:: check if this is working...
     for j,r in enumerate(np.array(resmap)):
         km = np.tile(K[:,j], (N,1)).T
