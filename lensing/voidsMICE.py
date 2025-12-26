@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
-from astropy.cosmology import WMAP5 as cosmo ## MICE uses WMAP5
+#from astropy.cosmology import WMAP5 as cosmo ## MICE uses WMAP5
+from astropy.cosmology import FlatLambdaCDM ## MICE uses WMAP5
 from astropy.constants import G,c,M_sun,pc
 from astropy.io import fits
 from astropy.table import Table
@@ -13,6 +14,7 @@ from tqdm import tqdm
 
 from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix, get_jackknife_kmeans
 
+cosmo = FlatLambdaCDM(Om0=0.25, H0=100.0, Ob0=0.044) # ver Fosalba+2015
 
 SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1.0e-6
 
