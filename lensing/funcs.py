@@ -75,7 +75,7 @@ def get_jackknife_naive(RA, DEC, NK, L):
 def get_jackknife_kmeans(ra_v, dec_v, nvoids, NK):
     
     K = np.zeros((NK+1, nvoids), dtype=bool)
-    K[0] = np.ones(nvoids, dtype=bool)
+    K[0] = True
     
     L = np.column_stack([ra_v, dec_v])
 
