@@ -91,10 +91,10 @@ def _get_masked_idx_fast(psi, ra0, dec0, z0):
         vec=hp.ang2vec(ra0, dec0, lonlat=True),
         radius=np.deg2rad(psi*1.1)
     )
-    
+
     idx_arrays = np.concatenate([
-        _PIX_TO_IDX[p] 
-        for p in pix_idx 
+        _PIX_TO_IDX[p]
+        for p in pix_idx
         if p in _PIX_TO_IDX
     ])
 
@@ -123,7 +123,7 @@ def partial_profile(inp):
     catdata = _S[idx]
 
     #sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
-    ## dividing by cosmo.h gives the correct units! (Rv0 in Mpc/h but sigma_crit in physical Msun*pc^-2) 
+    ## dividing by cosmo.h gives the correct units! (Rv0 in Mpc/h but sigma_crit in physical Msun*pc^-2)
     ## factor of almost 1.5 difference!
     sigma_c = sigma_crit(z0, catdata[REDSHIFT])/(Rv0*cosmo.h)
 
@@ -140,7 +140,7 @@ def partial_profile(inp):
     if _SHAPENOISE:
         e1-=catdata['eps1']
         e2+=catdata['eps2']
-    
+
     #get tangential ellipticities
     cos2t = np.cos(2.0*theta)
     sin2t = np.sin(2.0*theta)
@@ -230,7 +230,7 @@ def execute_single_simu(config, args):
 
     source_args = dict(
         name = config['source']['name'],
-        nback = config['source']['nback'],
+        nback = args.nback,
         seed = 0,
     )
 
@@ -350,6 +350,7 @@ def main():
     parser.add_argument('--config', type=str, default='config.toml', action='store')
     parser.add_argument('--use08', action='store_true')
     parser.add_argument('--addnoise', action='store_true')
+    parser.add_argument('--nback', type=float, default=26.9, action='store')
     parser.add_argument('--overwrite', action='store_true')
     args = parser.parse_args()
 
