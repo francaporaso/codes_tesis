@@ -4,3 +4,4 @@ __pycache__
 .ipynb_checkpoints
 fit_redmapper-Copy1.ipynb
 *png
+results/
