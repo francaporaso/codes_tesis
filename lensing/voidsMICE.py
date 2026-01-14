@@ -67,6 +67,7 @@ def check_output_exists(output_file, overwrite=False):
                 f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
                 f'{"="*60}'
             )
+            return False
         else:
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
     return True
@@ -103,7 +104,8 @@ def _get_masked_idx_fast(psi, ra0, dec0, z0):
     return idx_arrays[mask_z]
 
 
-## TODO: chequear las unidades de distancia -> no falta un h?
+## distance: is needed a cosmo.h dividing sigma_c when h!=1, else is not needed.
+## leaving it for general case...
 def partial_profile(inp):
 
     Sigma_wsum    = np.zeros(_N)
@@ -165,16 +167,19 @@ def partial_profile(inp):
 
 def stacking(source_args, lens_args, profile_args):
 
-    N = profile_args['N']
-    NK = profile_args['NK']
-    NCORES = profile_args['NCORES']
+    _init_globals(source_args=source_args, profile_args=profile_args)
 
-    N_inbin       = np.zeros((NK+1, N))
-    Sigma_wsum    = np.zeros((NK+1, N))
-    DSigma_t_wsum = np.zeros((NK+1, N))
-    DSigma_x_wsum = np.zeros((NK+1, N))
+    #N = profile_args['N']
+    #NK = profile_args['NK']
+    #NCORES = profile_args['NCORES']
 
-    L, K, nvoids = lenscat_load(**lens_args)
+    N_inbin       = np.zeros((_NK+1, _N))
+    Sigma_wsum    = np.zeros((_NK+1, _N))
+    DSigma_t_wsum = np.zeros((_NK+1, _N))
+    DSigma_x_wsum = np.zeros((_NK+1, _N))
+
+    L, nvoids = lenscat_load(**lens_args)
+    K, _ = get_jackknife_kmeans(L[2], L[3], nvoids, _NK)
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
     extradata = dict(
@@ -184,19 +189,18 @@ def stacking(source_args, lens_args, profile_args):
         delta_mean=L[9].mean()
     )
 
-    _init_globals(source_args=source_args, profile_args=profile_args)
-
     with Pool(processes=NCORES) as pool:
         resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print(' Pool ended, stacking...', flush=True)
-    ## TODO:: check if this is working...
+
+    ## works but its written in a dark way...
     for j,r in enumerate(np.array(resmap)):
-        km = np.tile(K[:,j], (N,1)).T
-        N_inbin += np.tile(r[-1], (NK+1,1))*km
-        Sigma_wsum += np.tile(r[0], (NK+1,1))*km
-        DSigma_t_wsum += np.tile(r[1], (NK+1,1))*km
-        DSigma_x_wsum += np.tile(r[2], (NK+1,1))*km
+        km = np.tile(K[:,j], (_N,1)).T
+        N_inbin += np.tile(r[-1], (_NK+1,1))*km
+        Sigma_wsum += np.tile(r[0], (_NK+1,1))*km
+        DSigma_t_wsum += np.tile(r[1], (_NK+1,1))*km
+        DSigma_x_wsum += np.tile(r[2], (_NK+1,1))*km
 
     Sigma = Sigma_wsum/N_inbin
     DSigma_t = DSigma_t_wsum/N_inbin
