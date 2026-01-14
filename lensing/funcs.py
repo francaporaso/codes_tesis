@@ -136,16 +136,15 @@ def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
     # octant surface = 5157.0 deg^2
 
     with fits.open(name, memmap=True) as f:
-        data = f[1].data
+        lendata = len(f[1].data)
+        n_select = int(nback*5157.0*3600.0)
+        if n_select > lendata:
+            print(' Full catalogue '.center(60, '|'))
+            return Table(f[1].data)
 
-    n_select = int(nback*5157.0*3600.0)
-    if n_select > len(data):
-        print(' Full catalogue '.center(60, '|'))
-        return Table(data)
-
-    rng = np.random.default_rng(seed)
-    j = np.sort(rng.choice(len(data), size=n_select, shuffle=False, replace=False))
-    return Table(data[j])
+        rng = np.random.default_rng(seed)
+        j = np.sort(rng.choice(lendata, size=n_select, shuffle=False, replace=False))
+        return Table(f[1].data[j])
 
 
 # ## Cuentas en drive 'IATE/sphere_plane_cut.pdf'
