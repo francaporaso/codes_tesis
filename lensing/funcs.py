@@ -136,6 +136,7 @@ def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
     # octant surface = 5157.0 deg^2
 
     n_select = int(nback*5157.0*3600.0)
+    print(f'{n_select=}', flush=True)
     with fits.open(name, memmap=True) as f:
         data = f[1].data
 
