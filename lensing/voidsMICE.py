@@ -189,7 +189,7 @@ def stacking(source_args, lens_args, profile_args):
         delta_mean=L[9].mean()
     )
 
-    with Pool(processes=NCORES) as pool:
+    with Pool(processes=_NCORES) as pool:
         resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print(' Pool ended, stacking...', flush=True)
