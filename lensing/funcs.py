@@ -131,21 +131,36 @@ def lenscat_load(name,
 
     return L, nvoids
 
-def sourcecat_load(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
+def sourcecat_load_slow(name='MICE_sources_HSN_withextra.fits', nback=30.0, seed=0):
     # nback :: number density of background sources [arcsec^-2]
     # octant surface = 5157.0 deg^2
 
     with fits.open(name, memmap=True) as f:
         lendata = len(f[1].data)
         n_select = int(nback*5157.0*3600.0)
+
         if n_select > lendata:
             print(' Full catalogue '.center(60, '|'))
-            return Table(f[1].data)
+            S = Table(f[1].data)
+        else:
+            rng = np.random.default_rng(seed)
+            j = np.sort(rng.choice(lendata, size=n_select, shuffle=False, replace=False))
+            S = Table(f[1].data[j])
+    return S
 
+def sourcecat_load(name, nback, seed=0):
+
+    if nback<30.0:
         rng = np.random.default_rng(seed)
-        j = np.sort(rng.choice(lendata, size=n_select, shuffle=False, replace=False))
-        return Table(f[1].data[j])
+        n_select = int(nback*5157.0*3600.0)
+        with fits.open(name, memmap=True) as f:
+            lendata = len(f[1].data)
+            j = np.sort(rng.choice(lendata, size=n_select, shuffle=False, replace=False))
+            S = Table(f[1].data[j])
+    else:
+        S = Table.read(name, memmap=True, format='fits')
 
+    return S
 
 # ## Cuentas en drive 'IATE/sphere_plane_cut.pdf'
 # def get_masked_data_intersection(psi, ra0, dec0, z0):
