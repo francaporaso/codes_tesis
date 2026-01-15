@@ -29,7 +29,10 @@ _binspace = None
 _NSIDE : int = None
 _SHAPENOISE : bool = False
 
-REDSHIFT = "z_cgal" # name of the redshift column in the source file
+# "z_cgal" : true-z
+# "z_cgal_v" : spec-z
+# "z_desdm_mc" : photo-z
+REDSHIFT = "z_cgal_v" # name of the redshift column in the source file
 
 def _init_globals(source_args, profile_args):
 
@@ -167,19 +170,21 @@ def partial_profile(inp):
 
 def stacking(source_args, lens_args, profile_args):
 
+    N = profile_args['N']
+    NK = profile_args['NK']
+    NCORES = profile_args['NCORES']
+
+    N_inbin       = np.zeros((NK+1, N))
+    Sigma_wsum    = np.zeros((NK+1, N))
+    DSigma_t_wsum = np.zeros((NK+1, N))
+    DSigma_x_wsum = np.zeros((NK+1, N))
+
     _init_globals(source_args=source_args, profile_args=profile_args)
 
-    #N = profile_args['N']
-    #NK = profile_args['NK']
-    #NCORES = profile_args['NCORES']
-
-    N_inbin       = np.zeros((_NK+1, _N))
-    Sigma_wsum    = np.zeros((_NK+1, _N))
-    DSigma_t_wsum = np.zeros((_NK+1, _N))
-    DSigma_x_wsum = np.zeros((_NK+1, _N))
-
     L, nvoids = lenscat_load(**lens_args)
-    K, _ = get_jackknife_kmeans(L[2], L[3], nvoids, _NK)
+    K, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
+    kunq = np.unique(kdix)
+
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
     extradata = dict(
@@ -193,6 +198,9 @@ def stacking(source_args, lens_args, profile_args):
         resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print(' Pool ended, stacking...', flush=True)
+
+    #for r in resmap:
+
 
     ## works but its written in a dark way...
     for j,r in enumerate(np.array(resmap)):
