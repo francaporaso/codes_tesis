@@ -137,9 +137,6 @@ def partial_profile(inp):
         np.deg2rad(ra0), np.deg2rad(dec0)
     )
 
-    ## Si cosmohub=[19532,19531,19260,19304], cambiarle el signo
-    ## Si comoshub=[22833, 22834], el signo ya está cambiado
-    ## Si MICE ('/mnt/simulations/MICE'), gamma1, -gamma2
     e1 = catdata['gamma1']
     e2 = -catdata['gamma2']
     if _SHAPENOISE:
@@ -155,7 +152,6 @@ def partial_profile(inp):
     #get convergence
     k  = catdata['kappa']*sigma_c
 
-    # r = (np.rad2deg(rads)/DEGxMPC)/Rv0
     bines = _binspace(_RIN, _ROUT, _N+1)
     dig = np.digitize((np.rad2deg(rads)/DEGxMPC)/Rv0, bines)
 
@@ -182,10 +178,10 @@ def stacking(source_args, lens_args, profile_args):
     _init_globals(source_args=source_args, profile_args=profile_args)
 
     L, nvoids = lenscat_load(**lens_args)
+    print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
+
     K, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
     kunq = np.unique(kdix)
-
-    print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
     extradata = dict(
         nvoids=nvoids,
@@ -199,22 +195,38 @@ def stacking(source_args, lens_args, profile_args):
 
     print(' Pool ended, stacking...', flush=True)
 
-    #for r in resmap:
+    kappa, gamma_t, gamma_x, nbin = map(
+        lambda x: np.vstack(x),
+        zip(*resmap)
+    )
 
+    N_inbin[0] = nbin.sum(axis=0)
+    Sigma_wsum[0] = kappa.sum(axis=0)
+    DSigma_t_wsum[0] = gamma_t.sum(axis=0)
+    DSigma_x_wsum[0] = gamma_x.sum(axis=0)
 
-    ## works but its written in a dark way...
-    for j,r in enumerate(np.array(resmap)):
-        km = np.tile(K[:,j], (_N,1)).T
-        N_inbin += np.tile(r[-1], (_NK+1,1))*km
-        Sigma_wsum += np.tile(r[0], (_NK+1,1))*km
-        DSigma_t_wsum += np.tile(r[1], (_NK+1,1))*km
-        DSigma_x_wsum += np.tile(r[2], (_NK+1,1))*km
+    for j, k in enumerate(kunq):
+        mask = (kidx!=k)
+        ntot = nbin.sum(axis=0)
+
+        N_inbin[j+1,:] = ntot
+        Sigma_wsum[j+1,:] = kappa[mask].sum(axis=0)/ntot
+        DSigma_t_wsum[j+1,:] = gamma_t[mask].sum(axis=0)/ntot
+        DSigma_x_wsum[j+1,:] = gamma_x[mask].sum(axis=0)/ntot
 
     Sigma = Sigma_wsum/N_inbin
     DSigma_t = DSigma_t_wsum/N_inbin
     DSigma_x = DSigma_x_wsum/N_inbin
 
     return Sigma, DSigma_t, DSigma_x, extradata
+
+    ## works? written in a dark way...
+    #for j,r in enumerate(np.array(resmap)):
+    #    km = np.tile(K[:,j], (_N,1)).T
+    #    N_inbin += np.tile(r[-1], (_NK+1,1))*km
+    #    Sigma_wsum += np.tile(r[0], (_NK+1,1))*km
+    #    DSigma_t_wsum += np.tile(r[1], (_NK+1,1))*km
+    #    DSigma_x_wsum += np.tile(r[2], (_NK+1,1))*km
 
 def execute_single_simu(config, args):
 
