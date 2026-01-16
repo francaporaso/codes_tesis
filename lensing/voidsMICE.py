@@ -300,7 +300,7 @@ def execute_single_simu(config, args):
     print(' RMAX '+f'{": ":.>14}{profile_args["ROUT"]:.2f}')
     print(' N '+f'{": ":.>17}{profile_args["N"]:<2d}')
     print(' NK '+f'{": ":.>16}{profile_args["NK"]:<2d}')
-    print(' Source density '+f'{": ":.>4}{source_args["nback"]} arcmin^(-2)')
+    print(' Source density '+f'{": ":.>4}{args.nback} arcmin^(-2)')
     print(' Binning '+f'{": ":.>11}{profile_args["binning"]}')
     print(' Shape Noise '+f'{": ":.>7}{profile_args["addnoise"]}\n')
 
