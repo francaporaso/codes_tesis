@@ -180,20 +180,13 @@ def stacking(source_args, lens_args, profile_args):
     L, nvoids = lenscat_load(**lens_args)
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
-    _, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
-    kunq = np.unique(kidx)
-
-    extradata = dict(
-        nvoids=nvoids,
-        z_mean=L[4].mean(),
-        Rv_mean=L[1].mean(),
-        delta_mean=L[9].mean()
-    )
-
     with Pool(processes=_NCORES) as pool:
         resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print(' Pool ended, stacking...', flush=True)
+
+    _, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
+    kunq = np.unique(kidx)
 
     kappa, gamma_t, gamma_x, nbin = map(
         lambda x: np.vstack(x),
@@ -218,15 +211,14 @@ def stacking(source_args, lens_args, profile_args):
     DSigma_t = DSigma_t_wsum/N_inbin
     DSigma_x = DSigma_x_wsum/N_inbin
 
-    return Sigma, DSigma_t, DSigma_x, extradata
+    extradata = dict(
+        nvoids=nvoids,
+        z_mean=L[4].mean(),
+        Rv_mean=L[1].mean(),
+        delta_mean=L[9].mean()
+    )
 
-    ## works? written in a dark way...
-    #for j,r in enumerate(np.array(resmap)):
-    #    km = np.tile(K[:,j], (_N,1)).T
-    #    N_inbin += np.tile(r[-1], (_NK+1,1))*km
-    #    Sigma_wsum += np.tile(r[0], (_NK+1,1))*km
-    #    DSigma_t_wsum += np.tile(r[1], (_NK+1,1))*km
-    #    DSigma_x_wsum += np.tile(r[2], (_NK+1,1))*km
+    return Sigma, DSigma_t, DSigma_x, extradata
 
 def execute_single_simu(config, args):
 
