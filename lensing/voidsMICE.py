@@ -180,8 +180,8 @@ def stacking(source_args, lens_args, profile_args):
     L, nvoids = lenscat_load(**lens_args)
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
-    K, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
-    kunq = np.unique(kdix)
+    _, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
+    kunq = np.unique(kidx)
 
     extradata = dict(
         nvoids=nvoids,
