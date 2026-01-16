@@ -254,8 +254,8 @@ def execute_single_simu(config, args):
 
     source_args = dict(
         name = config['source']['name'],
-        nback = args.nback,
-        seed = 0,
+        #nback = args.nback,
+        #seed = 0,
     )
 
     profile_args = dict(
