@@ -200,7 +200,8 @@ def stacking(source_args, lens_args, profile_args):
 
     for j, k in enumerate(kunq):
         mask = (kidx!=k)
-        ntot = nbin.sum(axis=0)
+
+        ntot = nbin[mask].sum(axis=0)
 
         N_inbin[j+1,:] = ntot
         Sigma_wsum[j+1,:] = kappa[mask].sum(axis=0)/ntot
