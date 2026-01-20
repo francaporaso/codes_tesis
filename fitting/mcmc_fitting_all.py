@@ -95,18 +95,24 @@ class Profile:
         return (2 / R**2) * disco - anillo
 
 class newHSW(Profile):
-    def __init__(self):
-        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+    def __init__(self, limits=None):
+        #self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+        if limits==None:
+            self.limits = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+        else:
+            self.limits = limits
 
     def model(self, R, chi, dc, rs, a, b):
         r = np.hypot(R, chi)
         return dc*(1-(r/rs)**a)/(1+r**b)
 
 class ErrFunc(Profile):
-    def __init__(self):
-        self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
+    def __init__(self, limits=None):
+        #self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
+        if limits==None:
+            self.limits = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
+        else:
+            self.limits = limits
 
     def model(self, R, chi, S, Rs, P, W):
         "chequear notas en cuadernito de cosmosur"
@@ -123,10 +129,13 @@ class ErrFunc(Profile):
         return Delta+1/3*r*Delta_prime
 
 class HSW:
-    def __init__(self, fix_off=False):
-        self.fix_off = fix_off
-        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+    def __init__(self, limits=None):
+        #self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+
+        if limits==None:
+            self.limits = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+        else:
+            self.limits = limits
 
     def h_integrand(self, chi, R, dc, rs, a, b):
         r = np.sqrt(R**2 + chi**2)
@@ -154,9 +163,12 @@ class HSW:
         return (2 / R**2) * disco - anillo
 
 class TopHat:
-    def __init__(self):
-        self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+    def __init__(self, limits):
+        #self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
+        if limits==None:
+            self.limits = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+        else:
+            self.limits = limits
 
     def tophat(self, r, rv, rs, dc, d2):
         '''
@@ -195,9 +207,12 @@ class TopHat:
         return (2 / R**2) * disco - anillo
 
 class modifiedLW:
-    def __init__(self):
-        self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+    def __init__(self, limits=None):
+        #self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
+        if limits==None:
+            self.limits = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+        else:
+            self.limits = limits
 
     def mLW(r, rv, rs, dc, d2):
         '''
