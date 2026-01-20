@@ -28,9 +28,9 @@ def chi_red(ajuste,data,err,gl):
 	gl           (float) grade of freedom (number of fitted variables)
 	------------------------------------------------------------------
 	OUTPUT:
-	chi          (float) Reduced chi**2 	
+	chi          (float) Reduced chi**2
 	'''
-		
+
 	BIN=len(data)
 	chi=((((ajuste-data)**2)/(err**2)).sum())/float(BIN-1-gl)
 	return chi
@@ -47,26 +47,26 @@ class Likelihood:
     def __init__(self, func, r, y, yerr, limits, redshift):
         self.func = func
         self.r = r
-        self.y = y 
+        self.y = y
         self.yerr = yerr
         self.params = list(limits.keys())
         self.limits = limits
         self.rhomean = rho_mean(redshift)
-    
+
     def log_likelihood(self, theta):
         model = self.func(self.r, *theta)*self.rhomean
         dist = self.y - model
-        # return -0.5*np.dot(dist, np.dot(self.yerr, dist))
-        return -0.5 * np.sum(((self.y - model)**2 )/self.yerr**2)
-    
+        return -0.5*np.dot(dist, np.dot(self.yerr, dist))
+        #return -0.5 * np.sum(((self.y - model)**2 )/self.yerr**2)
+
     def log_prior(self, theta):
         ### tener cuidado con el orden de lims!
         if np.prod(
-            [self.limits[self.params[j]][0] < theta[j] < self.limits[self.params[j]][1] for j in range(len(self.params))], 
+            [self.limits[self.params[j]][0] < theta[j] < self.limits[self.params[j]][1] for j in range(len(self.params))],
             dtype=bool
         ): return 0
         return -np.inf
-    
+
     def log_probability(self, theta):
         lp = self.log_prior(theta)
         if not np.isfinite(lp):
@@ -74,14 +74,12 @@ class Likelihood:
         return lp + self.log_likelihood(theta)
 
 class Profile:
-    def __init__(self):
-        pass
 
     def sigma(self, R, *params):
         chi = np.linspace(0.001, 200.0, 1000)
         vals = self.model(R[None, :], chi[:,None], *params)
         return 2.0*simpson(vals, x=chi, axis=0)
-    
+
     def mean_sigma(self, R, *params):
         x_grid = np.linspace(1e-5, R.max(), 1000)
         f_grid = self.sigma(x_grid, *params)
@@ -90,7 +88,7 @@ class Profile:
             for Ri in R
         ])
         return F_vals
-    
+
     def delta_sigma(self, R, *params):
         anillo = self.sigma(R, *params)
         disco = self.mean_sigma(R, *params)
@@ -98,7 +96,6 @@ class Profile:
 
 class newHSW(Profile):
     def __init__(self):
-        super().__init__()
         self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
         self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
 
@@ -108,13 +105,12 @@ class newHSW(Profile):
 
 class ErrFunc(Profile):
     def __init__(self):
-        super().__init__()
         self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
         self.limits_DSt = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
-    
+
     def model(self, R, chi, S, Rs, P, W):
         "chequear notas en cuadernito de cosmosur"
-        
+
         r = np.hypot(R, chi)
         Theta_sq = np.where(r<Rs, 1/(2*S), 1/(2*W))
         # Theta_cube = np.where(r<Rs, (2*S)**(-3/2), (2*W)**(-3/2))
@@ -131,18 +127,18 @@ class HSW:
         self.fix_off = fix_off
         self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
         self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
-        
+
     def h_integrand(self, chi, R, dc, rs, a, b):
         r = np.sqrt(R**2 + chi**2)
         return dc * (1 - (r / rs)**a) / (1 + r**b)
-    
+
     def sigma(self, R, dc, rs, a, b, off=0.0):
         if self.fix_off:
             off = 0.0
         chi = np.linspace(0.001, 200.0, 700)
         h_vals = self.h_integrand(chi=chi[:, None], R=R[None, :], dc=dc, rs=rs, a=a, b=b)
         return 2.0*simpson(h_vals, x=chi, axis=0) + off
-    
+
     def mean_sigma(self, R_vals, dc, rs, a, b):
         x_grid = np.linspace(0.001, R_vals.max(), 700)
         f_grid = self.sigma(x_grid, dc, rs, a, b, off=0.0)
@@ -151,7 +147,7 @@ class HSW:
             for R in R_vals
         ])
         return F_vals
-    
+
     def delta_sigma(self, R, dc, rs, a, b):
         anillo = self.sigma(R, dc, rs, a, b, off=0.0)
         disco = self.mean_sigma(R, dc, rs, a, b)
@@ -173,7 +169,7 @@ class TopHat:
         if Rv>rs:
             return np.inf
         den_integrada = np.where(
-            R<Rv, 
+            R<Rv,
             np.sqrt(np.abs(Rv**2-R**2))*(dc-d2) + d2*np.sqrt(np.abs(rs**2-R**2)),
             np.where(
                 R>rs,
@@ -192,7 +188,7 @@ class TopHat:
             for R in R_vals
         ])
         return F_vals
-    
+
     def delta_sigma(self, R, rs, dc, d2):
         anillo = self.sigma(R, rs, dc, d2, off=0.0)
         disco = self.mean_sigma(R, rs, dc, d2)
@@ -235,7 +231,7 @@ class modifiedLW:
             for R in R_vals
         ])
         return F_vals
-    
+
     def delta_sigma(self, R, rs, dc, d2):
         anillo = self.sigma(R, rs, dc, d2, off=0.0)
         disco = self.mean_sigma(R, rs, dc, d2)
@@ -247,14 +243,14 @@ if __name__ == '__main__':
     folder = '/home/fcaporaso/profiles/voids/'
     f = {
         '6-10':{
-            'ALL': fits.open(folder+'Rv_6-10/lensing_Rv6-10_z02-04_typeall_RMAX5.fits'),        
+            'ALL': fits.open(folder+'Rv_6-10/lensing_Rv6-10_z02-04_typeall_RMAX5.fits'),
             'S':   fits.open(folder+'Rv_6-10/lensing_Rv6-10_z02-04_typeS_RMAX5.fits'),
-            'R':   fits.open(folder+'Rv_6-10/lensing_Rv6-10_z02-04_typeR_RMAX5.fits'),        
+            'R':   fits.open(folder+'Rv_6-10/lensing_Rv6-10_z02-04_typeR_RMAX5.fits'),
         },
         '10-50':{
-            'ALL': fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeall_RMAX5.fits'),        
-            'S':   fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeS_RMAX5.fits'),        
-            'R':   fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeR_RMAX5.fits'),        
+            'ALL': fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeall_RMAX5.fits'),
+            'S':   fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeS_RMAX5.fits'),
+            'R':   fits.open(folder+'Rv_10-50/lensing_Rv10-50_z02-04_typeR_RMAX5.fits'),
         },
     }
 
@@ -264,7 +260,7 @@ if __name__ == '__main__':
     for radius, ff in f.items():
         p[radius] = {}
         cov[radius] = {}
-        for tipo, value in ff.items():   
+        for tipo, value in ff.items():
             ndots = value[0].header['ndots']
             # print(value[2].data.Sigma.shape,flush=True)
             # print('')
@@ -277,7 +273,7 @@ if __name__ == '__main__':
                 'eDSt':np.sqrt(np.diag(value[3].data.covDSt.reshape(ndots,ndots))),
                 'eDSx':np.sqrt(np.diag(value[3].data.covDSx.reshape(ndots,ndots))),
             })
-            
+
             cov[radius][tipo] = {
                 'covS':value[3].data.covS.reshape(ndots,ndots),
                 'covDSt':value[3].data.covDSt.reshape(ndots,ndots),
@@ -295,18 +291,18 @@ if __name__ == '__main__':
     hsw = HSW()
     for radius, pp in p.items():
         for tipo, profile in pp.items():
-            
+
             print('Fitting sigma for:')
             print('Rv: '.ljust(10,'.'),radius)
             print('Tipo: '.ljust(10,'.'),tipo)
 
             l = Likelihood(
-                func=hsw.sigma, 
-                r = p[radius][tipo].Rp.to_numpy(), 
-                y=p[radius][tipo].S.to_numpy(), 
+                func=hsw.sigma,
+                r = p[radius][tipo].Rp.to_numpy(),
+                y=p[radius][tipo].S.to_numpy(),
                 # yerr=np.linalg.inv(cov[radius][tipo]['covS']), ## No fittea con la cov completa
-                yerr=p[radius][tipo].eS.to_numpy(), 
-                limits=hsw.limits_S, 
+                yerr=p[radius][tipo].eS.to_numpy(),
+                limits=hsw.limits_S,
                 redshift=f[radius][tipo][0].header['Z_MEAN']
             )
             ## el orden es importante! -> chequear con hsw.sigma
@@ -332,7 +328,7 @@ if __name__ == '__main__':
 
             red_chisq = chi_red(l.func(l.r, **fitted_params)*l.rhomean, l.y, l.yerr, len(l.params))
             print('Reduced chi: '.ljust(10,'.'), red_chisq)
-            
+
             table_opt = np.array([
                 fits.Column(name=param,format='D',array=mcmc_out[:,:,i].flatten()) for i,param in enumerate(l.params)
             ])
@@ -345,16 +341,16 @@ if __name__ == '__main__':
             hdu.append(('nit',nit))
             hdu.append(('chi_red',red_chisq))
             hdu['HISTORY'] = f'{time.asctime()}'
-            hdu['COMMENT'] = f[radius][tipo].filename() 
+            hdu['COMMENT'] = f[radius][tipo].filename()
 
             primary_hdu = fits.PrimaryHDU(header=hdu)
             tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
             hdul = fits.HDUList([primary_hdu, tbhdu1])
-            
+
             outfile = folder+f'Rv_{radius}/fit/{sample}_MCMC_lensing_Sigma_Rv{radius}_type{tipo}_5RMAX_dim{nit}x{nwalkers}.fits'
             print(f'Guardado en {outfile}')
             hdul.writeto(outfile, overwrite=True)
-            
+
             ### ====================================================================================
 
             print('Fitting delta_sigma for:')
@@ -362,12 +358,12 @@ if __name__ == '__main__':
             print('Tipo: '.ljust(10,'.'),tipo)
 
             l = Likelihood(
-                func=hsw.delta_sigma, 
-                r = p[radius][tipo].Rp.to_numpy(), 
-                y=p[radius][tipo].DSt.to_numpy(), 
+                func=hsw.delta_sigma,
+                r = p[radius][tipo].Rp.to_numpy(),
+                y=p[radius][tipo].DSt.to_numpy(),
                 # yerr=np.linalg.inv(cov[radius][tipo]['covS']), ## No fittea con la cov completa
-                yerr=p[radius][tipo].eDSt.to_numpy(), 
-                limits=hsw.limits_DSt, 
+                yerr=p[radius][tipo].eDSt.to_numpy(),
+                limits=hsw.limits_DSt,
                 redshift=f[radius][tipo][0].header['Z_MEAN']
             )
             ## el orden es importante! -> chequear con hsw.sigma
@@ -392,7 +388,7 @@ if __name__ == '__main__':
 
             red_chisq = chi_red(hsw.delta_sigma(l.r, **fitted_params), l.y, l.yerr, len(l.params))
             print('Reduced chi: '.ljust(10,'.'), red_chisq)
-            
+
             table_opt = np.array([
                 fits.Column(name=param,format='D',array=mcmc_out[:,:,i].flatten()) for i,param in enumerate(l.params)
             ])
@@ -405,12 +401,12 @@ if __name__ == '__main__':
             hdu.append(('nit',nit))
             hdu.append(('chi_red',red_chisq))
             hdu['HISTORY'] = f'{time.asctime()}'
-            hdu['COMMENT'] = f[radius][tipo].filename() 
+            hdu['COMMENT'] = f[radius][tipo].filename()
 
             primary_hdu = fits.PrimaryHDU(header=hdu)
             tbhdu1 = fits.BinTableHDU.from_columns(table_opt)
             hdul = fits.HDUList([primary_hdu, tbhdu1])
-            
+
             outfile = folder+f'Rv_{radius}/fit/{sample}_MCMC_lensing_DeltaSigma_Rv{radius}_type{tipo}_5R.fits'
             print(f'Guardado en {outfile}')
             hdul.writeto(outfile, overwrite=True)
