@@ -76,7 +76,7 @@ class Likelihood:
 class Profile:
 
     def sigma(self, R, *params):
-        chi = np.linspace(0.001, 200.0, 1000)
+        chi = np.linspace(1e-5, 200.0, 1000)
         vals = self.model(R[None, :], chi[:,None], *params)
         return 2.0*simpson(vals, x=chi, axis=0)
 
