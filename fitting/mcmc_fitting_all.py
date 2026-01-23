@@ -102,7 +102,7 @@ class ProfileFast:
     def delta_sigma(self, R, *params):
 
         x_grid = np.linspace(0.0, R.max(), 2000)
-        integrand = x_grid**2 * self.model(R, *params)
+        integrand = x_grid**2 * self.model(x_grid, *params)
         cumulative = cumulative_trapezoid(integrand, x_grid, initial=0.0)
 
         I1_interp = np.interp(R, x_grid, cumulative)
