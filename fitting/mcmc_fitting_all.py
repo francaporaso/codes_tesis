@@ -97,11 +97,12 @@ class Profile:
 class ProfileFast:
 
     def model(self, r, *params):
+        ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
         raise NotImplementedError('Must be defined in child class')
 
     def delta_sigma(self, R, *params):
 
-        x_grid = np.linspace(0.0, R.max(), 2000)
+        x_grid = np.linspace(0.001, R.max(), 2000)
         integrand = x_grid**2 * self.model(x_grid, *params)
         cumulative = cumulative_trapezoid(integrand, x_grid, initial=0.0)
 
