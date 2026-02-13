@@ -268,7 +268,7 @@ def execute_single_simu(config, args):
     else:
         voidtype = 'mixed'
 
-    output_file = (f'results/lensing_{profile_args["name"]}_MICE_n{args.nback:02.0f}_'
+    output_file = (f'results/lensing_{profile_args["name"]}_MICE_N{profile_args["N"]}_'
                    f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
                    f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
                    f'type{voidtype}_bin{profile_args["binning"]}')
