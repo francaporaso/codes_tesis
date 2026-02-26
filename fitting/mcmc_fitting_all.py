@@ -1,40 +1,22 @@
+from astropy.cosmology import LambdaCDM
+from astropy.io import fits
+import emcee
 import numpy as np
 import pandas as pd
-from scipy.integrate import simpson, quad
-import emcee
-from astropy.io import fits
-from astropy.cosmology import LambdaCDM
-import time
 from multiprocessing import Pool
-from scipy.integrate import cumulative_trapezoid
 from scipy.special import erf
-# import matplotlib.pyplot as plt
-# import matplotlib.pylab as pylab
-# from scipy.optimize import curve_fit
-# import corner
-### TODO
-# implementar el modelo de Dante, ver notas de BCN
+from scipy.integrate import simpson, quad, quad_vec, cumulative_trapezoid
+import time
 
 h = 1.0
 cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 
-def chi_red(ajuste,data,err,gl):
-	'''
-	Reduced chi**2
-	------------------------------------------------------------------
-	INPUT:
-	ajuste       (float or array of floats) fitted value/s
-	data         (float or array of floats) data used for fitting
-	err          (float or array of floats) error in data
-	gl           (float) grade of freedom (number of fitted variables)
-	------------------------------------------------------------------
-	OUTPUT:
-	chi          (float) Reduced chi**2
-	'''
+SQPI = np.sqrt(np.pi)
 
-	BIN=len(data)
-	chi=((((ajuste-data)**2)/(err**2)).sum())/float(BIN-1-gl)
-	return chi
+# ==================== Auxiliar functions
+def chi2_red(data, model, invC, ndof):
+    d = (data-model)
+    return np.sum(np.dot(d, np.dot(invC,d)))/ndof
 
 def rho_mean(z):
     '''densidad media en Msun/(pc**2 Mpc)'''
@@ -43,6 +25,7 @@ def rho_mean(z):
     out = p_cr0*cosmo.Om0/a**3
     return out
 
+# ==================== Likelihood and Profile
 class Likelihood:
     def __init__(self, func, r, y, yerr, limits, redshift):
         self.func = func
@@ -73,8 +56,82 @@ class Likelihood:
             return -np.inf
         return lp + self.log_likelihood(theta)
 
-class Profile:
+class ProfileFast:
 
+    def model(self, r, *params):
+        ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
+        raise NotImplementedError('Must be defined in child class')
+    
+    def sigma(self, R, *params):
+
+        u_grid = np.linspace(0.0, 100.0, 500)
+        
+        # Use broadcasting to create a 2D grid of radii: sqrt(u^2 + R^2)
+        # R is (N, 1), u is (1, M) -> radius_grid is (N, M)
+        radius_grid = np.hypot(u_grid[None, :], R[:, None])
+        
+        # Calculate model for the entire grid at once
+        integrand_grid = self.model(radius_grid, *params)
+        
+        # Integrate over the u_grid axis (axis=1)
+        result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
+        return result
+
+    def delta_sigma(self, R, *params):
+
+        x_grid = np.linspace(0.0, R.max(), 1000)
+        integrand = x_grid**2 * self.model(x_grid, *params)
+        cumulative = cumulative_trapezoid(integrand, x_grid, initial=0.0)
+
+        I1_interp = np.interp(R, x_grid, cumulative)
+        
+        result = np.zeros_like(R)
+
+        for i, Ri in enumerate(R):
+            def integrand2(theta):
+                return self.model(Ri/np.cos(theta), *params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
+
+            I2,_ = quad(integrand2, 0.0, np.pi/2.0 - 1e-6)
+            result[i] = (4.0/Ri**2)*I1_interp[i] - 4.0*Ri*I2
+
+        return result
+    
+# ==================== Density Models
+
+class HSW(ProfileFast):
+    def model(self, r, dc, rs, a, b):
+        return dc*(1-(r/rs)**a)/(1+r**b)
+
+class B15(ProfileFast):
+    def model(self, r, dc, rs, rv, a, b):
+        return dc*(1-(r/rs)**a)/(1+(r/rv)**b)
+
+class ModifiedLW(ProfileFast):
+    def model(self, r, dc, dw, rw):
+        rv = 1.0
+        return np.where(r < rv, dc+(dw-dc)*(r/rv)**3, np.where(r > rw, 0.0, dw))
+
+class TopHat(ProfileFast):
+    def model(self, r, dc, dw, rw):
+        rv = 1.0
+        return np.where(r < rv, dc, np.where(r > rw, 0.0, dw))
+    
+class Paz13(ProfileFast):
+    def model(self, r, S, Rs, P, W):
+        x = np.log10(r/Rs)
+        asym_gauss = np.where(r<Rs, np.exp(-S*x**2), np.exp(-W*x**2))
+
+        Delta = 0.5*(erf(S*x)-1) + P*asym_gauss
+        
+        t1 = S*np.exp(-(S*x)**2)/(SQPI*r)
+        t2 = (-2.0*P*x/r) * asym_gauss
+        Delta_prime = t1+t2
+
+        return Delta+1/3*r*Delta_prime
+
+# ==================== Deprecated
+
+class Profile:
     def sigma(self, R, *params):
         chi = np.linspace(0.001, 200.0, 1000)
         vals = self.model(R[None, :], chi[:,None], *params)
@@ -94,37 +151,6 @@ class Profile:
         disco = self.mean_sigma(R, *params)
         return (2 / R**2) * disco - anillo
 
-class ProfileFast:
-
-    def model(self, r, *params):
-        ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
-        raise NotImplementedError('Must be defined in child class')
-
-    def delta_sigma(self, R, *params):
-
-        x_grid = np.linspace(0.0, R.max(), 2000)
-        integrand = x_grid**2 * self.model(x_grid, *params)
-        cumulative = cumulative_trapezoid(integrand, x_grid, initial=0.0)
-
-        I1_interp = np.interp(R, x_grid, cumulative)
-        result = np.zeros_like(R)
-
-        for i, Ri in enumerate(R):
-            def integrand2(theta):
-                return self.model(Ri/np.cos(theta), *params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
-
-            I2,_ = quad(integrand2, 0.0, np.pi/2.0)
-            result[i] = (4.0/Ri**2)*I1_interp[i] - 4.0*Ri*I2
-
-        return result
-
-class HSWFast(ProfileFast):
-    def model(self, r, dc, rs, a, b):
-        return dc*(1-(r/rs)**a)/(1+r**b)
-
-class B15Fast(ProfileFast):
-    def model(self, r, dc, rs, rv, a, b):
-        return dc*(1-(r/rs)**a)/(1+(r/rv)**b)
 
 class newHSW(Profile):
     def __init__(self):
@@ -135,139 +161,139 @@ class newHSW(Profile):
         r = np.hypot(R, chi)
         return dc*(1-(r/rs)**a)/(1+r**b)
 
-class ErrFunc(Profile):
-    def __init__(self):
-        self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
+# class ErrFunc(Profile):
+#     def __init__(self):
+#         self.limits_S = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0), 'off':(-0.5,0.5)}
+#         self.limits_DSt = {'S':(0.0,5.0), 'Rs':(0.0,5.0), 'P':(0.0,5.0), 'W':(0.0, 5.0)}
 
-    def model(self, R, chi, S, Rs, P, W):
-        "chequear notas en cuadernito de cosmosur"
+#     def model(self, R, chi, S, Rs, P, W):
+#         "chequear notas en cuadernito de cosmosur"
 
-        r = np.hypot(R, chi)
-        Theta_sq = np.where(r<Rs, 1/(2*S), 1/(2*W))
-        # Theta_cube = np.where(r<Rs, (2*S)**(-3/2), (2*W)**(-3/2))
-        # Theta_prime = np.where(r==Rs, 2**(-1/2)*(np.sqrt(S)+np.sqrt(W))/np.sqrt(S*W), 0)
-        x = np.log(r/Rs)
-        t1 = S*np.exp(-(S*x)**2)/(np.sqrt(np.pi)*r)
-        t2 = -P*np.exp(-x**2/(2*Theta_sq))*(x/(r*Theta_sq)) # - x**2*Theta_prime/Theta_cube dentro del parentesis... pero tiene una delta de dirac...
-        Delta_prime = t1+t2
-        Delta = 0.5*(erf(S*x)-1) + P*np.exp(-0.5*x**2/Theta_sq)
-        return Delta+1/3*r*Delta_prime
+#         r = np.hypot(R, chi)
+#         Theta_sq = np.where(r<Rs, 1/(2*S), 1/(2*W))
+#         # Theta_cube = np.where(r<Rs, (2*S)**(-3/2), (2*W)**(-3/2))
+#         # Theta_prime = np.where(r==Rs, 2**(-1/2)*(np.sqrt(S)+np.sqrt(W))/np.sqrt(S*W), 0)
+#         x = np.log(r/Rs)
+#         t1 = S*np.exp(-(S*x)**2)/(np.sqrt(np.pi)*r)
+#         t2 = -P*np.exp(-x**2/(2*Theta_sq))*(x/(r*Theta_sq)) # - x**2*Theta_prime/Theta_cube dentro del parentesis... pero tiene una delta de dirac...
+#         Delta_prime = t1+t2
+#         Delta = 0.5*(erf(S*x)-1) + P*np.exp(-0.5*x**2/Theta_sq)
+#         return Delta+1/3*r*Delta_prime
 
-class HSW:
-    def __init__(self, fix_off=False):
-        self.fix_off = fix_off
-        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+# class HSW:
+#     def __init__(self, fix_off=False):
+#         self.fix_off = fix_off
+#         self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+#         self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
 
-    def h_integrand(self, chi, R, dc, rs, a, b):
-        r = np.sqrt(R**2 + chi**2)
-        return dc * (1 - (r / rs)**a) / (1 + r**b)
+#     def h_integrand(self, chi, R, dc, rs, a, b):
+#         r = np.sqrt(R**2 + chi**2)
+#         return dc * (1 - (r / rs)**a) / (1 + r**b)
 
-    def sigma(self, R, dc, rs, a, b, off=0.0):
-        if self.fix_off:
-            off = 0.0
-        chi = np.linspace(0.001, 200.0, 700)
-        h_vals = self.h_integrand(chi=chi[:, None], R=R[None, :], dc=dc, rs=rs, a=a, b=b)
-        return 2.0*simpson(h_vals, x=chi, axis=0) + off
+#     def sigma(self, R, dc, rs, a, b, off=0.0):
+#         if self.fix_off:
+#             off = 0.0
+#         chi = np.linspace(0.001, 200.0, 700)
+#         h_vals = self.h_integrand(chi=chi[:, None], R=R[None, :], dc=dc, rs=rs, a=a, b=b)
+#         return 2.0*simpson(h_vals, x=chi, axis=0) + off
 
-    def mean_sigma(self, R_vals, dc, rs, a, b):
-        x_grid = np.linspace(0.001, R_vals.max(), 700)
-        f_grid = self.sigma(x_grid, dc, rs, a, b, off=0.0)
-        F_vals = np.array([
-            simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
-            for R in R_vals
-        ])
-        return F_vals
+#     def mean_sigma(self, R_vals, dc, rs, a, b):
+#         x_grid = np.linspace(0.001, R_vals.max(), 700)
+#         f_grid = self.sigma(x_grid, dc, rs, a, b, off=0.0)
+#         F_vals = np.array([
+#             simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
+#             for R in R_vals
+#         ])
+#         return F_vals
 
-    def delta_sigma(self, R, dc, rs, a, b):
-        anillo = self.sigma(R, dc, rs, a, b, off=0.0)
-        disco = self.mean_sigma(R, dc, rs, a, b)
-        return (2 / R**2) * disco - anillo
+#     def delta_sigma(self, R, dc, rs, a, b):
+#         anillo = self.sigma(R, dc, rs, a, b, off=0.0)
+#         disco = self.mean_sigma(R, dc, rs, a, b)
+#         return (2 / R**2) * disco - anillo
 
-class TopHat:
-    def __init__(self):
-        self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+# class TopHat:
+#     def __init__(self):
+#         self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
+#         self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
 
-    def tophat(self, r, rv, rs, dc, d2):
-        '''
-        top-hat model. (FALTA CITA PAPER)
-        '''
-        return np.where(r < rv, dc, np.where(r > rs, 0.0, d2))
+#     def tophat(self, r, rv, rs, dc, d2):
+#         '''
+#         top-hat model. (FALTA CITA PAPER)
+#         '''
+#         return np.where(r < rv, dc, np.where(r > rs, 0.0, d2))
 
-    def sigma(self, R, rs, dc, d2, off):
-        Rv = 1.
-        if Rv>rs:
-            return np.inf
-        den_integrada = np.where(
-            R<Rv,
-            np.sqrt(np.abs(Rv**2-R**2))*(dc-d2) + d2*np.sqrt(np.abs(rs**2-R**2)),
-            np.where(
-                R>rs,
-                0.0,
-                d2*np.sqrt(np.abs(rs**2-R**2)),
-            )
-        )
-        sigma = den_integrada/Rv + off
-        return sigma
+#     def sigma(self, R, rs, dc, d2, off):
+#         Rv = 1.
+#         if Rv>rs:
+#             return np.inf
+#         den_integrada = np.where(
+#             R<Rv,
+#             np.sqrt(np.abs(Rv**2-R**2))*(dc-d2) + d2*np.sqrt(np.abs(rs**2-R**2)),
+#             np.where(
+#                 R>rs,
+#                 0.0,
+#                 d2*np.sqrt(np.abs(rs**2-R**2)),
+#             )
+#         )
+#         sigma = den_integrada/Rv + off
+#         return sigma
 
-    def mean_sigma(self, R_vals, rs, dc, d2):
-        x_grid = np.linspace(0.001, R_vals.max(), 700)
-        f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
-        F_vals = np.array([
-            simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
-            for R in R_vals
-        ])
-        return F_vals
+#     def mean_sigma(self, R_vals, rs, dc, d2):
+#         x_grid = np.linspace(0.001, R_vals.max(), 700)
+#         f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
+#         F_vals = np.array([
+#             simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
+#             for R in R_vals
+#         ])
+#         return F_vals
 
-    def delta_sigma(self, R, rs, dc, d2):
-        anillo = self.sigma(R, rs, dc, d2, off=0.0)
-        disco = self.mean_sigma(R, rs, dc, d2)
-        return (2 / R**2) * disco - anillo
+#     def delta_sigma(self, R, rs, dc, d2):
+#         anillo = self.sigma(R, rs, dc, d2, off=0.0)
+#         disco = self.mean_sigma(R, rs, dc, d2)
+#         return (2 / R**2) * disco - anillo
 
-class modifiedLW:
-    def __init__(self):
-        self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
+# class modifiedLW:
+#     def __init__(self):
+#         self.limits_S = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5), 'off':(-0.5,0.5)}
+#         self.limits_DSt = {'rs':(1.0,5.0), 'dc':(-1.0,0.0), 'd2':(-0.5,0.5)}
 
-    def mLW(r, rv, rs, dc, d2):
-        '''
-        modified Lavaux-Wandelt model. (arXiv:1110.0345)
-        '''
-        return np.where(r < rv, dc+(d2-dc)*(r/rv)**3, np.where(r > rs, 0.0, d2))
+#     def mLW(r, rv, rs, dc, d2):
+#         '''
+#         modified Lavaux-Wandelt model. (arXiv:1110.0345)
+#         '''
+#         return np.where(r < rv, dc+(d2-dc)*(r/rv)**3, np.where(r > rs, 0.0, d2))
 
-    def sigma(self, R, rs, dc, d2, off):
-        Rv = 1.
-        if Rv>rs:
-            return np.inf
-        sq_diff = lambda r,r2: np.sqrt(np.abs(r2**2 - r**2))
-        argument = lambda r,rv: np.sqrt(np.abs((rv/r)**2 - 1))
-        den_integrada = 2*np.where(
-            R<Rv,
-            dc*sq_diff(R,rs) + (d2-dc)*(sq_diff(R,Rv)*(5/8*(R/Rv)**2 - 1) + sq_diff(R,rs) + 3/8*(R**4/Rv**3)*np.arcsinh(argument(R,Rv))),
-            np.where(
-                R>rs,
-                0.0,
-                d2*sq_diff(R,rs)
-            )
-        )
-        sigma = den_integrada/Rv + off
-        return sigma
+#     def sigma(self, R, rs, dc, d2, off):
+#         Rv = 1.
+#         if Rv>rs:
+#             return np.inf
+#         sq_diff = lambda r,r2: np.sqrt(np.abs(r2**2 - r**2))
+#         argument = lambda r,rv: np.sqrt(np.abs((rv/r)**2 - 1))
+#         den_integrada = 2*np.where(
+#             R<Rv,
+#             dc*sq_diff(R,rs) + (d2-dc)*(sq_diff(R,Rv)*(5/8*(R/Rv)**2 - 1) + sq_diff(R,rs) + 3/8*(R**4/Rv**3)*np.arcsinh(argument(R,Rv))),
+#             np.where(
+#                 R>rs,
+#                 0.0,
+#                 d2*sq_diff(R,rs)
+#             )
+#         )
+#         sigma = den_integrada/Rv + off
+#         return sigma
 
-    def mean_sigma(self, R_vals, rs, dc, d2):
-        x_grid = np.linspace(0.001, R_vals.max(), 700)
-        f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
-        F_vals = np.array([
-            simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
-            for R in R_vals
-        ])
-        return F_vals
+#     def mean_sigma(self, R_vals, rs, dc, d2):
+#         x_grid = np.linspace(0.001, R_vals.max(), 700)
+#         f_grid = self.sigma(x_grid, rs, dc, d2, off=0.0)
+#         F_vals = np.array([
+#             simpson(x_grid[x_grid <= R] * f_grid[x_grid <= R], x=x_grid[x_grid <= R])
+#             for R in R_vals
+#         ])
+#         return F_vals
 
-    def delta_sigma(self, R, rs, dc, d2):
-        anillo = self.sigma(R, rs, dc, d2, off=0.0)
-        disco = self.mean_sigma(R, rs, dc, d2)
-        return (2 / R**2) * disco - anillo
+#     def delta_sigma(self, R, rs, dc, d2):
+#         anillo = self.sigma(R, rs, dc, d2, off=0.0)
+#         disco = self.mean_sigma(R, rs, dc, d2)
+#         return (2 / R**2) * disco - anillo
 
 
 
