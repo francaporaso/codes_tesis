@@ -109,12 +109,12 @@ class ProfileFast:
         I1_interp = np.interp(R, x_grid, cumulative)
         result = np.zeros_like(R)
 
-        for i, R in enumerate(R):
+        for i, Ri in enumerate(R):
             def integrand2(theta):
-                return self.model(R/np.cos(theta), *params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
+                return self.model(Ri/np.cos(theta), *params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
 
             I2,_ = quad(integrand2, 0.0, np.pi/2.0)
-            result[i] = (4.0/R**2)*I1_interp[i] - 4.0*R*I2
+            result[i] = (4.0/Ri**2)*I1_interp[i] - 4.0*Ri*I2
 
         return result
 
