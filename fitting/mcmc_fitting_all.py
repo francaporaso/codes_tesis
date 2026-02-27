@@ -28,6 +28,21 @@ def rho_mean(z):
 def logistic(x, x0=1, k=10):
     return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)
 
+def read_profile(filename):
+
+    data = {}
+    with fits.open(filename) as f:
+        data['R'] = np.linspace(f[0].header['RIN'],f[0].header['ROUT'],f[0].header['N'])
+        data['redshift'] = f[0].header['Z_MEAN']
+        data['Sigma'] = f[1].data['Sigma']
+        data['DSigma_t'] = f[1].data['DSigma_t']
+        data['DSigma_x'] = f[1].data['DSigma_x']
+        data['covS'] = f[2].data
+        data['covDSt'] = f[3].data
+        data['covDSx'] = f[4].data
+
+    return data
+
 # ==================== Likelihood and Profile
 class Likelihood:
     def __init__(self, func, r, y, yerr, limits, redshift):
