@@ -25,6 +25,9 @@ def rho_mean(z):
     out = p_cr0*cosmo.Om0/a**3
     return out
 
+def logistic(x, x0=1, k=10):
+    return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)
+
 # ==================== Likelihood and Profile
 class Likelihood:
     def __init__(self, func, r, y, yerr, limits, redshift):
@@ -65,17 +68,43 @@ class ProfileFast:
     def sigma(self, R, *params):
 
         u_grid = np.linspace(0.0, 100.0, 500)
-        
-        # Use broadcasting to create a 2D grid of radii: sqrt(u^2 + R^2)
-        # R is (N, 1), u is (1, M) -> radius_grid is (N, M)
         radius_grid = np.hypot(u_grid[None, :], R[:, None])
-        
-        # Calculate model for the entire grid at once
         integrand_grid = self.model(radius_grid, *params)
-        
-        # Integrate over the u_grid axis (axis=1)
         result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
+        
         return result
+
+    def delta_sigma(self, R, *params, num_theta=200, num_x=1000):
+        """Vectorized Delta Sigma using broadcasting and Simpson's rule."""
+        
+        # --- Part 1: Vectorized I1 (The Trapezoidal Integral) ---
+        # We create a fine internal grid for x to ensure I1 is precise
+        x_grid = np.linspace(1e-5, R.max(), num_x)
+        #x_grid = np.geomspace(1e-5, R.max(), num_x)
+        integrand_x = x_grid**2 * self.model(x_grid, *params)
+        cumulative = cumulative_trapezoid(integrand_x, x_grid, initial=0.0)
+        I1_interp = np.interp(R, x_grid, cumulative)
+        
+        # --- Part 2: Vectorized I2 (The Angular Integral) ---
+        # 1. Setup theta grid (avoiding the singularity at pi/2)
+        theta = np.linspace(0.0, np.pi/2.0 - 1e-6, num_theta)
+        
+        # 2. Pre-calculate the denominator (constant for all R)
+        # Your denominator: 4sin(t) + 3 - cos(2t) simplifies to 2(sin(t) + 1)^2
+        denom = 4.0 * np.sin(theta) + 3.0 - np.cos(2.0 * theta)
+        
+        # 3. Create 2D grid for the model: r = Ri / cos(theta)
+        # R is (N, 1), theta is (1, M) -> r_mesh is (N, M)
+        r_mesh = R[:, None] / np.cos(theta[None, :])
+        
+        # 4. Calculate model values and perform integration
+        integrand_theta = self.model(r_mesh, *params) / denom[None, :]
+        I2 = simpson(integrand_theta, theta, axis=1)
+
+        # Final Calculation
+        return (4.0 / R**2) * I1_interp - 4.0 * R * I2
+    
+class ProfileGaussianQuad:
 
     def delta_sigma(self, R, *params):
 
@@ -129,37 +158,42 @@ class Paz13(ProfileFast):
 
         return Delta+1/3*r*Delta_prime
 
+class THLogistic(ProfileFast):
+    def model(self, r, dc, rw, dw):
+        k=15
+        return dc*(1.0-logistic(r, x0=1, k=k)) + dw*(logistic(r, x0=1, k=k) - logistic(r, x0=rw, k=k))
+
 # ==================== Deprecated
 
-class Profile:
-    def sigma(self, R, *params):
-        chi = np.linspace(0.001, 200.0, 1000)
-        vals = self.model(R[None, :], chi[:,None], *params)
-        return 2.0*simpson(vals, x=chi, axis=0)
+# class Profile:
+#     def sigma(self, R, *params):
+#         chi = np.linspace(0.001, 200.0, 1000)
+#         vals = self.model(R[None, :], chi[:,None], *params)
+#         return 2.0*simpson(vals, x=chi, axis=0)
 
-    def mean_sigma(self, R, *params):
-        x_grid = np.linspace(1e-5, R.max(), 1000)
-        f_grid = self.sigma(x_grid, *params)
-        F_vals = np.array([
-            simpson(x_grid[x_grid <= Ri] * f_grid[x_grid <= Ri], x=x_grid[x_grid <= Ri])
-            for Ri in R
-        ])
-        return F_vals
+#     def mean_sigma(self, R, *params):
+#         x_grid = np.linspace(1e-5, R.max(), 1000)
+#         f_grid = self.sigma(x_grid, *params)
+#         F_vals = np.array([
+#             simpson(x_grid[x_grid <= Ri] * f_grid[x_grid <= Ri], x=x_grid[x_grid <= Ri])
+#             for Ri in R
+#         ])
+#         return F_vals
 
-    def delta_sigma(self, R, *params):
-        anillo = self.sigma(R, *params)
-        disco = self.mean_sigma(R, *params)
-        return (2 / R**2) * disco - anillo
+#     def delta_sigma(self, R, *params):
+#         anillo = self.sigma(R, *params)
+#         disco = self.mean_sigma(R, *params)
+#         return (2 / R**2) * disco - anillo
 
 
-class newHSW(Profile):
-    def __init__(self):
-        self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
-        self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
+# class newHSW(Profile):
+#     def __init__(self):
+#         self.limits_S = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99), 'off':(-0.5,0.5)}
+#         self.limits_DSt = {'dc':(-0.99,-0.01), 'rs':(0.1,4.99), 'a':(1.01,9.99), 'b':(1.01,14.99)}
 
-    def model(self, R, chi, dc, rs, a, b):
-        r = np.hypot(R, chi)
-        return dc*(1-(r/rs)**a)/(1+r**b)
+#     def model(self, R, chi, dc, rs, a, b):
+#         r = np.hypot(R, chi)
+#         return dc*(1-(r/rs)**a)/(1+r**b)
 
 # class ErrFunc(Profile):
 #     def __init__(self):
