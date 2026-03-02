@@ -1,5 +1,6 @@
 from astropy.cosmology import LambdaCDM
 from astropy.io import fits
+from dataclasses import dataclass
 import emcee
 import numpy as np
 import pandas as pd
@@ -14,6 +15,17 @@ cosmo = LambdaCDM(H0=100*h, Om0=0.25, Ode0=0.75)
 SQPI = np.sqrt(np.pi)
 
 # ==================== Auxiliar functions
+@dataclass
+class DataProfile:
+    redshift : np.float64
+    R : np.ndarray
+    Sigma : np.ndarray
+    DSigma_t : np.ndarray
+    DSigma_x : np.ndarray
+    covS : np.ndarray
+    covDSt : np.ndarray
+    covDSx : np.ndarray
+
 def chi2_red(data, model, invC, ndof):
     d = (data-model)
     return np.sum(np.dot(d, np.dot(invC,d)))/ndof
@@ -28,23 +40,81 @@ def rho_mean(z):
 def logistic(x, x0=1, k=10):
     return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)
 
-def read_profile(filename):
-
-    data = {}
+def read_data(filename):
     with fits.open(filename) as f:
-        data['R'] = np.linspace(f[0].header['RIN'],f[0].header['ROUT'],f[0].header['N'])
-        data['redshift'] = f[0].header['Z_MEAN']
-        data['Sigma'] = f[1].data['Sigma']
-        data['DSigma_t'] = f[1].data['DSigma_t']
-        data['DSigma_x'] = f[1].data['DSigma_x']
-        data['covS'] = f[2].data
-        data['covDSt'] = f[3].data
-        data['covDSx'] = f[4].data
-
+        hd = f[0].header
+        dt = f[1].data
+        data = DataProfile(
+            R = np.linspace(hd['RIN'],hd['ROUT'],hd['N']),
+            redshift = hd['Z_MEAN'],
+            Sigma = dt['Sigma'],
+            DSigma_t = dt['DSigma_t'],
+            DSigma_x = dt['DSigma_x'],
+            covS = f[2].data,
+            covDSt = f[3].data,
+            covDSx = f[4].data,
+        )
     return data
+
+def calculate_posteriors(chain, params_labels=['dc','rs','a','b']):
+    nit, _, nparams = chain.shape
+    fitt_params = {}
+    err_params = {}
+    for i in range(nparams):
+        percentil = np.percentile(chain[int(nit*0.1),:,i], [16,50,84])
+        fitt_params[params_labels[i]] = percentil[1]
+        err_params[params_labels[i]] = tuple(percentil[[0,2]]-percentil[1])
+
+    return fitt_params, err_params
+
+def plot_chains(chain):
+    import matplotlib.pyplot as plt
+
+    nit, _, nparams = chain.shape
+    
+    fig, axes = plt.subplots(nparams,1, sharex=True)
+    for i in range(nparams):
+        axes[i].plot(chain[:,:,i], 'k', alpha=0.3)
+        axes[i].set_xlim(0.0, nit)
+        axes[i].set_ylabel(f'$a_{i}$')
+        axes[i].yaxis.set_label_coords(-0.1, 0.5)
+    
+    axes[-1].set_xlabel('Step Number')
+    plt.show()
+    return fig
+
+def plot_corner(sampler, discard=100, fig=None, color=None):
+    from corner import corner
+
+    flat_samples = sampler.get_chain(discard=discard, flat=True)
+    if fig==None:
+        fig = corner(flat_samples, color=color);
+        return fig
+    else:
+        corner(flat_samples, fig=fig, color=color);
+
+def make_pos_gaussian(init_guess, NWALKERS, seed=0):
+    rng = np.random.default_rng(seed)
+    pos = np.array([
+        rng.normal(init_guess[i], np.abs(0.15*init_guess[i]), NWALKERS) for i in range(len(init_guess))
+    ]).T
+    return pos
+
+def run_emcee(NCORES, pos, NIT, L):
+    nwalkers, nparams = pos.shape
+
+    with Pool(processes=NCORES) as pool:
+        sampler = emcee.EnsembleSampler(
+            nwalkers, nparams, L.log_probability, pool=pool
+        )
+        sampler.run_mcmc(pos, NIT, progress=True)
+
+    return sampler
 
 # ==================== Likelihood and Profile
 class Likelihood:
+    # TODO: - easy way to change between diagonal covariance or full matrix, user defined. (needs to change the log_likelihood method)
+    #       - easy way to make a joint fit for different data but model with the same parameters.
     def __init__(self, func, r, y, yerr, limits, redshift):
         self.func = func
         self.r = r
@@ -80,6 +150,7 @@ class ProfileFast:
         ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
         raise NotImplementedError('Must be defined in child class')
     
+    # TODO:  - agregar parametro ctte Sigma_0 a sigma
     def sigma(self, R, *params):
 
         u_grid = np.linspace(0.0, 100.0, 500)
@@ -91,32 +162,21 @@ class ProfileFast:
 
     def delta_sigma(self, R, *params, num_theta=200, num_x=1000):
         """Vectorized Delta Sigma using broadcasting and Simpson's rule."""
-        
-        # --- Part 1: Vectorized I1 (The Trapezoidal Integral) ---
-        # We create a fine internal grid for x to ensure I1 is precise
+
         x_grid = np.linspace(1e-5, R.max(), num_x)
         #x_grid = np.geomspace(1e-5, R.max(), num_x)
         integrand_x = x_grid**2 * self.model(x_grid, *params)
         cumulative = cumulative_trapezoid(integrand_x, x_grid, initial=0.0)
         I1_interp = np.interp(R, x_grid, cumulative)
         
-        # --- Part 2: Vectorized I2 (The Angular Integral) ---
-        # 1. Setup theta grid (avoiding the singularity at pi/2)
         theta = np.linspace(0.0, np.pi/2.0 - 1e-6, num_theta)
-        
-        # 2. Pre-calculate the denominator (constant for all R)
-        # Your denominator: 4sin(t) + 3 - cos(2t) simplifies to 2(sin(t) + 1)^2
         denom = 4.0 * np.sin(theta) + 3.0 - np.cos(2.0 * theta)
         
-        # 3. Create 2D grid for the model: r = Ri / cos(theta)
-        # R is (N, 1), theta is (1, M) -> r_mesh is (N, M)
         r_mesh = R[:, None] / np.cos(theta[None, :])
         
-        # 4. Calculate model values and perform integration
         integrand_theta = self.model(r_mesh, *params) / denom[None, :]
         I2 = simpson(integrand_theta, theta, axis=1)
 
-        # Final Calculation
         return (4.0 / R**2) * I1_interp - 4.0 * R * I2
     
 class ProfileGaussianQuad:
@@ -174,6 +234,7 @@ class Paz13(ProfileFast):
         return Delta+1/3*r*Delta_prime
 
 class THLogistic(ProfileFast):
+    
     def model(self, r, dc, rw, dw):
         k=15
         return dc*(1.0-logistic(r, x0=1, k=k)) + dw*(logistic(r, x0=1, k=k) - logistic(r, x0=rw, k=k))
