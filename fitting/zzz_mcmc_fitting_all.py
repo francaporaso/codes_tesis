@@ -494,7 +494,7 @@ if __name__ == '__main__':
                 fitted_params[param] = percentil[1]
                 error_params[param] = tuple(percentil[[0,2]]-percentil[1])
 
-            red_chisq = chi_red(l.func(l.r, **fitted_params)*l.rhomean, l.y, l.yerr, len(l.params))
+            red_chisq = chi2_red(l.func(l.r, **fitted_params)*l.rhomean, l.y, l.yerr, len(l.params))
             print('Reduced chi: '.ljust(10,'.'), red_chisq)
 
             table_opt = np.array([
@@ -554,7 +554,7 @@ if __name__ == '__main__':
                 fitted_params[param] = percentil[1]
                 error_params[param] = tuple(percentil[[0,2]]-percentil[1])
 
-            red_chisq = chi_red(hsw.delta_sigma(l.r, **fitted_params), l.y, l.yerr, len(l.params))
+            red_chisq = chi2_red(hsw.delta_sigma(l.r, **fitted_params), l.y, l.yerr, len(l.params))
             print('Reduced chi: '.ljust(10,'.'), red_chisq)
 
             table_opt = np.array([
