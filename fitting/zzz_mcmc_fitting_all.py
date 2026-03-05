@@ -116,21 +116,21 @@ class Likelihood:
     # TODO: - easy way to change between diagonal covariance or full matrix, user defined. (needs to change the log_likelihood method)
     #       - easy way to make a joint fit for different data but model with the same parameters.
     def __init__(self, func, r, y, yerr, limits, redshift):
-        self.func = func
-        self.r = r
-        self.y = y
-        self.yerr = yerr
-        self.params = list(limits.keys())
-        self.limits = limits
-        self.rhomean = rho_mean(redshift)
+        self.func : function = func
+        self.r : list = r
+        self.y : list = y
+        self.yerr : list = yerr
+        self.params : list = list(limits.keys())
+        self.limits : dict = limits
+        self.rhomean : float = rho_mean(redshift)
 
-    def log_likelihood(self, theta):
+    def log_likelihood(self, theta : list) -> float:
         model = self.func(self.r, *theta)*self.rhomean
         dist = self.y - model
         return -0.5*np.dot(dist, np.dot(self.yerr, dist))
         #return -0.5 * np.sum(((self.y - model)**2 )/self.yerr**2)
 
-    def log_prior(self, theta):
+    def log_prior(self, theta : list) -> float:
         ### tener cuidado con el orden de lims!
         if np.prod(
             [self.limits[self.params[j]][0] < theta[j] < self.limits[self.params[j]][1] for j in range(len(self.params))],
@@ -138,7 +138,7 @@ class Likelihood:
         ): return 0
         return -np.inf
 
-    def log_probability(self, theta):
+    def log_probability(self, theta : list) -> float:
         lp = self.log_prior(theta)
         if not np.isfinite(lp):
             return -np.inf
