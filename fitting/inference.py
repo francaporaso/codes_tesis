@@ -19,27 +19,34 @@ class Likelihood:
             self.cov = data.covDSt
 
             self.func = model.delta_sigma
+        else:
+            raise ValueError('observable must be either "sigma" or "delta_sigma"')
+
+        Njk = 100
+        hartlap_factor = (Njk-len(self.R)-2)/(Njk-1)
 
         if cov_mode == 'full':
-            self.yerr = np.linalg.inv(self.cov)
+            self.yerr = np.linalg.inv(self.cov)*hartlap_factor
         elif cov_mode == 'diag':
             # this allows to use log_likelihood with both diag or full covariance!
             self.yerr = np.zeros_like(self.cov)
-            np.fill_diagonal(self.yerr, 1/np.diag(self.cov))
+            np.fill_diagonal(self.yerr, 1.0/np.diag(self.cov))
+        else:
+            raise ValueError('cov_mode must be either "full" or "diag"')
 
         self.limits = param_limits
         self.param_name = list(self.limits.keys())
+        self.nparams = len(self.param_name)
         
-
     def log_likelihood(self, theta):
-        model = self.func(self.r, *theta)*self.rhomean
-        dist = self.y - model
+        model = self.func(self.R, *theta)*self.rhomean
+        dist = self.ydata - model
         return -0.5*np.dot(dist, np.dot(self.yerr, dist))
 
     def log_prior(self, theta):
         ### tener cuidado con el orden de lims!
         if np.prod(
-            [self.limits[self.params[j]][0] < theta[j] < self.limits[self.params[j]][1] for j in range(len(self.params))],
+            [self.limits[self.param_name[j]][0] < theta[j] < self.limits[self.param_name[j]][1] for j in range(self.nparams)],
             dtype=bool
         ): return 0
         return -np.inf
