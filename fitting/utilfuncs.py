@@ -13,3 +13,6 @@ def make_pos_gaussian(init_guess, NWALKERS, seed=0):
         rng.normal(init_guess[i], np.abs(0.15*init_guess[i]), NWALKERS) for i in range(len(init_guess))
     ]).T
     return pos
+
+def validate_pos(pos):
+    pass
