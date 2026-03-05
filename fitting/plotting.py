@@ -1,5 +1,7 @@
+import matplotlib.pyplot as plt
+from corner import corner
+
 def plot_chains(chain):
-    import matplotlib.pyplot as plt
 
     nit, _, nparams = chain.shape
     
@@ -15,7 +17,6 @@ def plot_chains(chain):
     return fig
 
 def plot_corner(sampler, discard=100, fig=None, color=None):
-    from corner import corner
 
     flat_samples = sampler.get_chain(discard=discard, flat=True)
     if fig==None:
@@ -23,3 +24,14 @@ def plot_corner(sampler, discard=100, fig=None, color=None):
         return fig
     else:
         corner(flat_samples, fig=fig, color=color);
+
+def plot_pos(pos):
+
+    nwalkers, nparams = pos.shape
+
+    fig, axes = plt.subplots(1, nparams, figsize=(2*nparams, 2))
+    for i in range(nparams):
+        axes[i].hist(pos.T[i], bins=nwalkers//10)
+        axes[i].set_xlabel(f'$a_{i}$')
+
+    return fig
