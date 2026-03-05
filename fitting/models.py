@@ -16,23 +16,23 @@ class BaseModelFast:
         raise NotImplementedError('Must be defined in child class')
     
     # TODO:  - agregar parametro ctte Sigma_0 a sigma
-    def sigma(self, R, **params):
+    def sigma(self, R, *params):
 
         u_grid = np.linspace(0.0, 100.0, 500)
         radius_grid = np.hypot(u_grid[None, :], R[:, None])
-        integrand_grid = self.density_contrast(radius_grid, **params)
+        integrand_grid = self.density_contrast(radius_grid, *params)
         result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
         
         return result
 
-    def delta_sigma(self, R, **params):
+    def delta_sigma(self, R, *params):
 
         num_theta=200
         num_x=1000
         
         x_grid = np.linspace(1e-5, R.max(), num_x)
         #x_grid = np.geomspace(1e-5, R.max(), num_x)
-        integrand_x = x_grid**2 * self.density_contrast(x_grid, **params)
+        integrand_x = x_grid**2 * self.density_contrast(x_grid, *params)
         cumulative = cumulative_trapezoid(integrand_x, x_grid, initial=0.0)
         I1_interp = np.interp(R, x_grid, cumulative)
         
@@ -41,17 +41,17 @@ class BaseModelFast:
         
         r_mesh = R[:, None] / np.cos(theta[None, :])
         
-        integrand_theta = self.density_contrast(r_mesh, **params) / denom[None, :]
+        integrand_theta = self.density_contrast(r_mesh, *params) / denom[None, :]
         I2 = simpson(integrand_theta, theta, axis=1)
 
         return (4.0 / R**2) * I1_interp - 4.0 * R * I2
     
 class BaseModelQuad:
 
-    def delta_sigma(self, R, **params):
+    def delta_sigma(self, R, *params):
 
         x_grid = np.linspace(0.0, R.max(), 1000)
-        integrand = x_grid**2 * self.model(x_grid, **params)
+        integrand = x_grid**2 * self.density_contrast(x_grid, *params)
         cumulative = cumulative_trapezoid(integrand, x_grid, initial=0.0)
 
         I1_interp = np.interp(R, x_grid, cumulative)
@@ -60,7 +60,7 @@ class BaseModelQuad:
 
         for i, Ri in enumerate(R):
             def integrand2(theta):
-                return self.model(Ri/np.cos(theta), **params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
+                return self.density_contrast(Ri/np.cos(theta), *params) / (4.0*np.sin(theta) + 3 - np.cos(2.0*theta))
 
             I2,_ = quad(integrand2, 0.0, np.pi/2.0 - 1e-6)
             result[i] = (4.0/Ri**2)*I1_interp[i] - 4.0*Ri*I2
