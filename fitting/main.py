@@ -8,7 +8,10 @@ from fitting.models import *
 from fitting.utilfuncs import *
 
 
-def run_emcee(NCORES, NIT, NWALKERS, data_filename, save_filename, model_name, observable, cov_mode):
+def run_emcee(
+        NCORES, NIT, NWALKERS, 
+        data_filename, save_filename, model_name, observable, cov_mode,
+        init_guess):
     data = read_dataprofile_fits(name=data_filename)
 
     L = Likelihood(
@@ -20,7 +23,7 @@ def run_emcee(NCORES, NIT, NWALKERS, data_filename, save_filename, model_name, o
     )
 
     init_pos = make_pos_gaussian(
-        init_guess=default_guess.get(model_name),
+        init_guess=init_guess,
         NWALKERS=NWALKERS,
         seed=0
     )
@@ -40,12 +43,13 @@ if __name__ == '__main__':
     from fitting.plotting import *
     
     sampler = run_emcee(
-        6,1000,32,
+        NCORES=6,NIT=1000,NWALKERS=32,
         data_filename='lensing/results/lensing_EUC-PURE_MICE_N30_Rv06-10_z020-040_typeS_binlin.fits',
         save_filename='fitting/results/fitting_EUC-PURE_MICE_N30_Rv06-10_z020-040_typeS_binlin.hdf5',
         model_name='B15',
         observable='delta_sigma',
-        cov_mode='full'
+        cov_mode='full',
+        init_guess=default_guess.get('delta_sigma')
     )
     plot_chains(sampler.get_chain())
     plt.show()
