@@ -7,6 +7,8 @@ class Likelihood:
         
         self.R = data.R
         self.rhomean = rho_mean(data.redshift)
+        self.limits = param_limits
+        self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
 
         if observable=='sigma':
             self.ydata = data.Sigma
@@ -19,10 +21,10 @@ class Likelihood:
             self.cov = data.covDSt
 
             self.func = model.delta_sigma
+
+            self.limits.pop('sigma0')
         else:
             raise ValueError('observable must be either "sigma" or "delta_sigma"')
-
-        self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
 
         if cov_mode == 'full':
             self.yerr = np.linalg.inv(self.cov)*self.hartlap_factor
@@ -33,7 +35,6 @@ class Likelihood:
         else:
             raise ValueError('cov_mode must be either "full" or "diag"')
 
-        self.limits = param_limits
         self.param_name = list(self.limits.keys())
         self.nparams = len(self.param_name)
         
