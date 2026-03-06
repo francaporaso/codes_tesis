@@ -20,12 +20,13 @@ class BaseModelFast:
     # TODO:  - agregar parametro ctte Sigma_0 a sigma
     def sigma(self, R, *params):
 
+        *p, sigma0 = params
         u_grid = np.linspace(0.0, 100.0, 500)
         radius_grid = np.hypot(u_grid[None, :], R[:, None])
-        integrand_grid = self.density_contrast(radius_grid, *params)
+        integrand_grid = self.density_contrast(radius_grid, *p)
         result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
         
-        return result
+        return result + sigma0
 
     def delta_sigma(self, R, *params):
 
