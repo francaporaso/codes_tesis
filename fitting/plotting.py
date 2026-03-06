@@ -35,3 +35,28 @@ def plot_pos(pos):
         axes[i].set_xlabel(f'$a_{i}$')
 
     return fig
+
+def plot_getdist(labels, names, discard, *samplers):
+    from getdist import plots as gdplots, MCSamples
+    log_prob = {}
+    chain = {}
+    log_prob_list = {}
+    chain_list = {}
+
+    samples = {}
+
+    for i,spl in enumerate(samplers):
+        log_prob[i] = spl.get_log_prob(discard=discard)
+        chain[i] = spl.get_chain(discard=discard)
+        log_prob_list[i] = [log_prob[i][:,j] for j in range(log_prob[i].shape[1])]
+        chain_list[i] = [chain[i][:,j] for j in range(chain[i].shape[1])]
+
+        samples[i] = MCSamples(
+            samples=chain_list[i],
+            loglikes=[-lp for lp in log_prob_list[i]],
+            labels=labels,
+            names=names,
+        )
+
+    g = gdplots.get_subplot_plotter()
+    g.triangle_plot(list(samples.values()), filled=True);
