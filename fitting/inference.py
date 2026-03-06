@@ -22,11 +22,10 @@ class Likelihood:
         else:
             raise ValueError('observable must be either "sigma" or "delta_sigma"')
 
-        Njk = 100
-        hartlap_factor = (Njk-len(self.R)-2)/(Njk-1)
+        self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
 
         if cov_mode == 'full':
-            self.yerr = np.linalg.inv(self.cov)*hartlap_factor
+            self.yerr = np.linalg.inv(self.cov)*self.hartlap_factor
         elif cov_mode == 'diag':
             # this allows to use log_likelihood with both diag or full covariance!
             self.yerr = np.zeros_like(self.cov)
