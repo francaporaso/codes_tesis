@@ -6,12 +6,15 @@ def chi2_red(data, model, invC, ndof):
     d = (data-model)
     return np.sum(np.dot(d, np.dot(invC,d)))/ndof
 
-
 def make_pos_gaussian(init_guess, NWALKERS, seed=0):
     rng = np.random.default_rng(seed)
-    pos = np.array([
-        rng.normal(init_guess[i], np.abs(0.15*init_guess[i]), NWALKERS) for i in range(len(init_guess))
-    ]).T
+    nparam = len(init_guess)
+    pos = np.zeros((NWALKERS, nparam))
+    for i in range(nparam):
+        if init_guess[i]!=0.0:
+            pos[:, i] = rng.normal(init_guess[i], np.abs(0.15*init_guess[i]), NWALKERS)
+        else:
+            pos[:, i] = rng.normal(0.0, 0.15, NWALKERS)
     return pos
 
 def validate_pos(pos, model_name):
