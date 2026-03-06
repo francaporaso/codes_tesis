@@ -3,7 +3,9 @@ from scipy.integrate import simpson, quad, cumulative_trapezoid
 from scipy.special import erf
 
 from fitting.constants import *
-from fitting.utilfuncs import *
+
+def logistic(x, x0=1, k=10):
+    return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)
 
 # ==================== 
 # Base models: sigma, delta_sigma integration
@@ -106,3 +108,22 @@ class THLogistic(BaseModelFast):
     def density_contrast(self, r, dc, rw, dw):
         k=15
         return dc*(1.0-logistic(r, x0=1, k=k)) + dw*(logistic(r, x0=1, k=k) - logistic(r, x0=rw, k=k))
+
+models_dict = {
+    'HSW':HSW(),
+    'TH':TopHat(),
+    'mLW':ModifiedLW(),
+    'B15':B15(),
+}
+default_limits = {
+    'HSW':{'dc':(-1.0,0.0),'rs':(0.5,5.0),'a':(1.0,15.0),'b':(1.0,15.0)},
+    'B15':{'dc':(-1.0,0.0),'rs':(0.5,5.0),'rv':(0.5,5.0),'a':(1.0,15.0),'b':(1.0,15.0)},
+    'TH':{'dc':(-1.0,0.0),'dw':(-0.5,0.5),'rw':(1.0,5.0)},
+    'mLW':{'dc':(-1.0,0.0),'dw':(-0.5,0.5),'rw':(1.0,5.0)},
+}
+default_guess = {
+    'HSW':(-0.7,0.9,3.0,6.0),
+    'B15':(-0.7,0.9,1.0,3.0,6.0),
+    'TH':(-0.7,0.2,2.5),
+    'mLW':(-0.7,0.2,2.5),
+}
