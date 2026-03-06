@@ -6,6 +6,7 @@ from astropy.table import Table
 @dataclass
 class DataProfile:
     redshift : np.float64
+    Njk : np.float64
     R : np.ndarray
     Sigma : np.ndarray
     DSigma_t : np.ndarray
@@ -53,6 +54,7 @@ def read_dataprofile_fits(**kwargs):
         data = DataProfile(
             R = np.linspace(hd['RIN'],hd['ROUT'],hd['N']),
             redshift = hd['Z_MEAN'],
+            Njk = hd['NK'],
             Sigma = dt['Sigma'],
             DSigma_t = dt['DSigma_t'],
             DSigma_x = dt['DSigma_x'],
