@@ -97,6 +97,13 @@ class TopHat(BaseModelFast):
         rv = 1.0 
         return np.where(R<rv, (dc-dw)*np.sqrt(rv**2-R**2), 0.0) + np.where(R<rw, dw*np.sqrt(rw**2-R**2), 0.0)
     
+    def delta_sigma(self, R, dc, dw, rw):
+        rv = 1.0
+        I1 = np.where(R<rv, 1/3*(dc-dw)*(rv**3-(rv**2-R**2)**(3/2)), 1/3*(dc-dw)*rv**3)
+        I2 = np.where(R<rw, 1/3*dw*(rw**3-(rw**2-R**2)**(3/2)), 1/3*dw*rw**3)
+
+        return (2.0/R**2)*(I1+I2) - self.sigma(R, dc, dw, rw)
+    
 class Paz13(BaseModelFast):
     def density_contrast(self, r, S, Rs, P, W):
         x = np.log10(r/Rs)
