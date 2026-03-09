@@ -26,3 +26,17 @@ def validate_pos(pos, model_name):
                 print('Invalid pos, redrawing...')
                 pos[j,i] = rng.uniform(lmin, lmax)
     return pos
+
+def get_fitted_params(chain, params):
+    '''
+    chain : sampler.get_chain(discard=ndiscard) # posteriors
+    params : L.param_name
+    '''
+    fitted_params = {}
+    error_params = {}
+    for i, p in enumerate(params):
+        percentil = np.percentile(chain[:,:,i], [16,50,84])
+        fitted_params[p] = percentil[1]
+        error_params[p] = tuple(percentil[[0,2]]-percentil[1])
+
+    return fitted_params, error_params
