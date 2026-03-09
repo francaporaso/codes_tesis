@@ -119,9 +119,16 @@ class Paz13(BaseModelFast):
         return Delta+1/3*r*Delta_prime
 
 class THLogistic(BaseModelFast):
-    def density_contrast(self, r, dc, rw, dw):
+    def density_contrast(self, r, dc, dw, rw):
         k=15
-        return dc*(1.0-logistic(r, x0=1, k=k)) + dw*(logistic(r, x0=1, k=k) - logistic(r, x0=rw, k=k))
+        return (dc-dw)*(1.0-logistic(r, x0=1, k=k)) + dw*(1.0-logistic(r, x0=rw, k=k))
+
+class ModLWLogistic(BaseModelFast):
+    # not tested! weird values at r=rv
+    def density_contrast(self, r, dc, dw, rw):
+        rv = 1.0
+        k=15
+        return (dc-dw)*(1.0-(r/rv)**3)*(1.0-logistic(r, x0=rv, k=k)) + dw*(1.0-logistic(r, x0=rw, k=k))
 
 models_dict = {
     'HSW':HSW(),
