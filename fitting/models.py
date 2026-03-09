@@ -90,7 +90,12 @@ class ModifiedLW(BaseModelFast):
 class TopHat(BaseModelFast):
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
-        return np.where(r < rv, dc, np.where(r > rw, 0.0, dw))
+        return np.where(r<rv, dc-dw, 0.0) + np.where(r<rw, dw, 0.0)
+    
+    # easier to compute since is integrable
+    def sigma(self, R, dc, dw, rw):
+        rv = 1.0 
+        return np.where(R<rv, (dc-dw)*np.sqrt(rv**2-R**2), 0.0) + np.where(R<rw, dw*np.sqrt(rw**2-R**2), 0.0)
     
 class Paz13(BaseModelFast):
     def density_contrast(self, r, S, Rs, P, W):
