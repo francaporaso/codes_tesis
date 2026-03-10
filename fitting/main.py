@@ -62,6 +62,7 @@ if __name__ == '__main__':
         cov_mode=cov_mode,
         init_guess=default_guess.get(model_name)
     )
+    # TODO: que guarde los valores de mejor ajuste!
 
     plot_chains(sampler.get_chain())
     plt.show()
