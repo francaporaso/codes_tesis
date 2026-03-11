@@ -64,4 +64,3 @@ def plot_getdist(labels, names, discard, model, samplers, samplename):
 
     g = gdplots.get_subplot_plotter()
     g.triangle_plot(list(samples.values()), filled=True);
-s
