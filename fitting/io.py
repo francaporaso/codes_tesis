@@ -47,12 +47,13 @@ class DataProfile:
 # the **kwargs requires giving the arg name when calling this function
 # ex: data = read_dataprofile_fits(name='myprofile.fits')
 # this is not going to work: data = read_dataprofile_fits('myprofile.fits').
-def read_dataprofile_fits(**kwargs):
-    with fits.open(**kwargs) as f:
+def read_dataprofile_fits(binning='lin', *args, **kwargs):
+    binspace = (np.linspace if binning=='lin' else np.geomspace)
+    with fits.open(*args, **kwargs) as f:
         hd = f[0].header
         dt = f[1].data
         data = DataProfile(
-            R = np.linspace(hd['RIN'],hd['ROUT'],hd['N']),
+            R = binspace(hd['RIN'],hd['ROUT'],hd['N']),
             redshift = hd['Z_MEAN'],
             Njk = hd['NK'],
             Sigma = dt['Sigma'],
