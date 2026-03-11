@@ -59,7 +59,7 @@ def plot_getdist(labels, names, discard, model, samplers, samplename):
             ranges=default_limits.get(model),
             labels=labels,
             names=names,
-            label=samplename,
+            label=samplename[i],
         )
 
     g = gdplots.get_subplot_plotter()
