@@ -4,21 +4,9 @@ from dataclasses import dataclass
 from lensing.io import *
 
 @dataclass
-class Config:
-    
+class GlobalConfig:
     RIN : float|None = None
     ROUT : float|None = None
-
-    # TODO :: maybe this can be in another dataclass
-    # to make a for loop over these for different samples
-    # or they could be a list to iterate over...
-    ZMIN : float|None = None
-    ZMAX : float|None = None
-    RVMIN : float|None = None
-    RVMAX : float|None = None
-    DELTAMIN : float|None = None
-    DELTAMAX : float|None = None
-
     N : int|None = None
     NJK : int|None = None
     NCORES : int|None = None
@@ -31,10 +19,30 @@ class Config:
     RDSHFT_COLNAME : str = 'z_cgal_v'
     LENSNAME : str|None = None
     SOURCENAME : str|None = None
-    SAVEFILENAME : str|None = None
+    OUTPUTNAME : str|None = None
 
+    def print(self):
+        print(' Lens cat '+f'{": ":.>10}{self.LENSNAME}')
+        print(' Source cat '+f'{": ":.>10}{self.SOURCENAME}')
+        print(' Output file '+f'{": ":.>10}{self.OUTPUTNAME}')
+        print(' NCORES '+f'{": ":.>12}{self.NCORES}\n')
+        print(' RMIN '+f'{": ":.>14}{self.RIN:.2f}')
+        print(' RMAX '+f'{": ":.>14}{self.ROUT:.2f}')
+        print(' N '+f'{": ":.>17}{self.N:<2d}')
+        print(' NJK '+f'{": ":.>16}{self.NJK:<2d}')
+        print(' Binning '+f'{": ":.>11}{self.BINNING}')
+        print(' Shape Noise '+f'{": ":.>7}{self.SHAPENOISE}\n')
 
-CONFIG : Config = None
+@dataclass
+class VoidProfileConfig:
+    ZMIN : float|None = None
+    ZMAX : float|None = None
+    RVMIN : float|None = None
+    RVMAX : float|None = None
+    DELTAMIN : float|None = None
+    DELTAMAX : float|None = None
+
+CONFIG : GlobalConfig = None
 
 S = None # Table of galaxy data
 PIX_TO_IDX = {}
@@ -46,7 +54,7 @@ def init_worker(configargs, sourceargs):
     global S, PIX_TO_IDX
     global binspace
 
-    CONFIG = Config(**configargs)
+    CONFIG = GlobalConfig(**configargs)
 
     if CONFIG.BINNING == 'lin':
         binspace = np.linspace
