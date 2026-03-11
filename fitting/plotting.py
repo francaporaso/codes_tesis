@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from corner import corner
 
+from fitting.models import default_limits
+
 def plot_chains(chain):
 
     nit, _, nparams = chain.shape
@@ -36,7 +38,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, *samplers):
+def plot_getdist(labels, names, discard, model, samplers, samplename):
     from getdist import plots as gdplots, MCSamples
     log_prob = {}
     chain = {}
@@ -54,9 +56,12 @@ def plot_getdist(labels, names, discard, *samplers):
         samples[i] = MCSamples(
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
+            ranges=default_limits.get(model),
             labels=labels,
             names=names,
+            label=samplename,
         )
 
     g = gdplots.get_subplot_plotter()
     g.triangle_plot(list(samples.values()), filled=True);
+s
