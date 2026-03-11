@@ -17,7 +17,8 @@ class BaseModelFast:
         ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
         raise NotImplementedError('Must be defined in child class')
     
-    # TODO:  - agregar parametro ctte Sigma_0 a sigma
+    # TODO:  - Sigma_0 is not implemented as before. NOW rhomean is multiplied AFTER adding sigma0. OLD version (paper) has sigma0 'outside', which alters the value. 
+    # As it is now, Sigma_0 dont represent an aditive constant to the profile!, is an additive constant times rhomean
     def sigma(self, R, *params):
 
         *p, sigma0 = params
