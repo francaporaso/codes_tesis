@@ -1,5 +1,6 @@
 from multiprocessing import Pool
 import emcee
+import h5py
 
 from fitting.constants import *
 from fitting.inference import *
@@ -46,6 +47,7 @@ if __name__ == '__main__':
     NCORES = 32
     NIT = 5000
     NWALKERS = 64
+    PLOT = True #False
 
     model_name = 'HSW'
     observable = 'delta_sigma'
