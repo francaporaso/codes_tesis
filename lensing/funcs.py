@@ -72,20 +72,37 @@ def get_jackknife_naive(RA, DEC, NK, L):
 
     return K
 
-def get_jackknife_kmeans(ra_v, dec_v, nvoids, NK):
+def get_jackknife_kmeans(ra_sample, dec_sample, ra_cl, dec_cl, nlenses, NJK):
 
-    K = np.zeros((NK+1, nvoids), dtype=bool)
-    K[0] = True
+    #K = np.zeros((NJK+1, nlenses), dtype=bool)
+    #K[0] = True
+    sam = np.column_stack([ra_sample, dec_sample])
+    L = np.column_stack([ra_cl, dec_cl])
 
-    L = np.column_stack([ra_v, dec_v])
-
-    km = kmeans_sample(L, ncen=NK, verbose=0)
+    km = kmeans_sample(sam, ncen=NJK, verbose=0)
     labels = km.find_nearest(L)
 
-    for j in range(1, NK+1):
-        K[j] = ~(labels==j-1)
+    #for j in range(1, NJK+1):
+    #    K[j] = ~(labels==j-1)
 
-    return K, labels
+    # return K, labels
+    return labels
+
+
+#def get_jackknife_kmeans(ra_v, dec_v, nvoids, NK):
+#
+#    K = np.zeros((NK+1, nvoids), dtype=bool)
+#    K[0] = True
+#
+#    L = np.column_stack([ra_v, dec_v])
+#
+#    km = kmeans_sample(L, ncen=NK, verbose=0)
+#    labels = km.find_nearest(L)
+#
+#    for j in range(1, NK+1):
+#        K[j] = ~(labels==j-1)
+#
+#    return K, labels
 
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
