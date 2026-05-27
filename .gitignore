@@ -10,5 +10,9 @@ __pycache__
 *.png
 *.pdf
 *.svg
+# config files
+*.toml
+*.ylm
+*.json
 # results folder
 results/
