@@ -75,8 +75,10 @@ def check_output_exists(output_file, overwrite=False):
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
     return True
 
-## WARNING::cosmo.distance is in physical units (ie Mpc)
+## WARNING :
+## cosmo.distance is in physical units (ie Mpc)
 ## need to divide out by littleh to get Mpc/h
+## important only if h!=1
 def sigma_crit(z_l, z_s):
     d_l  = cosmo.angular_diameter_distance(z_l).value
     d_s  = cosmo.angular_diameter_distance(z_s).value
@@ -184,10 +186,7 @@ def stacking(source_args, lens_args, profile_args):
         resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
 
     print(' Pool ended, stacking...', flush=True)
-
-    _, kidx = get_jackknife_kmeans(L[2], L[3], nvoids, NK)
-    kunq = np.unique(kidx)
-
+ 
     kappa, gamma_t, gamma_x, nbin = map(
         lambda x: np.vstack(x),
         zip(*resmap)
@@ -198,7 +197,14 @@ def stacking(source_args, lens_args, profile_args):
     DSigma_t_wsum[0] = gamma_t.sum(axis=0)
     DSigma_x_wsum[0] = gamma_x.sum(axis=0)
 
-    for j, k in enumerate(kunq):
+    jidx = np.arange(0, len(_S)-1, len(_S)//100_000, dtype=int)
+    _, kidx = get_jackknife_kmeans(
+        _S['ra_gal'][jidx], 
+        _S['dec_gal'][jidx], 
+        nvoids, NK
+    )
+    
+    for j, k in enumerate(range(NK)):
         mask = (kidx!=k)
 
         N_inbin[j+1,:] = nbin[mask].sum(axis=0)
