@@ -1,7 +1,14 @@
+# complied code
 *pyc
+# cahce
 __pycache__
 .vscode
 .ipynb_checkpoints
-fit_redmapper-Copy1.ipynb
-*png
+# jupyter notebooks
+*.ipynb
+# images&pdf
+*.png
+*.pdf
+*.svg
+# results folder
 results/
