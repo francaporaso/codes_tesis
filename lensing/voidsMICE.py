@@ -198,10 +198,13 @@ def stacking(source_args, lens_args, profile_args):
     DSigma_x_wsum[0] = gamma_x.sum(axis=0)
 
     jidx = np.arange(0, len(_S)-1, len(_S)//100_000, dtype=int)
-    _, kidx = get_jackknife_kmeans(
-        _S['ra_gal'][jidx], 
-        _S['dec_gal'][jidx], 
-        nvoids, NK
+    kidx = get_jackknife_kmeans(
+        ra_sample=_S['ra_gal'][jidx], 
+        dec_sample=_S['dec_gal'][jidx], 
+        ra_cl=L[2],
+        dec_cl=L[3],
+        nlenses=nvoids, 
+        NJK=NK
     )
     
     for j, k in enumerate(range(NK)):
