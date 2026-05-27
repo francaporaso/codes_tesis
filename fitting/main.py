@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cov_mode = 'full'
 
     if observable=='delta_sigma':
-        init_guess = default_guess.get(model_name).pop('sigma0')
+        init_guess = default_guess.get(model_name)[:-1]
 
     for i, rv in enumerate(['06-10', '10-50']):
         for j, t in enumerate(['mixed', 'S', 'R']):
