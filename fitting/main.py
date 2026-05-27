@@ -67,7 +67,7 @@ if __name__ == '__main__':
                 model_name=model_name,
                 observable=observable,
                 cov_mode=cov_mode,
-                init_guess=default_guess.get(model_name)
+                init_guess=init_guess
             )
 
             param_names = list(default_limits.get(model_name).keys())
