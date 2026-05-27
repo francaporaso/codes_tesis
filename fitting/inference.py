@@ -23,7 +23,11 @@ class Likelihood:
 
             self.func = model.delta_sigma
 
-            self.limits.pop('sigma0')
+            try:
+                self.limits.pop('sigma0')
+            except KeyError:
+                print('')
+
         else:
             raise ValueError('observable must be either "sigma" or "delta_sigma"')
 
