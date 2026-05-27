@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cov_mode = 'full'
 
     for i, rv in enumerate(['06-10', '10-50']):
-        for j, t in enumrerate(['mixed', 'S', 'R']):
+        for j, t in enumerate(['mixed', 'S', 'R']):
 
             data_filename = f'lensing/results/lensing_rev2_MICE_N30_Rv{rv}_z020-040_type{t}_binlin.fits'
             chain_filename = f'fitting/results/fitting_MICE_rev2_N30_Rv{rv}_z020-040_type{t}_binlin.hdf5'
