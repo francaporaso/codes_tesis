@@ -49,7 +49,7 @@ if __name__ == '__main__':
     NWALKERS = 64
     PLOT = True #False
 
-    model_name = 'HSW'
+    model_name = 'mLW'
     observable = 'delta_sigma'
     cov_mode = 'full'
 
