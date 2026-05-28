@@ -90,7 +90,7 @@ if __name__ == '__main__':
             )
 
             with h5py.File(chain_filename, 'a') as f:
-                group_path = f'fitedparams/{model_name}/{cov_mode}'
+                group_path = f'fitedparams/{model_name}/{observable}/{cov_mode}'
 
                 # Overwrite if exists
                 if group_path in f:
