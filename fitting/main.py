@@ -45,9 +45,11 @@ if __name__ == '__main__':
     from fitting.plotting import *
     
     NCORES = 32
-    NIT = 5000
+    NIT = 1000
     NWALKERS = 64
     PLOT = True #False
+
+    sample = 'test'
 
     model_name = 'HSW'
     observable = 'sigma'
@@ -60,7 +62,7 @@ if __name__ == '__main__':
         for j, t in enumerate(['mixed', 'S', 'R']):
 
             data_filename = f'lensing/results/lensing_rev2_MICE_N30_Rv{rv}_z020-040_type{t}_binlin.fits'
-            chain_filename = f'fitting/results/fitting_MICE_rev2_N30_Rv{rv}_z020-040_type{t}_binlin.hdf5'
+            chain_filename = f'fitting/results/fitting_MICE_rev2-{sample}_N30_Rv{rv}_z020-040_type{t}_binlin.hdf5'
 
             sampler = run_emcee(
                 NCORES=NCORES,NIT=NIT,NWALKERS=NWALKERS,
