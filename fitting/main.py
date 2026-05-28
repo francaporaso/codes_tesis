@@ -57,6 +57,8 @@ if __name__ == '__main__':
 
     if observable=='delta_sigma':
         init_guess = default_guess.get(model_name)[:-1]
+    else:
+        init_guess = default_guess.get(model_name)
 
     for i, rv in enumerate(['06-10', '10-50']):
         for j, t in enumerate(['mixed', 'S', 'R']):
