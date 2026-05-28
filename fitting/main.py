@@ -43,16 +43,22 @@ def run_emcee(
 
 if __name__ == '__main__':
     from fitting.plotting import *
-    
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument('--observable', type=str, default='delta_sigma', action='store', choices=['delta_sigma', 'sigma'])
+    parser.add_argument('--model', type=str, default='HSW', action='store', choices=['HSW', 'mLW', 'TH'])
+    args = parser.parse_args()
+
     NCORES = 32
-    NIT = 1000
+    NIT = 5000
     NWALKERS = 64
-    PLOT = True #False
+    PLOT = False #True
 
-    sample = 'test'
+    sample = 'full'
 
-    model_name = 'HSW'
-    observable = 'sigma'
+    model_name = args.model
+    observable = args.observable
     cov_mode = 'full'
 
     if observable=='delta_sigma':
