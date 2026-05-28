@@ -98,5 +98,5 @@ if __name__ == '__main__':
                 plot_chains(sampler.get_chain())
                 plt.show()
 
-                plot_corner(sampler);
+                plot_corner(sampler, discard=int(NIT*0.40));
                 plt.show()
