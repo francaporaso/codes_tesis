@@ -18,7 +18,7 @@ def run_emcee(
 
     L = Likelihood(
         data=data,
-        model=models_dict.get(model_name),
+        model=models_dict.get(model_name)(data.redshift),
         param_limits=default_limits.get(model_name),
         observable=observable,
         cov_mode=cov_mode
