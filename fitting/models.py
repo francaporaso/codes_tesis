@@ -136,11 +136,11 @@ class ModLWLogistic(BaseModelFast):
         return (dc-dw)*(1.0-(r/rv)**3)*(1.0-logistic(r, x0=rv, k=k)) + dw*(1.0-logistic(r, x0=rw, k=k))
 
 models_dict = {
-    'HSW':HSW(),
-    'TH':TopHat(),
-    'mLW':ModifiedLW(),
-    'B15':B15(),
-    'P13':Paz13(),
+    'HSW':HSW,
+    'TH':TopHat,
+    'mLW':ModifiedLW,
+    'B15':B15,
+    'P13':Paz13,
 }
 default_limits = {
     'HSW':{'dc':(-1.0,0.0),'rs':(0.5,5.0),'a':(1.0,15.0),'b':(1.0,15.0),'sigma0':(-0.5,0.5)},
