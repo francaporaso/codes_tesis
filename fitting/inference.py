@@ -44,7 +44,7 @@ class Likelihood:
         self.nparams = len(self.param_name)
         
     def log_likelihood(self, theta):
-        model = self.func(self.R, *theta)*self.rhomean
+        model = self.func(self.R, *theta) #*self.rhomean
         dist = self.ydata - model
         return -0.5*np.dot(dist, np.dot(self.yerr, dist))
 

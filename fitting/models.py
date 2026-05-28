@@ -12,6 +12,9 @@ def logistic(x, x0=1, k=10):
 # ==================== 
 
 class BaseModelFast:
+    def __init__(self, redshift):
+        self.redshift = redshift
+        self.rho_mean = rho_mean(redshift)
 
     def density_contrast(self):
         ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
@@ -27,7 +30,7 @@ class BaseModelFast:
         integrand_grid = self.density_contrast(radius_grid, *p)
         result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
         
-        return result + sigma0
+        return result*self.rho_mean + sigma0
 
     def delta_sigma(self, R, *params):
 
@@ -48,7 +51,7 @@ class BaseModelFast:
         integrand_theta = self.density_contrast(r_mesh, *params) / denom[None, :]
         I2 = simpson(integrand_theta, theta, axis=1)
 
-        return (4.0 / R**2) * I1_interp - 4.0 * R * I2
+        return self.rho_mean*((4.0 / R**2) * I1_interp - 4.0 * R * I2)
     
 class BaseModelQuad:
 
@@ -76,6 +79,7 @@ class BaseModelQuad:
 # ==================== 
 
 class HSW(BaseModelFast):
+
     def density_contrast(self, r, dc, rs, a, b):
         return dc*(1-(r/rs)**a)/(1+r**b)
 
