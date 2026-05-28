@@ -31,7 +31,7 @@ def run_emcee(
     )
     validate_pos(init_pos, model_name)
     
-    group_name = f'emcee/{model_name}/{cov_mode}'
+    group_name = f'emcee/{model_name}/{observable}/{cov_mode}'
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
@@ -49,8 +49,8 @@ if __name__ == '__main__':
     NWALKERS = 64
     PLOT = True #False
 
-    model_name = 'P13'
-    observable = 'delta_sigma'
+    model_name = 'HSW'
+    observable = 'sigma'
     cov_mode = 'full'
 
     if observable=='delta_sigma':
@@ -75,7 +75,7 @@ if __name__ == '__main__':
             param_names = list(default_limits.get(model_name).keys())
             # not possible to fix params for now
             fitpar, errpar = get_fitted_params(
-                sampler.get_chain(discard=int(NIT*0.15)), 
+                sampler.get_chain(discard=int(NIT*0.40)), 
                 param_names
             )
 
