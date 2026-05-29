@@ -38,7 +38,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename, kwargs):
+def plot_getdist(labels, names, discard, model, samplers, samplename, kwargs=None):
     from getdist import plots as gdplots, MCSamples
     log_prob = {}
     chain = {}
