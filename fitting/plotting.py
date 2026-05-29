@@ -57,8 +57,8 @@ def plot_getdist(labels, names, discard, model, samplers, samplename):
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
             ranges=default_limits.get(model),
-            labels=labels,
-            names=names,
+            labels=labels[i],
+            names=names[i],
             label=samplename[i],
         )
 
