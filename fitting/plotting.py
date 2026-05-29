@@ -3,7 +3,7 @@ from corner import corner
 
 from fitting.models import default_limits
 
-def plot_chains(chain):
+def plot_chains(chain,labels):
 
     nit, _, nparams = chain.shape
     
@@ -11,7 +11,7 @@ def plot_chains(chain):
     for i in range(nparams):
         axes[i].plot(chain[:,:,i], 'k', alpha=0.3)
         axes[i].set_xlim(0.0, nit)
-        axes[i].set_ylabel(f'$a_{i}$')
+        axes[i].set_ylabel(labels[i])
         axes[i].yaxis.set_label_coords(-0.1, 0.5)
     
     axes[-1].set_xlabel('Step Number')
@@ -38,7 +38,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename):
+def plot_getdist(labels, names, discard, model, samplers, samplename, kwargs):
     from getdist import plots as gdplots, MCSamples
     log_prob = {}
     chain = {}
@@ -63,4 +63,4 @@ def plot_getdist(labels, names, discard, model, samplers, samplename):
         )
 
     g = gdplots.get_subplot_plotter()
-    g.triangle_plot(list(samples.values()), filled=True);
+    g.triangle_plot(list(samples.values()), filled=True, **kwargs);
