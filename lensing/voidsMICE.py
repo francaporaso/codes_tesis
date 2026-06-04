@@ -350,9 +350,9 @@ def execute_single_simu(config, args):
     ]
 
     jack_hdu = [
-        fits.ImageHDU(Sigma[1:profile_args['NK']+1, :], name='jack_Sigma'),
-        fits.ImageHDU(DSigma_t[1:profile_args['NK']+1, :], name='jack_DSigma_t'),
-        fits.ImageHDU(DSigma_x[1:profile_args['NK']+1, :], name='jack_DSigma_x'),
+        fits.ImageHDU(Sigma[1:, :], name='jack_Sigma'),
+        fits.ImageHDU(DSigma_t[1:, :], name='jack_DSigma_t'),
+        fits.ImageHDU(DSigma_x[1:, :], name='jack_DSigma_x'),
     ]
 
 
