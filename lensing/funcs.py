@@ -48,29 +48,39 @@ def eq2p2(ra_gal, dec_gal, RA0,DEC0):
 
     return rad, theta
 
-def get_jackknife_naive(RA, DEC, NK, L):
+def get_jackknife_naive(ra_sample, dec_sample, ra_cl, dec_cl, NK=100):
+    '''
+    divides the sky in NK = n*m rectangular regions of the same area.
+    usefull for rectangular survey geometries. 
+    returns index of the jackknife region that the void belongs to.
+    '''
 
-    sqrt_NK = int(np.sqrt(NK))
-    NNN = len(L[0]) ##total number of voids
-    ra,dec = L[RA],L[DEC]
-    K    = np.zeros((NK+1,NNN), dtype=bool)
-    K[0] = np.ones(NNN, dtype=bool)
+    n = 10 if NK>=100 else 5
+    m = np.ceil(NK/n).astype(int)
+    print(f'{n=}')
+    print(f'{m=}')
+    print(f'effective NJK: {n*m}')
 
-    ramin  = np.min(ra)
-    cdec   = np.sin(np.deg2rad(dec))
+    ramin  = np.min(ra_sample)
+    print(f'{ramin=}')
+    cdec   = np.sin(np.deg2rad(dec_sample))
     decmin = np.min(cdec)
-    dra    = ((np.max(ra)+1.e-5) - ramin)/sqrt_NK
-    ddec   = ((np.max(cdec)+1.e-5) - decmin)/sqrt_NK
+    print(f'{decmin=}')
+    dra    = (np.max(ra_sample) - ramin)/n
+    ddec   = (np.max(cdec) - decmin)/m
 
-    c = 1
-    for a in range(sqrt_NK):
-        for d in range(sqrt_NK):
-            mra  = (ra  >= ramin + a*dra)&(ra < ramin + (a+1)*dra)
-            mdec = (cdec >= decmin + d*ddec)&(cdec < decmin + (d+1)*ddec)
-            K[c] = ~(mra&mdec)
+    sdec_cl = np.sin(np.deg2rad(dec_cl))
+
+    kidx = np.zeros(len(ra_cl), dtype=int)
+    c = 0
+    for a in range(n):
+        for d in range(m):
+            mra  = (ra_cl  >= ramin + a*dra) & (ra_cl < ramin + (a+1)*dra)
+            mdec = (sdec_cl >= decmin + d*ddec) & (sdec_cl < decmin + (d+1)*ddec)
+            kidx[mra&mdec] = c
             c += 1
 
-    return K
+    return kidx
 
 def get_jackknife_kmeans(ra_sample, dec_sample, ra_cl, dec_cl, nlenses, NJK):
 
@@ -87,22 +97,6 @@ def get_jackknife_kmeans(ra_sample, dec_sample, ra_cl, dec_cl, nlenses, NJK):
 
     # return K, labels
     return labels
-
-
-#def get_jackknife_kmeans(ra_v, dec_v, nvoids, NK):
-#
-#    K = np.zeros((NK+1, nvoids), dtype=bool)
-#    K[0] = True
-#
-#    L = np.column_stack([ra_v, dec_v])
-#
-#    km = kmeans_sample(L, ncen=NK, verbose=0)
-#    labels = km.find_nearest(L)
-#
-#    for j in range(1, NK+1):
-#        K[j] = ~(labels==j-1)
-#
-#    return K, labels
 
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
