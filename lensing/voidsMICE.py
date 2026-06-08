@@ -245,7 +245,7 @@ def execute_single_simu(config, args):
     )
 
     random_args = dict(
-        name = '~/cats/MICE/voids_rands.dat' ,
+        name = 'MICE/voids_rands.dat' ,
         Rv_min = config['void']['Rv_min'],
         Rv_max = config['void']['Rv_max'],
         z_min = config['void']['z_min'],
