@@ -244,13 +244,19 @@ def execute_single_simu(config, args):
         MICE=True,
     )
 
-    #sourcename = config['sim'][gravity]['source']['full']
-    #if (config['void']['z_min']>=0.1) and (config['void']['z_max']<=0.2):
-    #    sourcename = config['sim'][gravity]['source'][f'for01-02']
-    #elif (config['void']['z_min']>=0.2) and (config['void']['z_max']<=0.3):
-    #    sourcename = config['sim'][gravity]['source'][f'for02-03']
-    #else:
-    #    sourcename = config['sim'][gravity]['source'][f'for05-06']
+    random_args = dict(
+        name = '~/cats/MICE/voids_rands.dat' ,
+        Rv_min = config['void']['Rv_min'],
+        Rv_max = config['void']['Rv_max'],
+        z_min = config['void']['z_min'],
+        z_max = config['void']['z_max'],
+        delta_min = config['void']['delta_min'], # void type
+        delta_max = config['void']['delta_max'], # void type
+        NK = config['NK'],
+        fullshape=True,
+        NCHUNKS=1,
+        MICE=True,
+    )
 
     source_args = dict(
         name = config['source']['name'],
@@ -311,7 +317,13 @@ def execute_single_simu(config, args):
     print(' Type '+f'{": ":.>14}[{lens_args["delta_min"]},{lens_args["delta_max"]}) => {voidtype}')
 
     # ==== Calculating profiles
+    print(' >> Profiles...')
     Sigma, DSigma_t, DSigma_x, extradata = stacking(source_args, lens_args, profile_args)
+
+    # making sigma in random points for LSS substraction
+    print('  >> Profile randoms...')
+    Sigma_rand, _, _, _ = stacking(source_args, random_args, profile_args)
+
     # =======================
 
     # ==== Saving
@@ -343,8 +355,12 @@ def execute_single_simu(config, args):
         'DSigma_x':DSigma_x[0]
     })
 
+    # sigma cov_matrix
+    covS = cov_matrix(Sigma[1:,:])
+    covS_rand = cov_matrix(Sigma_rand[1:,:])
+
     cov_hdu = [
-        fits.ImageHDU(cov_matrix(Sigma[1:,:]), name='cov_Sigma'),
+        fits.ImageHDU(covS - covS_rand, name='cov_Sigma'),
         fits.ImageHDU(cov_matrix(DSigma_t[1:,:]), name='cov_DSigma_t'),
         fits.ImageHDU(cov_matrix(DSigma_x[1:,:]), name='cov_DSigma_x'),
     ]
