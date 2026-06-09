@@ -1,0 +1,411 @@
+from argparse import ArgumentParser
+#from astropy.cosmology import WMAP5 as cosmo ## MICE uses WMAP5
+from astropy.cosmology import FlatLambdaCDM ## MICE uses WMAP5
+from astropy.constants import G,c,M_sun,pc
+from astropy.io import fits
+from astropy.table import Table
+import healpy as hp
+from multiprocessing import Pool
+import numpy as np
+import os
+import time
+import toml
+from tqdm import tqdm
+
+from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix, get_jackknife_kmeans
+from config import Config
+
+# --- Fixed globals
+
+cfg : None | Config = None
+cosmo = FlatLambdaCDM(Om0=0.25, H0=100.0, Ob0=0.044) # ver Fosalba+2015
+
+SOURCE = None
+PIX_TO_IDX : dict = {}
+SC_CONSTANT : float = (c.value**2.0/(4.0*np.pi*G.value))*(pc.value/M_sun.value)*1e-6
+binspace = None
+
+# --- Input
+#_RIN : float  = None
+#_ROUT : float = None
+#_N : int      = None
+#_NK : int     = None
+#_NCORES : int = None
+#_S : Table    = None
+#_PIX_TO_IDX : dict = {}
+#_binspace = None
+#_NSIDE : int = None
+#_SHAPENOISE : bool = False
+
+# "z_cgal" : true-z
+# "z_cgal_v" : spec-z
+# "z_desdm_mc" : photo-z
+# REDSHIFT = "z_cgal_v" # name of the redshift column in the source file
+
+def _init_globals():
+
+    global SOURCE, PIX_TO_IDX
+    global binspace
+
+    # set binning
+    binspace = ( np.linspace if cfg.binning=='lin' else np.geomspace )
+
+    # read cat
+    SOURCE = sourcecat_load(**source_args)
+
+    # making a dict of healpix idx for fast query
+    upix, split_idx = np.unique(SOURCE['pix'], return_index=True)
+    split_idx = np.append(split_idx, len(SOURCE))
+    for i, pix in enumerate(upix):
+        PIX_TO_IDX[int(pix)] = np.arange(split_idx[i], split_idx[i+1])
+
+def check_output_exists(output_file, overwrite=False):
+
+    if os.path.exists(output_file):
+        if not overwrite:
+            raise OSError(
+                f'\n{"="*60}\n'
+                f'Output file already exists: {output_file}\n'
+                f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
+                f'{"="*60}'
+            )
+            return False
+        else:
+            print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
+    return True
+
+## WARNING :
+## cosmo.distance is in physical units (ie Mpc)
+## need to divide out by littleh to get Mpc/h
+## important only if h!=1
+def sigma_crit(z_l, z_s):
+    d_l  = cosmo.angular_diameter_distance(z_l).value
+    d_s  = cosmo.angular_diameter_distance(z_s).value
+    d_ls = cosmo.angular_diameter_distance_z1z2(z_l, z_s).value
+    return SC_CONSTANT*(d_s/(d_ls*d_l))
+
+def get_masked_idx_fast(psi, ra0, dec0, z0):
+    '''
+    objects are selected by pixel on a disc of rad=psi+pad where pad = 0.1*psi
+    uses prebuilt _PIX_TO_INDEX dict
+    returns the indices of _S where to select
+    '''
+
+    pix_idx = hp.query_disc(
+        cfg.NSIDE,
+        vec=hp.ang2vec(ra0, dec0, lonlat=True),
+        radius=np.deg2rad(psi*1.1)
+    )
+
+    idx_arrays = np.concatenate([
+        PIX_TO_IDX[p]
+        for p in pix_idx
+        if p in _PIX_TO_IDX
+    ])
+
+    mask_z = SOURCE[self.redshift][idx_arrays] > (z0+0.1)
+
+    return idx_arrays[mask_z]
+
+## distance: is needed a cosmo.h dividing sigma_c when h!=1, else is not needed.
+## leaving it for general case...
+def partial_profile(inp):
+
+    Sigma_wsum    = np.zeros(cfg.NBINS)
+    DSigma_t_wsum = np.zeros(cfg.NBINS)
+    DSigma_x_wsum = np.zeros(cfg.NBINS)
+    N_inbin       = np.zeros(cfg.NBINS)
+
+    Rv0, ra0, dec0, z0 = inp
+    # for ni in range(N):
+    # adentro del for, mask depende de n... solo quiero las gx en un anillo
+
+    DEGxMPC = cosmo.arcsec_per_kpc_proper(z0).to('deg/Mpc').value
+    psi = DEGxMPC * cfg.ROUT * Rv0
+
+    idx = get_masked_idx_fast(psi, ra0, dec0, z0)
+    catdata = SOURCE[idx]
+
+    #sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
+    ## dividing by cosmo.h gives the correct units! (Rv0 in Mpc/h but sigma_crit in physical Msun*pc^-2)
+    ## factor of almost 1.5 difference!
+    sigma_c = sigma_crit(z0, catdata[REDSHIFT]) / (Rv0*cosmo.h)
+
+    rads, theta = eq2p2(
+        np.deg2rad(catdata['ra_gal']), np.deg2rad(catdata['dec_gal']),
+        np.deg2rad(ra0), np.deg2rad(dec0)
+    )
+
+    e1 = catdata['gamma1']
+    e2 = -catdata['gamma2']
+    if cf.addnoise:
+        e1-=catdata['eps1']
+        e2+=catdata['eps2']
+
+    #get tangential ellipticities
+    cos2t = np.cos(2.0*theta)
+    sin2t = np.sin(2.0*theta)
+    et = -(e1*cos2t+e2*sin2t) * sigma_c
+    ex = (-e1*sin2t+e2*cos2t) * sigma_c
+
+    #get convergence
+    k  = catdata['kappa'] * sigma_c
+
+    bines = binspace(cfg.RIN, cfg.ROUT, cfg.NBINS+1)
+    dig = np.digitize((np.rad2deg(rads)/DEGxMPC)/Rv0, bines)
+
+    for nbin in range(cfg.NBINES):
+        mbin = dig == nbin+1
+        Sigma_wsum[nbin]    = k[mbin].sum()
+        DSigma_t_wsum[nbin] = et[mbin].sum()
+        DSigma_x_wsum[nbin] = ex[mbin].sum()
+        N_inbin[nbin]       = np.count_nonzero(mbin) ## idem mbin.sum(), faster
+
+    return Sigma_wsum, DSigma_t_wsum, DSigma_x_wsum, N_inbin
+
+def stacking(source_args, lens_args, profile_args):
+ 
+    N_inbin       = np.zeros((cfg.NJK+1, cfg.NBINS))
+    Sigma_wsum    = np.zeros((cfg.NJK+1, cfg.NBINS))
+    DSigma_t_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
+    DSigma_x_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
+
+    _init_globals(source_args=source_args, profile_args=profile_args)
+
+    L, nvoids = lenscat_load(**lens_args)
+    print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
+
+    with Pool(processes=_NCORES) as pool:
+        resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
+
+    print(' Pool ended, stacking...', flush=True)
+ 
+    kappa, gamma_t, gamma_x, nbin = map(
+        lambda x: np.vstack(x),
+        zip(*resmap)
+    )
+
+    N_inbin[0] = nbin.sum(axis=0)
+    Sigma_wsum[0] = kappa.sum(axis=0)
+    DSigma_t_wsum[0] = gamma_t.sum(axis=0)
+    DSigma_x_wsum[0] = gamma_x.sum(axis=0)
+
+    jidx = np.arange(0, len(_S)-1, len(_S)//100_000, dtype=int)
+    kidx = get_jackknife_kmeans(
+        ra_sample=_S['ra_gal'][jidx], 
+        dec_sample=_S['dec_gal'][jidx], 
+        ra_cl=L[2],
+        dec_cl=L[3],
+        nlenses=nvoids, 
+        NJK=NK
+    )
+    
+    for j, k in enumerate(range(NK)):
+        mask = (kidx!=k)
+
+        N_inbin[j+1,:] = nbin[mask].sum(axis=0)
+        Sigma_wsum[j+1,:] = kappa[mask].sum(axis=0)
+        DSigma_t_wsum[j+1,:] = gamma_t[mask].sum(axis=0)
+        DSigma_x_wsum[j+1,:] = gamma_x[mask].sum(axis=0)
+
+    Sigma = Sigma_wsum/N_inbin
+    DSigma_t = DSigma_t_wsum/N_inbin
+    DSigma_x = DSigma_x_wsum/N_inbin
+
+    extradata = dict(
+        nvoids=nvoids,
+        z_mean=L[4].mean(),
+        Rv_mean=L[1].mean(),
+        delta_mean=L[9].mean()
+    )
+
+    return Sigma, DSigma_t, DSigma_x, extradata
+
+def execute_single_simu(config, args):
+
+    lens_args = dict(
+        name = config['lens']['name'] ,
+        Rv_min = config['void']['Rv_min'],
+        Rv_max = config['void']['Rv_max'],
+        z_min = config['void']['z_min'],
+        z_max = config['void']['z_max'],
+        delta_min = config['void']['delta_min'], # void type
+        delta_max = config['void']['delta_max'], # void type
+        NK = config['NK'],
+        fullshape=True,
+        NCHUNKS=1,
+        MICE=True,
+    )
+
+    random_args = dict(
+        name = 'MICE/voids_rands.dat' ,
+        Rv_min = config['void']['Rv_min'],
+        Rv_max = config['void']['Rv_max'],
+        z_min = config['void']['z_min'],
+        z_max = config['void']['z_max'],
+        delta_min = config['void']['delta_min'], # void type
+        delta_max = config['void']['delta_max'], # void type
+        NK = config['NK'],
+        fullshape=True,
+        NCHUNKS=1,
+        MICE=True,
+    )
+
+    source_args = dict(
+        name = config['source']['name'],
+        #nback = args.nback,
+        #seed = 0,
+    )
+
+    profile_args = dict(
+        RIN = config['prof']['RIN'],
+        ROUT = config['prof']['ROUT'],
+        N = config['prof']['NDOTS'],
+        NK = config['NK'],
+        NSIDE = 64, # No tocar! depende del source file...
+        NCORES = config['NCORES'],
+        binning = config['BIN'],
+        name = args.sample,
+        addnoise = args.addnoise
+    )
+
+    if lens_args['delta_max']<=0:
+        voidtype = 'R'
+    elif lens_args['delta_min']>=0:
+        voidtype = 'S'
+    else:
+        voidtype = 'mixed'
+
+    output_file = (f'results/lensing_{profile_args["name"]}_MICE_N{profile_args["N"]}_'
+                   f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
+                   f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
+                   f'type{voidtype}_bin{profile_args["binning"]}')
+    if args.addnoise:
+        output_file += 'w-noise'
+    output_file += '.fits'
+
+    assert check_output_exists(output_file, overwrite=args.overwrite)
+
+    # === program arguments
+    print(f' {" Settings ":=^60}')
+    print(' Lens cat '+f'{": ":.>10}{lens_args["name"]}')
+    print(' Source cat '+f'{": ":.>8}{source_args["name"]}')
+    print(' Output file '+f'{": ":.>7}{output_file}')
+    print(' NCORES '+f'{": ":.>12}{profile_args["NCORES"]}\n')
+
+    # === profile arguments
+    # print(f' {" Profile arguments ":=^60}')
+    print(' RMIN '+f'{": ":.>14}{profile_args["RIN"]:.2f}')
+    print(' RMAX '+f'{": ":.>14}{profile_args["ROUT"]:.2f}')
+    print(' N '+f'{": ":.>17}{profile_args["N"]:<2d}')
+    print(' NK '+f'{": ":.>16}{profile_args["NK"]:<2d}')
+    print(' Source density '+f'{": ":.>4}{args.nback} arcmin^(-2)')
+    print(' Binning '+f'{": ":.>11}{profile_args["binning"]}')
+    print(' Shape Noise '+f'{": ":.>7}{profile_args["addnoise"]}\n')
+
+    # === lens arguments
+    print(f' {" Void sample ":=^60}')
+    print(' Radii '+f'{": ":.>13}[{lens_args["Rv_min"]:.2f}, {lens_args["Rv_max"]:.2f}) Mpc/h')
+    print(' Redshift '+f'{": ":.>10}[{lens_args["z_min"]:.2f}, {lens_args["z_max"]:.2f})')
+    print(' Type '+f'{": ":.>14}[{lens_args["delta_min"]},{lens_args["delta_max"]}) => {voidtype}')
+
+    # ==== Calculating profiles
+    print(' >> Profiles...')
+    Sigma, DSigma_t, DSigma_x, extradata = stacking(source_args, lens_args, profile_args)
+
+    # making sigma in random points for LSS substraction
+    print('  >> Profile randoms...')
+    Sigma_rand, _, _, _ = stacking(source_args, random_args, profile_args)
+
+    # =======================
+
+    # ==== Saving
+    head=fits.Header()
+    head.update({
+        'nvoids':extradata['nvoids'],
+        'lenscat':lens_args['name'],
+        'sourcat':source_args['name'],
+        'Rv_min':lens_args['Rv_min'],
+        'Rv_max':lens_args['Rv_max'],
+        'Rv_mean':extradata['Rv_mean'],
+        'z_min':lens_args['z_min'],
+        'z_max':lens_args['z_max'],
+        'z_mean':extradata['z_mean'],
+        'voidtype':voidtype,
+        'deltamin':lens_args['delta_min'],
+        'deltamax':lens_args['delta_max'],
+        'RIN':profile_args['RIN'],
+        'ROUT':profile_args['ROUT'],
+        'N':profile_args['N'],
+        'NK':profile_args['NK'],
+        'binning':profile_args['binning'],
+        'HISTORY':f'{time.asctime()}',
+    })
+
+    table = Table({
+        'Sigma':Sigma[0],
+        'DSigma_t':DSigma_t[0],
+        'DSigma_x':DSigma_x[0]
+    })
+
+    # sigma cov_matrix
+    covS = cov_matrix(Sigma[1:,:])
+    covS_rand = cov_matrix(Sigma_rand[1:,:])
+
+    cov_hdu = [
+        fits.ImageHDU(covS - covS_rand, name='cov_Sigma'),
+        fits.ImageHDU(cov_matrix(DSigma_t[1:,:]), name='cov_DSigma_t'),
+        fits.ImageHDU(cov_matrix(DSigma_x[1:,:]), name='cov_DSigma_x'),
+    ]
+
+    jack_hdu = [
+        fits.ImageHDU(Sigma[1:, :], name='jack_Sigma'),
+        fits.ImageHDU(DSigma_t[1:, :], name='jack_DSigma_t'),
+        fits.ImageHDU(DSigma_x[1:, :], name='jack_DSigma_x'),
+    ]
+
+
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(header=head),
+        fits.BinTableHDU(table, name='profiles'),
+        *cov_hdu,
+        *jack_hdu
+    ])
+
+    hdul.writeto(output_file, overwrite=args.overwrite)
+    print(f' File saved in: {output_file}', flush=True)
+
+def main():
+
+    parser = ArgumentParser()
+    parser.add_argument('--sample', type=str, action='store', required=True)
+    parser.add_argument('-c','--NCORES', type=int, default=8, action='store')
+    parser.add_argument('--config', type=str, default='config.toml', action='store')
+    parser.add_argument('--use08', action='store_true')
+    parser.add_argument('--addnoise', action='store_true')
+    parser.add_argument('--nback', type=float, default=26.9, action='store')
+    parser.add_argument('--overwrite', action='store_true')
+    args = parser.parse_args()
+
+    config = toml.load(args.config)
+
+    if config['NCORES'] <= args.NCORES:
+        config['NCORES'] = args.NCORES
+
+    execute_single_simu(config, args)
+
+if __name__ == '__main__':
+
+    # print('''
+    # ▗▖▗▞▀▚▖▄▄▄▄   ▄▄▄ ▄ ▄▄▄▄   ▗▄▄▖
+    # ▐▌▐▛▀▀▘█   █ ▀▄▄  ▄ █   █ ▐▌
+    # ▐▌▝▚▄▄▖█   █ ▄▄▄▀ █ █   █ ▐▌▝▜▌
+    # ▐▙▄▄▖             █       ▝▚▄▞▘
+    # '''.center(60,' '),
+    # flush=True)
+
+    print(' '+f'Start'.center(60,'#'))
+    t1=time.time()
+    main()
+    print(' End!')
+    print(f' Took {(time.time()-t1)/60.0:5.2f} min')
