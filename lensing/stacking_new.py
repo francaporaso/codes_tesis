@@ -18,7 +18,7 @@ from config import Config
 # --- Fixed globals
 
 cfg : None | Config = None
-cosmo = FlatLambdaCDM(Om0=0.25, H0=100.0, Ob0=0.044) # ver Fosalba+2015
+#cosmo = FlatLambdaCDM(Om0=0.25, H0=100.0, Ob0=0.044) # ver Fosalba+2015
 
 SOURCE = None
 PIX_TO_IDX : dict = {}
@@ -46,6 +46,10 @@ def init_globals():
 
     global SOURCE, PIX_TO_IDX
     global binspace
+    global cosmo
+
+    #set cosmology
+    cosmo = FlatLambdaCDM(H0=100.0*cfg.h, Om0=cfg.Om0, Ob0=cfg.Ob0)
 
     # set binning
     binspace = ( np.linspace if cfg.binning=='lin' else np.geomspace )
@@ -163,11 +167,11 @@ def partial_profile(inp):
 
     return Sigma_wsum, DSigma_t_wsum, DSigma_x_wsum, N_inbin
 
-def stacking(Rv_min, Rv_max, z_min, z_max, delta_min, delta_max):
+def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     
     lenses, nvoids = lenscat_load(
         name = cfg.lensname,
-        Rv_min = Rv_min, Rv_max = Rv_max,
+        Rv_min = rv_min, Rv_max = rv_max,
         z_min = z_min, z_max = z_max,
         delta_min = delta_min, delta_max = delta_max,
         flag = cfg.flag,
@@ -175,23 +179,75 @@ def stacking(Rv_min, Rv_max, z_min, z_max, delta_min, delta_max):
         fullshape = cfg.fullshape
     )
 
+    if delta_max<=0:
+        voidtype = 'R'
+    elif delta_min>=0:
+        voidtype = 'S'
+    else:
+        voidtype = 'mixed'
+
+    # === program arguments
+    print(f' {" Settings ":=^60}')
+    print(' Lens cat '+f'{": ":.>10}{cfg.lensname}')
+    print(' Source cat '+f'{": ":.>8}{cfg.sourcename}')
+    print(' NCORES '+f'{": ":.>12}{cfg.NCORES}\n')
+
+    # === profile arguments
+    print(' RMIN '+f'{": ":.>14}{cfg.RIN:.2f}')
+    print(' RMAX '+f'{": ":.>14}{cfg.ROUT:.2f}')
+    print(' NBINS '+f'{": ":.>13}{cfg.NBINS:<2d}')
+    print(' NJK '+f'{": ":.>15}{cfg.NJK:<2d}')
+    print(' Source density '+f'{": ":.>4}{cfg.nback} arcmin^(-2)')
+    print(' Binning '+f'{": ":.>11}{cfg.binning}')
+    print(' Shape Noise '+f'{": ":.>7}{cfg.addnoise}\n')
+
+    # === lens arguments
+    print(f' {" Void sample ":=^60}')
+    print(' Radii '+f'{": ":.>13}[{rv_min:.2f}, {rv_max:.2f}) Mpc/h')
+    print(' Redshift '+f'{": ":.>10}[{z_min:.2f}, {z_max:.2f})')
+    print(' Type '+f'{": ":.>14}[{delta_min},{delta_max}) => {voidtype}')
+    print(' # of voids '+f'{": ":.>12}{nvoids}\n', flush=True)
+
     N_inbin       = np.zeros((cfg.NJK+1, cfg.NBINS))
     Sigma_wsum    = np.zeros((cfg.NJK+1, cfg.NBINS))
     DSigma_t_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
     DSigma_x_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
     
-    print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
-
-    with Pool(processes=_NCORES) as pool:
+    Sigma_wsum_rand = np.zeros((cfg.NJK+1, cfg.NBINS))
+    N_inbin_rand = np.zeros((cfg.NJK+1, cfg.NBINS))
+    # calculating voids 
+    with Pool(processes=cfg.NCORES) as pool:
         resmap = list(
             tqdm(
                 pool.imap(
-                    partial_profile, L[[1,2,3,4]].T
+                    partial_profile, lenses[[1,2,3,4]].T
                 ), 
                 total=nvoids
             )
         )
 
+    # calculating randoms
+    print(' >> Calculating profiles for random voids...')
+    lensrand, nrands = lenscat_load(
+        name = cfg.lensname,
+        Rv_min = rv_min, Rv_max = rv_max,
+        z_min = z_min, z_max = z_max,
+        delta_min = delta_min, delta_max = delta_max,
+        flag = cfg.flag,
+        is_MICE = cfg.is_mice,
+        fullshape = cfg.fullshape
+    )
+
+    with Pool(processes=cfg.NCORES) as pool:
+        randmap = list(
+            tqdm(
+                pool.imap(
+                    partial_profile, lensrand[[1,2,3,4]].T
+                ),
+                total=nrands
+            )
+        )
+    
     print(' >> Pool ended, stacking...', flush=True)
  
     # -- reducing...
@@ -199,34 +255,49 @@ def stacking(Rv_min, Rv_max, z_min, z_max, delta_min, delta_max):
         lambda x: np.vstack(x),
         zip(*resmap)
     )
+    
+    kappa_rand, _, _, nbin_rand = map(
+        lambda x: np.vstack(x),
+        zip(*randmap)
+    )
 
     N_inbin[0] = nbin.sum(axis=0)
     Sigma_wsum[0] = kappa.sum(axis=0)
     DSigma_t_wsum[0] = gamma_t.sum(axis=0)
     DSigma_x_wsum[0] = gamma_x.sum(axis=0)
 
+    N_inbin_rand[0] = nbin_rand.sum(axis=0)
+    Sigma_wsum_rand[0] = kappa_rand.sum(axis=0)
+    
     # calculate jackknife regions and profiles
     jidx = np.arange(1, len(SOURCE)-1, len(SOURCE)//10_000, dtype=int)
-    kidx = get_jackknife_kmeans(
-        ra_sample=_S['ra_gal'][jidx], 
-        dec_sample=_S['dec_gal'][jidx], 
-        ra_cl=L[2],
-        dec_cl=L[3],
+    kidx, km = get_jackknife_kmeans(
+        ra_sample=SOURCE['ra_gal'][jidx], 
+        dec_sample=SOURCE['dec_gal'][jidx], 
+        ra_cl=lenses[2],
+        dec_cl=lenses[3],
         nlenses=nvoids, 
         NJK=NK
     )
+    kidx_rand = km.find_nearest(np.column_stack([lensrand[2], lensrand[3]]))
     
     for j, k in enumerate(range(NK)):
         mask = (kidx!=k)
+        mask_rand = (kidx_rand!=k)
 
         N_inbin[j+1,:] = nbin[mask].sum(axis=0)
         Sigma_wsum[j+1,:] = kappa[mask].sum(axis=0)
         DSigma_t_wsum[j+1,:] = gamma_t[mask].sum(axis=0)
         DSigma_x_wsum[j+1,:] = gamma_x[mask].sum(axis=0)
 
+        N_inbin_rand[j+1,:] = nbin_rand[mask_rand].sum(axis=0)
+        Sigma_wsum_rand[j+1,:] = kappa_rand[mask_rand].sum(axis=0)
+
     Sigma = Sigma_wsum/N_inbin
     DSigma_t = DSigma_t_wsum/N_inbin
     DSigma_x = DSigma_x_wsum/N_inbin
+
+    Sigma_rand = Sigma_wsum_rand/N_inbin_rand
 
     extradata = dict(
         nvoids=nvoids,
@@ -235,157 +306,48 @@ def stacking(Rv_min, Rv_max, z_min, z_max, delta_min, delta_max):
         delta_mean=L[9].mean()
     )
 
-    return Sigma, DSigma_t, DSigma_x, extradata
+    # return Sigma, DSigma_t, DSigma_x, extradata
 
-def main():
-    global cfg
-
-    parser = ArgumentParser()
-    parser.add_argument(
-        '--config', type=str, 
-        default='lensing/config.toml', action='store',
-    )
-    args = parser.parse_args()
-    
-    print(' Start '.center(15, '=')
-    tini = time()
-    
-    cfg = Config(args.config)
-    init_globals()
-
-    for i, ((z_min, z_max), (rv_min, rv_max)) in enumerate(product(cfg.zbins, cfg.rvbins), start=1):
-        for void in cfg.voidtype:
-            continue
-
-    print(' End! '.center(15,'='))
-    print(f' >> Took {(time()-tini)/60.0:.2f} min <<')
-
-
-def execute_single_simu(config, args):
-
-    lens_args = dict(
-        name = config['lens']['name'] ,
-        Rv_min = config['void']['Rv_min'],
-        Rv_max = config['void']['Rv_max'],
-        z_min = config['void']['z_min'],
-        z_max = config['void']['z_max'],
-        delta_min = config['void']['delta_min'], # void type
-        delta_max = config['void']['delta_max'], # void type
-        NK = config['NK'],
-        fullshape=True,
-        NCHUNKS=1,
-        MICE=True,
-    )
-
-    random_args = dict(
-        name = 'MICE/voids_rands.dat' ,
-        Rv_min = config['void']['Rv_min'],
-        Rv_max = config['void']['Rv_max'],
-        z_min = config['void']['z_min'],
-        z_max = config['void']['z_max'],
-        delta_min = config['void']['delta_min'], # void type
-        delta_max = config['void']['delta_max'], # void type
-        NK = config['NK'],
-        fullshape=True,
-        NCHUNKS=1,
-        MICE=True,
-    )
-
-    source_args = dict(
-        name = config['source']['name'],
-        #nback = args.nback,
-        #seed = 0,
-    )
-
-    profile_args = dict(
-        RIN = config['prof']['RIN'],
-        ROUT = config['prof']['ROUT'],
-        N = config['prof']['NDOTS'],
-        NK = config['NK'],
-        NSIDE = 64, # No tocar! depende del source file...
-        NCORES = config['NCORES'],
-        binning = config['BIN'],
-        name = args.sample,
-        addnoise = args.addnoise
-    )
-
-    if lens_args['delta_max']<=0:
-        voidtype = 'R'
-    elif lens_args['delta_min']>=0:
-        voidtype = 'S'
-    else:
-        voidtype = 'mixed'
-
-    output_file = (f'results/lensing_{profile_args["name"]}_MICE_N{profile_args["N"]}_'
-                   f'Rv{lens_args["Rv_min"]:02.0f}-{lens_args["Rv_max"]:02.0f}_'
-                   f'z{100*lens_args["z_min"]:03.0f}-{100*lens_args["z_max"]:03.0f}_'
-                   f'type{voidtype}_bin{profile_args["binning"]}')
+    output_filename = (f'results/lensing_MICE_{cfg.sample}_N{cfg.NBINS}_'
+                   f'Rv{rv_min:02.0f}-{rv_max:02.0f}_'
+                   f'z{100*z_min:03.0f}-{100*z_max:03.0f}_'
+                   f'type{voidtype}_bin{cfg.binning}')
     if args.addnoise:
-        output_file += 'w-noise'
-    output_file += '.fits'
+        output_filename += 'w-noise'
+    output_filename += '.fits'
 
-    assert check_output_exists(output_file, overwrite=args.overwrite)
-
-    # === program arguments
-    print(f' {" Settings ":=^60}')
-    print(' Lens cat '+f'{": ":.>10}{lens_args["name"]}')
-    print(' Source cat '+f'{": ":.>8}{source_args["name"]}')
-    print(' Output file '+f'{": ":.>7}{output_file}')
-    print(' NCORES '+f'{": ":.>12}{profile_args["NCORES"]}\n')
-
-    # === profile arguments
-    # print(f' {" Profile arguments ":=^60}')
-    print(' RMIN '+f'{": ":.>14}{profile_args["RIN"]:.2f}')
-    print(' RMAX '+f'{": ":.>14}{profile_args["ROUT"]:.2f}')
-    print(' N '+f'{": ":.>17}{profile_args["N"]:<2d}')
-    print(' NK '+f'{": ":.>16}{profile_args["NK"]:<2d}')
-    print(' Source density '+f'{": ":.>4}{args.nback} arcmin^(-2)')
-    print(' Binning '+f'{": ":.>11}{profile_args["binning"]}')
-    print(' Shape Noise '+f'{": ":.>7}{profile_args["addnoise"]}\n')
-
-    # === lens arguments
-    print(f' {" Void sample ":=^60}')
-    print(' Radii '+f'{": ":.>13}[{lens_args["Rv_min"]:.2f}, {lens_args["Rv_max"]:.2f}) Mpc/h')
-    print(' Redshift '+f'{": ":.>10}[{lens_args["z_min"]:.2f}, {lens_args["z_max"]:.2f})')
-    print(' Type '+f'{": ":.>14}[{lens_args["delta_min"]},{lens_args["delta_max"]}) => {voidtype}')
-
-    # ==== Calculating profiles
-    print(' >> Profiles...')
-    Sigma, DSigma_t, DSigma_x, extradata = stacking(source_args, lens_args, profile_args)
-
-    # making sigma in random points for LSS substraction
-    print('  >> Profile randoms...')
-    Sigma_rand, _, _, _ = stacking(source_args, random_args, profile_args)
-
+    assert check_output_exists(output_filename, overwrite=cfg.overwrite)
     # =======================
 
     # ==== Saving
     head=fits.Header()
     head.update({
         'nvoids':extradata['nvoids'],
-        'lenscat':lens_args['name'],
-        'sourcat':source_args['name'],
-        'Rv_min':lens_args['Rv_min'],
-        'Rv_max':lens_args['Rv_max'],
+        'lenscat':cfg.lensname,
+        'sourcat':cfg.sourcename,
+        'Rv_min':rv_min,
+        'Rv_max':rv_max,
         'Rv_mean':extradata['Rv_mean'],
-        'z_min':lens_args['z_min'],
-        'z_max':lens_args['z_max'],
+        'z_min':z_min,
+        'z_max':z_max,
         'z_mean':extradata['z_mean'],
         'voidtype':voidtype,
-        'deltamin':lens_args['delta_min'],
-        'deltamax':lens_args['delta_max'],
-        'RIN':profile_args['RIN'],
-        'ROUT':profile_args['ROUT'],
-        'N':profile_args['N'],
-        'NK':profile_args['NK'],
-        'binning':profile_args['binning'],
+        'deltamin':delta_min,
+        'deltamax':delta_max,
+        'RIN':cfg.RIN,
+        'ROUT':cfg.ROUT,
+        'NBINS':cfg.NBINS,
+        'NJK':cfg.NJK,
+        'binning':cfg.binning,
         'HISTORY':f'{time.asctime()}',
     })
 
     table = Table({
+        'R':binspace(cfg.RIN, cfg.ROUT, cfg.NBINS),
         'Sigma':Sigma[0],
         'DSigma_t':DSigma_t[0],
-        'DSigma_x':DSigma_x[0]
+        'DSigma_x':DSigma_x[0],
+        'Sigma_rand':Sigma_rand[0]
     })
 
     # sigma cov_matrix
@@ -396,14 +358,15 @@ def execute_single_simu(config, args):
         fits.ImageHDU(covS - covS_rand, name='cov_Sigma'),
         fits.ImageHDU(cov_matrix(DSigma_t[1:,:]), name='cov_DSigma_t'),
         fits.ImageHDU(cov_matrix(DSigma_x[1:,:]), name='cov_DSigma_x'),
+        fits.ImageHDU(covS_rand, name='cov_Sigma_rand'),
     ]
 
     jack_hdu = [
         fits.ImageHDU(Sigma[1:, :], name='jack_Sigma'),
         fits.ImageHDU(DSigma_t[1:, :], name='jack_DSigma_t'),
         fits.ImageHDU(DSigma_x[1:, :], name='jack_DSigma_x'),
+        fits.ImageHDU(Sigma_rand[1:, :], name='jack_Sigma_rand'),
     ]
-
 
     hdul = fits.HDUList([
         fits.PrimaryHDU(header=head),
@@ -414,25 +377,47 @@ def execute_single_simu(config, args):
 
     hdul.writeto(output_file, overwrite=args.overwrite)
     print(f' File saved in: {output_file}', flush=True)
+    
+    return 0
+
 
 def main():
+    global cfg
 
     parser = ArgumentParser()
-    parser.add_argument('--sample', type=str, action='store', required=True)
-    parser.add_argument('-c','--NCORES', type=int, default=8, action='store')
-    parser.add_argument('--config', type=str, default='config.toml', action='store')
-    parser.add_argument('--use08', action='store_true')
-    parser.add_argument('--addnoise', action='store_true')
-    parser.add_argument('--nback', type=float, default=26.9, action='store')
-    parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--config', type=str, default='lensing/config.toml', action='store')
+    parser.add_argument('--ncores', type=int, action='store', default=2)
     args = parser.parse_args()
 
-    config = toml.load(args.config)
+    print(' Start '.center(15, '=')
+    tini = time()
+    
+    cfg = Config(args.config)
+    if args.ncores > cfg.NCORES:
+        cfg.set_ncores(args.ncores)
+    
+    init_globals()
 
-    if config['NCORES'] <= args.NCORES:
-        config['NCORES'] = args.NCORES
+    total = len(cfg.zbins)*len(cfg.rvbins)*len(cfg.voidtype)
+    print(f' >> Running {len(cfg.zbins)} redshift bin(s) x {len(cfg.rvbins)} radius bin(s), for {len(cfg.voidtype)} void types.')
+    print(f' >> Calculating {total} void profiles')
 
-    execute_single_simu(config, args)
+    delta_min, delta_max = -1.0, 100.0
+
+    for i, ((z_min, z_max), (rv_min, rv_max)) in enumerate(product(cfg.zbins, cfg.rvbins), start=1):
+        print(f' \n[{i}/{total}]')
+        for void in cfg.voidtype:
+            if void=='S':
+                delta_min = 0.0
+            elif void=='R':
+                delta_max = 0.0
+            
+            check = stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max)
+            assert check == 0, ' >> Something went wrong. << '
+
+    print(' End! '.center(15,'='))
+    print(f' >> Took {(time()-tini)/60.0:.3f} min <<')
+
 
 if __name__ == '__main__':
 
@@ -444,8 +429,4 @@ if __name__ == '__main__':
     # '''.center(60,' '),
     # flush=True)
 
-    print(' '+f'Start'.center(60,'#'))
-    t1=time.time()
     main()
-    print(' End!')
-    print(f' Took {(time.time()-t1)/60.0:5.2f} min')
