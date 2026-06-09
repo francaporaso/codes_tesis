@@ -185,7 +185,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         z_min = z_min, z_max = z_max,
         delta_min = delta_min, delta_max = delta_max,
         flag = cfg.flag,
-        is_MICE = cfg.is_mice,
+        is_MICE = cfg.is_MICE,
         fullshape = cfg.fullshape
     )
 
