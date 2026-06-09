@@ -8,7 +8,7 @@ import healpy as hp
 from multiprocessing import Pool
 import numpy as np
 import os
-import time
+from time import time, asctime
 import toml
 from tqdm import tqdm
 
@@ -339,7 +339,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         'NBINS':cfg.NBINS,
         'NJK':cfg.NJK,
         'binning':cfg.binning,
-        'HISTORY':f'{time.asctime()}',
+        'HISTORY':f'{asctime()}',
     })
 
     table = Table({
