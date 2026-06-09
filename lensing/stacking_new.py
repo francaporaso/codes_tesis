@@ -389,7 +389,7 @@ def main():
     parser.add_argument('--ncores', type=int, action='store', default=2)
     args = parser.parse_args()
 
-    print(' Start '.center(15, '=')
+    print(' Start '.center(15, '='))
     tini = time()
     
     cfg = Config(args.config)
