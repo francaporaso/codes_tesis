@@ -1,72 +1,49 @@
 import numpy as np
+import toml
 
-from dataclasses import dataclass
-from lensing.io import *
+# ==== Input globals
+# read from config file
+class Config:
 
-@dataclass
-class GlobalConfig:
-    RIN : float|None = None
-    ROUT : float|None = None
-    N : int|None = None
-    NJK : int|None = None
-    NCORES : int|None = None
-    NSIDE : int|None = 64
-    
-    SHAPENOISE : bool|None = False
-    USE08 : bool|None = False
-    
-    BINNING : str|None = None
-    RDSHFT_COLNAME : str = 'z_cgal_v'
-    LENSNAME : str|None = None
-    SOURCENAME : str|None = None
-    OUTPUTNAME : str|None = None
+    def __init__(self, configfile:str='lensing/config.toml'):
 
-    def print(self):
-        print(' Lens cat '+f'{": ":.>10}{self.LENSNAME}')
-        print(' Source cat '+f'{": ":.>10}{self.SOURCENAME}')
-        print(' Output file '+f'{": ":.>10}{self.OUTPUTNAME}')
-        print(' NCORES '+f'{": ":.>12}{self.NCORES}\n')
-        print(' RMIN '+f'{": ":.>14}{self.RIN:.2f}')
-        print(' RMAX '+f'{": ":.>14}{self.ROUT:.2f}')
-        print(' N '+f'{": ":.>17}{self.N:<2d}')
-        print(' NJK '+f'{": ":.>16}{self.NJK:<2d}')
-        print(' Binning '+f'{": ":.>11}{self.BINNING}')
-        print(' Shape Noise '+f'{": ":.>7}{self.SHAPENOISE}\n')
+        config = toml.load(configfile)
+        cat = config['catalog']
+        run = config['run']
+        profile = config['profile']
 
-@dataclass
-class VoidProfileConfig:
-    ZMIN : float|None = None
-    ZMAX : float|None = None
-    RVMIN : float|None = None
-    RVMAX : float|None = None
-    DELTAMIN : float|None = None
-    DELTAMAX : float|None = None
+        self.lensname = cat['lenses']['name']
+        self.sourcename = cat['sources']['name']
+        self.randsname = cat['randoms']['name']
+        self.redshift = cat['sources']['redshift_col']
 
-CONFIG : GlobalConfig = None
+        self.sample = run['sample']
+        self.ncores = run['ncores']
+        self.plot = run['plot']
+        self.overwrite = run['overwrite']
+        
+        self.RIN, self.ROUT = profile['rin'], profile['rout'] #Mpc/h
+        self.NBINS = profile['nbins']
+        self.NJK = profile['njk']
+        self.NSIDE = profile['nside']
+        self.addnoise = profile['addnoise']
+        self.binning = profile['binning']
+        self.nback = profile['nback']
 
-S = None # Table of galaxy data
-PIX_TO_IDX = {}
+        self.zbins = self._edges_to_bins(cat['lenses']['zedges'], 'zedges')
+        self.rvbins = self._edges_to_bins(cat['lenses']['rvedges'], 'rvedges')
+        self.voidtype = cat['lenses']['voidtype']
+        self.flag = cat['lenses']['flag']
+        self.fullshape = cat['lenses']['fullshape']
+        self.is_MICE = cat['lenses']['is_mice']
 
-binspace = None
+    def _edges_to_bins(self, edges, name):
+        if not isinstance(edges, list) or len(edges) < 2:
+            raise ValueError(f'[LENSES] {name} must be a list with at least 2 values.')
+        for lo, hi in zip(edges[:-1], edges[1:]):
+            if lo >= hi:
+                raise ValueError(f'[LENSES] {name} must be strictly increasing, got {lo} >= {hi}.')
+        return list(zip(edges[:-1], edges[1:]))
 
-def init_worker(configargs, sourceargs):
-    global CONFIG
-    global S, PIX_TO_IDX
-    global binspace
 
-    CONFIG = GlobalConfig(**configargs)
 
-    if CONFIG.BINNING == 'lin':
-        binspace = np.linspace
-    elif CONFIG.BINNING == 'log':
-        binspace = np.logspace
-    else:
-        raise ValueError('BINNING must be "lin" or "log".')
-    
-    S = sourcecat_load(**sourceargs)
-    
-    ## making a dict of healpix idx for fast query
-    upix, split_idx = np.unique(S['pix'], return_index=True)
-    split_idx = np.append(split_idx, len(S))
-    for i, pix in enumerate(upix):
-        PIX_TO_IDX[int(pix)] = np.arange(split_idx[i], split_idx[i+1])
