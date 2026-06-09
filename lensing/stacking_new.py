@@ -105,7 +105,7 @@ def get_masked_idx_fast(psi, ra0, dec0, z0):
     idx_arrays = np.concatenate([
         PIX_TO_IDX[p]
         for p in pix_idx
-        if p in _PIX_TO_IDX
+        if p in PIX_TO_IDX
     ])
 
     mask_z = SOURCE[cfg.redshift][idx_arrays] > (z0+0.1)
