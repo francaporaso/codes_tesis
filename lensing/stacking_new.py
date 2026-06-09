@@ -55,7 +55,7 @@ def init_globals():
     binspace = ( np.linspace if cfg.binning=='lin' else np.geomspace )
 
     # read cat
-    SOURCE = sourcecat_load(**source_args)
+    SOURCE = sourcecat_load(cfg.sourcename)
 
     # making a dict of healpix idx for fast query
     upix, split_idx = np.unique(SOURCE['pix'], return_index=True)
