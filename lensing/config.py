@@ -11,6 +11,7 @@ class Config:
         cat = config['catalog']
         run = config['run']
         profile = config['profile']
+        cosmo = config['cosmology']
 
         self.lensname = cat['lenses']['name']
         self.sourcename = cat['sources']['name']
@@ -37,6 +38,10 @@ class Config:
         self.fullshape = cat['lenses']['fullshape']
         self.is_MICE = cat['lenses']['is_mice']
 
+        self.h = cosmo['h']
+        self.Om0 = cosmo['Om0']
+        self.Ob0 = cosmo['Ob0']
+
     def _edges_to_bins(self, edges, name):
         if not isinstance(edges, list) or len(edges) < 2:
             raise ValueError(f'[LENSES] {name} must be a list with at least 2 values.')
@@ -45,5 +50,6 @@ class Config:
                 raise ValueError(f'[LENSES] {name} must be strictly increasing, got {lo} >= {hi}.')
         return list(zip(edges[:-1], edges[1:]))
 
-
+    def set_ncores(new_ncores):
+        self.NCORES = new_ncores
 
