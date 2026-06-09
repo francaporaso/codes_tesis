@@ -100,9 +100,9 @@ def get_jackknife_kmeans(ra_sample, dec_sample, ra_cl, dec_cl, nlenses, NJK):
 
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
-                 NCHUNKS:int=1, NK:int=1, octant=False, MICE=False, fullshape=True):
+                 NCHUNKS:int=1, NK:int=1, octant=False, is_MICE=False, fullshape=True):
 
-    if MICE:
+    if is_MICE:
         RV,RA,DEC,Z,R1,R2 = 1,2,3,4,8,9
     else:
         RV,RA,DEC,Z,R1,R2 = 0,1,2,3,7,8

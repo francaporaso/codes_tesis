@@ -42,7 +42,7 @@ binspace = None
 # "z_desdm_mc" : photo-z
 # REDSHIFT = "z_cgal_v" # name of the redshift column in the source file
 
-def _init_globals():
+def init_globals():
 
     global SOURCE, PIX_TO_IDX
     global binspace
@@ -103,7 +103,7 @@ def get_masked_idx_fast(psi, ra0, dec0, z0):
         if p in _PIX_TO_IDX
     ])
 
-    mask_z = SOURCE[self.redshift][idx_arrays] > (z0+0.1)
+    mask_z = SOURCE[cfg.redshift][idx_arrays] > (z0+0.1)
 
     return idx_arrays[mask_z]
 
@@ -129,7 +129,7 @@ def partial_profile(inp):
     #sigma_c = sigma_crit(z0, catdata[REDSHIFT])/Rv0
     ## dividing by cosmo.h gives the correct units! (Rv0 in Mpc/h but sigma_crit in physical Msun*pc^-2)
     ## factor of almost 1.5 difference!
-    sigma_c = sigma_crit(z0, catdata[REDSHIFT]) / (Rv0*cosmo.h)
+    sigma_c = sigma_crit(z0, catdata[cfg.redshift]) / (Rv0*cosmo.h)
 
     rads, theta = eq2p2(
         np.deg2rad(catdata['ra_gal']), np.deg2rad(catdata['dec_gal']),
@@ -154,7 +154,7 @@ def partial_profile(inp):
     bines = binspace(cfg.RIN, cfg.ROUT, cfg.NBINS+1)
     dig = np.digitize((np.rad2deg(rads)/DEGxMPC)/Rv0, bines)
 
-    for nbin in range(cfg.NBINES):
+    for nbin in range(cfg.NBINS):
         mbin = dig == nbin+1
         Sigma_wsum[nbin]    = k[mbin].sum()
         DSigma_t_wsum[nbin] = et[mbin].sum()
@@ -163,23 +163,38 @@ def partial_profile(inp):
 
     return Sigma_wsum, DSigma_t_wsum, DSigma_x_wsum, N_inbin
 
-def stacking(source_args, lens_args, profile_args):
- 
+def stacking(Rv_min, Rv_max, z_min, z_max, delta_min, delta_max):
+    
+    lenses, nvoids = lenscat_load(
+        name = cfg.lensname,
+        Rv_min = Rv_min, Rv_max = Rv_max,
+        z_min = z_min, z_max = z_max,
+        delta_min = delta_min, delta_max = delta_max,
+        flag = cfg.flag,
+        is_MICE = cfg.is_mice,
+        fullshape = cfg.fullshape
+    )
+
     N_inbin       = np.zeros((cfg.NJK+1, cfg.NBINS))
     Sigma_wsum    = np.zeros((cfg.NJK+1, cfg.NBINS))
     DSigma_t_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
     DSigma_x_wsum = np.zeros((cfg.NJK+1, cfg.NBINS))
-
-    _init_globals(source_args=source_args, profile_args=profile_args)
-
-    L, nvoids = lenscat_load(**lens_args)
+    
     print(' nvoids '+f'{": ":.>12}{nvoids}\n', flush=True)
 
     with Pool(processes=_NCORES) as pool:
-        resmap = list(tqdm(pool.imap(partial_profile, L[[1,2,3,4]].T), total=nvoids))
+        resmap = list(
+            tqdm(
+                pool.imap(
+                    partial_profile, L[[1,2,3,4]].T
+                ), 
+                total=nvoids
+            )
+        )
 
-    print(' Pool ended, stacking...', flush=True)
+    print(' >> Pool ended, stacking...', flush=True)
  
+    # -- reducing...
     kappa, gamma_t, gamma_x, nbin = map(
         lambda x: np.vstack(x),
         zip(*resmap)
@@ -190,7 +205,8 @@ def stacking(source_args, lens_args, profile_args):
     DSigma_t_wsum[0] = gamma_t.sum(axis=0)
     DSigma_x_wsum[0] = gamma_x.sum(axis=0)
 
-    jidx = np.arange(0, len(_S)-1, len(_S)//100_000, dtype=int)
+    # calculate jackknife regions and profiles
+    jidx = np.arange(1, len(SOURCE)-1, len(SOURCE)//10_000, dtype=int)
     kidx = get_jackknife_kmeans(
         ra_sample=_S['ra_gal'][jidx], 
         dec_sample=_S['dec_gal'][jidx], 
@@ -220,6 +236,30 @@ def stacking(source_args, lens_args, profile_args):
     )
 
     return Sigma, DSigma_t, DSigma_x, extradata
+
+def main():
+    global cfg
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        '--config', type=str, 
+        default='lensing/config.toml', action='store',
+    )
+    args = parser.parse_args()
+    
+    print(' Start '.center(15, '=')
+    tini = time()
+    
+    cfg = Config(args.config)
+    init_globals()
+
+    for i, ((z_min, z_max), (rv_min, rv_max)) in enumerate(product(cfg.zbins, cfg.rvbins), start=1):
+        for void in cfg.voidtype:
+            continue
+
+    print(' End! '.center(15,'='))
+    print(f' >> Took {(time()-tini)/60.0:.2f} min <<')
+
 
 def execute_single_simu(config, args):
 
