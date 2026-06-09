@@ -96,7 +96,7 @@ def get_jackknife_kmeans(ra_sample, dec_sample, ra_cl, dec_cl, nlenses, NJK):
     #    K[j] = ~(labels==j-1)
 
     # return K, labels
-    return labels
+    return labels, km
 
 def lenscat_load(name,
                  Rv_min, Rv_max, z_min, z_max, delta_min, delta_max, rho1_min=-1.0, rho1_max=0.0, flag=2,
