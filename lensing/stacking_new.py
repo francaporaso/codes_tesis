@@ -179,6 +179,16 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         is_MICE = cfg.is_MICE,
         fullshape = cfg.fullshape
     )
+    lensrand, nrands = lenscat_load(
+        name = cfg.lensname,
+        Rv_min = rv_min, Rv_max = rv_max,
+        z_min = z_min, z_max = z_max,
+        delta_min = delta_min, delta_max = delta_max,
+        flag = cfg.flag,
+        is_MICE = cfg.is_mice,
+        fullshape = cfg.fullshape
+    )
+
 
     if delta_max<=0:
         voidtype = 'R'
@@ -229,16 +239,6 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
 
     # calculating randoms
     print(' >> Calculating profiles for random voids...')
-    lensrand, nrands = lenscat_load(
-        name = cfg.lensname,
-        Rv_min = rv_min, Rv_max = rv_max,
-        z_min = z_min, z_max = z_max,
-        delta_min = delta_min, delta_max = delta_max,
-        flag = cfg.flag,
-        is_MICE = cfg.is_mice,
-        fullshape = cfg.fullshape
-    )
-
     with Pool(processes=cfg.ncores) as pool:
         randmap = list(
             tqdm(
