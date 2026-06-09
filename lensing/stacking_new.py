@@ -11,6 +11,7 @@ import os
 from time import time, asctime
 import toml
 from tqdm import tqdm
+from itertools import product
 
 from funcs import eq2p2, lenscat_load, sourcecat_load, cov_matrix, get_jackknife_kmeans
 from config import Config
