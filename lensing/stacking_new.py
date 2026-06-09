@@ -190,7 +190,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     print(f' {" Settings ":=^60}')
     print(' Lens cat '+f'{": ":.>10}{cfg.lensname}')
     print(' Source cat '+f'{": ":.>8}{cfg.sourcename}')
-    print(' NCORES '+f'{": ":.>12}{cfg.NCORES}\n')
+    print(' NCORES '+f'{": ":.>12}{cfg.ncores}\n')
 
     # === profile arguments
     print(' RMIN '+f'{": ":.>14}{cfg.RIN:.2f}')
@@ -216,7 +216,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     Sigma_wsum_rand = np.zeros((cfg.NJK+1, cfg.NBINS))
     N_inbin_rand = np.zeros((cfg.NJK+1, cfg.NBINS))
     # calculating voids 
-    with Pool(processes=cfg.NCORES) as pool:
+    with Pool(processes=cfg.ncores) as pool:
         resmap = list(
             tqdm(
                 pool.imap(
@@ -238,7 +238,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         fullshape = cfg.fullshape
     )
 
-    with Pool(processes=cfg.NCORES) as pool:
+    with Pool(processes=cfg.ncores) as pool:
         randmap = list(
             tqdm(
                 pool.imap(
@@ -393,7 +393,7 @@ def main():
     tini = time()
     
     cfg = Config(args.config)
-    if args.ncores > cfg.NCORES:
+    if args.ncores > cfg.ncores:
         cfg.set_ncores(args.ncores)
     
     init_globals()
