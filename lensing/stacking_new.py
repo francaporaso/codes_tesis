@@ -401,17 +401,20 @@ def main():
     print(f' >> Running {len(cfg.zbins)} redshift bin(s) x {len(cfg.rvbins)} radius bin(s), for {len(cfg.voidtype)} void types.')
     print(f' >> Calculating {total} void profiles')
 
-    delta_min, delta_max = -1.0, 100.0
 
-    ## TODO: i is not accounting for the void types yet. Ask claude....
-    for i, ((z_min, z_max), (rv_min, rv_max)) in enumerate(product(cfg.zbins, cfg.rvbins), start=1):
-        print(f' \n[{i}/{total}]')
+    i = 0
+    for ((z_min, z_max), (rv_min, rv_max)) in product(cfg.zbins, cfg.rvbins):
         for void in cfg.voidtype:
+            i+=1
+            # reset in each loop
+            delta_min, delta_max = -1.0, 100.0
+
             if void=='S':
                 delta_min = 0.0
             elif void=='R':
                 delta_max = 0.0
-            
+
+            print(f' \n[{i}/{total}]')
             check = stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max)
             assert check == 0, ' >> Something went wrong. << '
 
