@@ -375,7 +375,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     ])
 
     hdul.writeto(output_filename, overwrite=cfg.overwrite)
-    print(f' File saved in: {output_filename}', flush=True)
+    print(f' >> File saved in: {output_filename}.\n', flush=True)
     
     return 0
 
@@ -403,6 +403,7 @@ def main():
 
     delta_min, delta_max = -1.0, 100.0
 
+    ## TODO: i is not accounting for the void types yet. Ask claude....
     for i, ((z_min, z_max), (rv_min, rv_max)) in enumerate(product(cfg.zbins, cfg.rvbins), start=1):
         print(f' \n[{i}/{total}]')
         for void in cfg.voidtype:
@@ -415,7 +416,7 @@ def main():
             assert check == 0, ' >> Something went wrong. << '
 
     print(' End! '.center(15,'='))
-    print(f' >> Took {(time()-tini)/60.0:.3f} min <<')
+    print(f' >> Took {(time()-tini)/60.0:.3f} min <<\n\n')
 
 
 if __name__ == '__main__':
