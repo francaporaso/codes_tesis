@@ -249,7 +249,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
             )
         )
     
-    print(' >> Pool ended, stacking...', flush=True)
+    print('\n >> Pool ended, stacking...', flush=True)
  
     # -- reducing...
     kappa, gamma_t, gamma_x, nbin = map(
@@ -352,14 +352,12 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     })
 
     # sigma cov_matrix
-    covS = cov_matrix(Sigma[1:,:])
-    covS_rand = cov_matrix(Sigma_rand[1:,:])
-
+    covS = cov_matrix(Sigma[1:,:]-Sigma_rand[1:,:])
     cov_hdu = [
-        fits.ImageHDU(covS - covS_rand, name='cov_Sigma'),
+        fits.ImageHDU(covS, name='cov_Sigma'),
         fits.ImageHDU(cov_matrix(DSigma_t[1:,:]), name='cov_DSigma_t'),
         fits.ImageHDU(cov_matrix(DSigma_x[1:,:]), name='cov_DSigma_x'),
-        fits.ImageHDU(covS_rand, name='cov_Sigma_rand'),
+        fits.ImageHDU( cov_matrix(Sigma_rand[1:,:]), name='cov_Sigma_rand'),
     ]
 
     jack_hdu = [
