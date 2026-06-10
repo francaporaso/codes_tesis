@@ -282,7 +282,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
     )
     kidx_rand = km.find_nearest(np.column_stack([lensrand[2], lensrand[3]]))
     
-    for j, k in enumerate(range(NK)):
+    for j, k in enumerate(range(cfg.NJK)):
         mask = (kidx!=k)
         mask_rand = (kidx_rand!=k)
 
