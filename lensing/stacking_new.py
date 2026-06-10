@@ -302,9 +302,9 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
 
     extradata = dict(
         nvoids=nvoids,
-        z_mean=L[4].mean(),
-        Rv_mean=L[1].mean(),
-        delta_mean=L[9].mean()
+        z_mean=lenses[4].mean(),
+        Rv_mean=lenses[1].mean(),
+        delta_mean=lenses[9].mean()
     )
 
     # return Sigma, DSigma_t, DSigma_x, extradata
