@@ -376,8 +376,8 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         *jack_hdu
     ])
 
-    hdul.writeto(output_file, overwrite=args.overwrite)
-    print(f' File saved in: {output_file}', flush=True)
+    hdul.writeto(output_filename, overwrite=cfg.overwrite)
+    print(f' File saved in: {output_filename}', flush=True)
     
     return 0
 
