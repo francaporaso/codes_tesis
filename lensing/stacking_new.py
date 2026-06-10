@@ -238,7 +238,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         )
 
     # calculating randoms
-    print(' >> Calculating profiles for random voids...')
+    print('\n >> Calculating profiles for random voids...')
     with Pool(processes=cfg.ncores) as pool:
         randmap = list(
             tqdm(
@@ -313,7 +313,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
                    f'Rv{rv_min:02.0f}-{rv_max:02.0f}_'
                    f'z{100*z_min:03.0f}-{100*z_max:03.0f}_'
                    f'type{voidtype}_bin{cfg.binning}')
-    if args.addnoise:
+    if cfg.addnoise:
         output_filename += 'w-noise'
     output_filename += '.fits'
 
