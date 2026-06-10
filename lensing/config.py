@@ -50,6 +50,6 @@ class Config:
                 raise ValueError(f'[LENSES] {name} must be strictly increasing, got {lo} >= {hi}.')
         return list(zip(edges[:-1], edges[1:]))
 
-    def set_ncores(new_ncores):
+    def set_ncores(self, new_ncores):
         self.NCORES = new_ncores
 
