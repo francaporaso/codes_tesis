@@ -278,7 +278,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         ra_cl=lenses[2],
         dec_cl=lenses[3],
         nlenses=nvoids, 
-        NJK=NK
+        NJK=NJK
     )
     kidx_rand = km.find_nearest(np.column_stack([lensrand[2], lensrand[3]]))
     
