@@ -180,7 +180,7 @@ def stacking(rv_min, rv_max, z_min, z_max, delta_min, delta_max):
         fullshape = cfg.fullshape
     )
     lensrand, nrands = lenscat_load(
-        name = cfg.lensname,
+        name = cfg.randsname,
         Rv_min = rv_min, Rv_max = rv_max,
         z_min = z_min, z_max = z_max,
         delta_min = delta_min, delta_max = delta_max,
