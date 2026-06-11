@@ -22,9 +22,14 @@ def make_pos_uniform(init_guess, NWALKERS, seed=0):
     
     rng = np.random.default_rng(0)
     init_pos = np.zeros((NWALKERS, len(init_guess)))
-    init_pos = np.array([
-       rng.uniform(ig*(1-0.2), ig*(1+0.2), NWALKERS) for ig in init_guess
-    ]).T #ordering of dict is asserted in python >3.7
+    for i, ig in enumerate(init_guess):
+        low = ig*(1-0.2)
+        hig = ig*(1+0.2)
+        if low<hig:
+            init_pos[:,i] = rng.uniform(low, hig, NWALKERS)
+        else:
+            init_pos[:,i] = rng.uniform(hig, low, NWALKERS)
+
     return init_pos
 
 def make_pos(init_guess, NWALKERS, seed, dist):
