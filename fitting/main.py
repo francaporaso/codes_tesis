@@ -109,7 +109,7 @@ def main():
                         i+=1
                         print(f'\n [{i}/{Total}]')
 
-                        data_filename = f'{cfg.data["folder"]}/{cfg.data.["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits'
+                        data_filename = f'{cfg.data["folder"]}/{cfg.data["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits'
                         chain_filename = f'{cfg.chain["folder"]}/fitting_{cfg.chain["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5'
 
                         assert check_output_exists(chain_filename, overwrite=cfg.overwrite)
