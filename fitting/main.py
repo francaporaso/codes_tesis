@@ -115,8 +115,16 @@ def main():
 
                         assert check_output_exists(chain_filename, overwrite=cfg.overwrite)
 
-                        print(f' >> Fitting {data_filename}')
-                        print(f' >> Saving to {chain_filename}')
+                        #print(f' >> Fitting {data_filename}')
+                        #print(f' >> Saving to {chain_filename}')
+
+                        print('-'*15)
+                        print(f' Model: {model}')
+                        print(f' Profile: {obs}')
+                        print(f' z: {redshift}')
+                        print(f' Rv: {rv}')
+                        print(f' Type: {vt}')
+                        print('-'*15)
 
                         sampler = run_emcee(
                             NCORES=cfg.ncores,NIT=cfg.nit,NWALKERS=cfg.nwalkers,
@@ -139,9 +147,10 @@ def main():
                         )
                         
                         # print result values from fit
-                        print(f'>> model: {model} | prof: {obs} | rv: {rv} | z:{redshift} | type: {vt}')
+                        #print(f'>> model: {model} | prof: {obs} | rv: {rv} | z:{redshift} | type: {vt}')
                         # TODO: incorporate the chi2 to the file...
                         # print(f'chi^2 = {chi2_red()}')
+                        print(' Fitted params:')
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
                             print(f'{key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})')
 
