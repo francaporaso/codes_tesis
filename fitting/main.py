@@ -137,7 +137,7 @@ def main():
                         # print result values from fit
                         print(f'>> model: {model} | prof: {obs} | rv: {rv} | z:{redshift} | type: {vt}')
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
-i                           print(f"    {repr(key)} = {repr(value)} ± {repr(e)}   ")
+                            print(f"    {repr(key)} = {repr(value)} ± {repr(e)}   ")
 
                         with h5py.File(chain_filename, 'a') as f:
                             group_path = f'fitedparams/{model}/{obs}/{cfg.cov_mode}'
