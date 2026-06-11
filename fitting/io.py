@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from astropy.io import fits
-from astropy.table import Table
+#from astropy.table import Table
 
 @dataclass
 class DataProfile:

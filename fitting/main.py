@@ -2,13 +2,16 @@ from multiprocessing import Pool
 from argparse import ArgumentParser
 import emcee
 import h5py
+import numpy as np
+import matplotlib.pyplot as plt
+import toml
 
-from fitting.constants import *
-from fitting.inference import *
-from fitting.io import *
-from fitting.models import *
-from fitting.utilfuncs import *
-from fitting.plotting import *
+#from fitting.constants import rho_mean
+from fitting.inference import Likelihood
+from fitting.io import read_dataprofile_fits
+from fitting.models import models_dict, default_limits, default_guess
+from fitting.utilfuncs import check_output_exists, get_fitted_params, validate_pos, make_pos, chi2_red
+from fitting.plotting import plot_chains, plot_corner
 
 def run_emcee(
         NCORES, NIT, NWALKERS, 
@@ -43,7 +46,6 @@ def run_emcee(
 
     return sampler
 
-import toml
 
 class Config:
     def __init__(self, configfile):
@@ -136,6 +138,8 @@ def main():
                         
                         # print result values from fit
                         print(f'>> model: {model} | prof: {obs} | rv: {rv} | z:{redshift} | type: {vt}')
+                        # TODO: incorporate the chi2 to the file...
+                        # print(f'chi^2 = {chi2_red()}')
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
                             print(f"    {repr(key)} = {repr(value)} ± {repr(e)}   ")
 

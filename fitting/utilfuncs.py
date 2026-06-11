@@ -21,7 +21,7 @@ def make_pos_gaussian(init_guess, NWALKERS, seed=0):
 def make_pos_uniform(init_guess, NWALKERS, seed=0):
     
     rng = np.random.default_rng(0)
-    init_pos = np.zeros((NWLAKERS, len(init_guess)))
+    init_pos = np.zeros((NWALKERS, len(init_guess)))
     init_pos = np.array([
        rng.uniform(ig*(1-0.2), ig*(1+0.2), NWALKERS) for ig in init_guess
     ]).T #ordering of dict is asserted in python >3.7

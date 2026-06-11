@@ -2,7 +2,7 @@ import numpy as np
 from scipy.integrate import simpson, quad, cumulative_trapezoid
 from scipy.special import erf
 
-from fitting.constants import *
+from fitting.constants import SQPI, rho_mean
 
 def logistic(x, x0=1, k=10):
     return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)

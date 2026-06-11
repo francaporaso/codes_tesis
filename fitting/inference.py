@@ -1,6 +1,6 @@
 import numpy as np
 
-from fitting.constants import *
+from fitting.constants import rho_mean
 
 class Likelihood:
     def __init__(self, data, model, param_limits, observable='delta_sigma', cov_mode='full'):
@@ -53,7 +53,8 @@ class Likelihood:
         if np.prod(
             [self.limits[self.param_name[j]][0] < theta[j] < self.limits[self.param_name[j]][1] for j in range(self.nparams)],
             dtype=bool
-        ): return 0
+        ): 
+            return 0
         return -np.inf
 
     def log_probability(self, theta):

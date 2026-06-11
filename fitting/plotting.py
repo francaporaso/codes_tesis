@@ -21,7 +21,7 @@ def plot_chains(chain,labels):
 def plot_corner(sampler, discard=100, fig=None, color=None):
 
     flat_samples = sampler.get_chain(discard=discard, flat=True)
-    if fig==None:
+    if fig is None:
         fig = corner(flat_samples, color=color);
         return fig
     else:
