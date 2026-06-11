@@ -78,4 +78,5 @@ def check_output_exists(output_file, overwrite=False):
             return False
         else:
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
+            os.remove(output_file)
     return True
