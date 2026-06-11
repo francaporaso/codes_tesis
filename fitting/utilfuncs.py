@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from fitting.models import default_limits
 
@@ -16,6 +17,21 @@ def make_pos_gaussian(init_guess, NWALKERS, seed=0):
         else:
             pos[:, i] = rng.normal(0.0, 0.15, NWALKERS)
     return pos
+
+def make_pos_uniform(init_guess, NWALKERS, seed=0):
+    
+    rng = np.random.default_rng(0)
+    init_pos = np.zeros((NWLAKERS, len(init_guess)))
+    init_pos = np.array([
+       rng.uniform(ig*(1-0.2), ig*(1+0.2), NWALKERS) for ig in init_guess
+    ]).T #ordering of dict is asserted in python >3.7
+    return init_pos
+
+def make_pos(init_guess, NWALKERS, seed, dist):
+    if dist == 'gaussian':
+        return make_pos_gaussian(init_guess, NWALKERS, seed)
+    elif dist == 'uniform':
+        return make_pos_uniform(init_guess, NWALKERS, seed)
 
 def validate_pos(pos, model_name):
     rng = np.random.default_rng(seed=0)
@@ -40,3 +56,18 @@ def get_fitted_params(chain, params):
         error_params[p] = tuple(percentil[[0,2]]-percentil[1])
 
     return fitted_params, error_params
+
+def check_output_exists(output_file, overwrite=False):
+
+    if os.path.exists(output_file):
+        if not overwrite:
+            raise OSError(
+                f'\n{"="*60}\n'
+                f'Output file already exists: {output_file}\n'
+                f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
+                f'{"="*60}'
+            )
+            return False
+        else:
+            print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
+    return True
