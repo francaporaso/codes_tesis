@@ -79,9 +79,8 @@ class Config:
         self.discardp : float = cfg['fit']['discardp']
 
     def get_prefix(self):
-        name = self.data['prefix'].split('.')[0].join()
-        prefix = name.split('_')[1:]
-        return prefix
+        return '_'.join(self.data['prefix'].split('_')[1:])
+        
 
 def main():
 
