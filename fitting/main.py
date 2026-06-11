@@ -113,9 +113,10 @@ def main():
                         data_filename = f'{cfg.data["folder"]}/{cfg.data["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits'
                         chain_filename = f'{cfg.chain["folder"]}/fitting_{cfg.chain["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5'
 
-                        print()
-
                         assert check_output_exists(chain_filename, overwrite=cfg.overwrite)
+
+                        print(f' >> Fitting {data_filename}')
+                        print(f' >> Saving to {chain_filename}')
 
                         sampler = run_emcee(
                             NCORES=cfg.ncores,NIT=cfg.nit,NWALKERS=cfg.nwalkers,
