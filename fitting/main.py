@@ -79,7 +79,7 @@ class Config:
         self.discardp : float = cfg['fit']['discardp']
 
     def get_prefix(self):
-        name = self.data['prefix'].split('.')[0]
+        name = self.data['prefix'].split('.')[0].join()
         prefix = name.split('_')[1:]
         return prefix
 
@@ -113,6 +113,8 @@ def main():
 
                         data_filename = f'{cfg.data["folder"]}/{cfg.data["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits'
                         chain_filename = f'{cfg.chain["folder"]}/fitting_{cfg.chain["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5'
+
+                        print()
 
                         assert check_output_exists(chain_filename, overwrite=cfg.overwrite)
 
