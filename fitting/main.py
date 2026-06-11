@@ -90,7 +90,7 @@ def main():
     cfg = Config(args.config)
 
     Total = len(cfg.models)*len(cfg.observables)*len(cfg.z_ranges)*len(cfg.rv_ranges)*len(cfg.voidtypes)
-    print(f' >> Fitting {len(cfg.models)} model(s) x {len(cfg.observables)} profile(s) x {len(cfg.z_ranges)} redshift bin(s) x {len(cfg.rv_ranges} radius bin(s) x {len(cfg.voidtypes)} void type(s)')
+    print(f' >> Fitting {len(cfg.models)} model(s) x {len(cfg.observables)} profile(s) x {len(cfg.z_ranges)} redshift bin(s) x {len(cfg.rv_ranges)} radius bin(s) x {len(cfg.voidtypes)} void type(s)')
     print(f' >> {Total=} \n')
 
     i = 0
