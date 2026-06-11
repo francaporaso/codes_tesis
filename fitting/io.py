@@ -50,18 +50,24 @@ class DataProfile:
 def read_dataprofile_fits(binning='lin', *args, **kwargs):
     binspace = (np.linspace if binning=='lin' else np.geomspace)
     with fits.open(*args, **kwargs) as f:
+        
         hd = f[0].header
-        dt = f[1].data
+        dt = f['profiles'].data
+        if 'R' in f['profiles'].columns.names:
+            R = dt['R']
+        else:
+            R = binspace(hd['RIN'], hd['ROUT'], hd['NBINS'])
+
         data = DataProfile(
-            R = binspace(hd['RIN'],hd['ROUT'],hd['N']),
+            R = R,
             redshift = hd['Z_MEAN'],
             Njk = hd['NK'],
             Sigma = dt['Sigma'],
             DSigma_t = dt['DSigma_t'],
             DSigma_x = dt['DSigma_x'],
-            covS = f[2].data,
-            covDSt = f[3].data,
-            covDSx = f[4].data,
+            covS = f['cov_sigma'].data,
+            covDSt = f['cov_dsigma_t'].data,
+            covDSx = f['cov_dsigma_x'].data,
         )
     return data
 
