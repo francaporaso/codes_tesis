@@ -23,6 +23,9 @@ def make_pos_uniform(init_guess, NWALKERS, seed=0):
     rng = np.random.default_rng(0)
     init_pos = np.zeros((NWALKERS, len(init_guess)))
     for i, ig in enumerate(init_guess):
+        if ig==0:
+            ig=1e-3
+
         low = ig*(1-0.2)
         hig = ig*(1+0.2)
         if low<hig:
