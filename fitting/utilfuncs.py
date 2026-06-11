@@ -18,22 +18,19 @@ def make_pos_gaussian(init_guess, NWALKERS, seed=0):
             pos[:, i] = rng.normal(0.0, 0.15, NWALKERS)
     return pos
 
-def make_pos_uniform(init_guess, NWALKERS, seed=0):
-    
-    rng = np.random.default_rng(0)
-    init_pos = np.zeros((NWALKERS, len(init_guess)))
+def make_pos_uniform(init_guess, nwalkers, seed=0,
+                     frac=0.2, abs_width=1e-2):
+
+    rng = np.random.default_rng(seed)
+    init_guess = np.asarray(init_guess)
+
+    pos = np.zeros((nwalkers, len(init_guess)))
+
     for i, ig in enumerate(init_guess):
-        if ig==0:
-            ig=1e-3
+        width = np.max([np.abs(ig) * frac, abs_width])
+        pos[:, i] = rng.uniform(ig - width, ig + width, size=nwalkers)
 
-        low = ig*(1-0.2)
-        hig = ig*(1+0.2)
-        if low<hig:
-            init_pos[:,i] = rng.uniform(low, hig, NWALKERS)
-        else:
-            init_pos[:,i] = rng.uniform(hig, low, NWALKERS)
-
-    return init_pos
+    return pos
 
 def make_pos(init_guess, NWALKERS, seed, dist):
     if dist == 'gaussian':
