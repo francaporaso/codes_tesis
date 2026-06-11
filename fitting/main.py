@@ -143,7 +143,7 @@ def main():
                         # TODO: incorporate the chi2 to the file...
                         # print(f'chi^2 = {chi2_red()}')
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
-                            print(f"    {repr(key)} = {repr(value)} ± {repr(e)}   ")
+                            print(f'{key} = {value:.2f} ± ({e[0]:.2f},{e[1]:.2f})')
 
                         with h5py.File(chain_filename, 'a') as f:
                             group_path = f'fitedparams/{model}/{obs}/{cfg.cov_mode}'
