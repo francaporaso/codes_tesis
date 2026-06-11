@@ -84,7 +84,7 @@ class Config:
 def main():
 
     parser = ArgumentParser()
-    parser.add_argument('--config', type=str, defaul='config.toml', action='store')
+    parser.add_argument('--config', type=str, default='config.toml', action='store')
     args = parser.parse_args()
 
     cfg = Config(args.config)
