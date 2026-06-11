@@ -49,7 +49,7 @@ class Config:
     def __init__(self, configfile):
         cfg = toml.load(configfile)
 
-        self data : dict = {
+        self.data : dict = {
             'folder' : cfg['data']['folder'],
             'prefix' : cfg['data']['prefix']
         }
