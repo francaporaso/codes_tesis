@@ -76,7 +76,7 @@ class Config:
         self.models : list = cfg['fit']['models']
         self.pos_dist : str = cfg['fit']['pos_dist']
         self.seed : int = cfg['fit']['seed']
-        self.discardp : float = cfg['fit']['discard']
+        self.discardp : float = cfg['fit']['discardp']
 
     def get_prefix(self):
         name = self.data['prefix'].split('.')[0]
