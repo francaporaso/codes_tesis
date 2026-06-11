@@ -163,8 +163,8 @@ def main():
 
 if __name__ == '__main__':
     from time import time
-    print(' Start '.center('#', 15))
+    print(' Start '.center(15, '#'))
     tini = time()
     main()
-    print(' End :) '.center('#', 15))
+    print(' End :) '.center(15, '#'))
     print(f' >> Took {(time()-tini)/60.0} min <<\n')
