@@ -152,7 +152,7 @@ def main():
                         # print(f'chi^2 = {chi2_red()}')
                         print(' Fitted params:')
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
-                            print(f'{key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})')
+                            print(f'    > {key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})')
 
                         with h5py.File(chain_filename, 'a') as f:
                             group_path = f'fitedparams/{model}/{obs}/{cfg.cov_mode}'
@@ -170,7 +170,7 @@ def main():
 
 
                         if cfg.do_plot:
-                            plot_chains(sampler.get_chain())
+                            plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
                             plt.show()
 
                             plot_corner(sampler, discard=discard);
