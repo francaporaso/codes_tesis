@@ -146,7 +146,7 @@ def main():
                             model_name=model,
                             observable=obs,
                             cov_mode=cfg.cov_mode,
-                            limits=limits
+                            limits=limits,
                             init_guess=init_guess,
                             pos_dist=cfg.pos_dist,
                             seed=cfg.seed,
