@@ -57,7 +57,8 @@ class Config:
         }
         self.chain : dict = {
             'folder' : cfg['chain']['folder'],
-            'prefix' : '_'.join(self.data['prefix'].split('_')[1:])
+            'prefix' : '_'.join(self.data['prefix'].split('_')[1:]),
+            'sample' : cfg['chain']['sample']
         }
 
         self.rv_ranges : list[str] = cfg['data']['rv_ranges']
@@ -124,7 +125,7 @@ def main():
                         print(f'\n [{i}/{Total}]')
 
                         data_filename = f'{cfg.data["folder"]}{cfg.data["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits'
-                        chain_filename = f'{cfg.chain["folder"]}fitting_{cfg.chain["prefix"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5'
+                        chain_filename = f'{cfg.chain["folder"]}fitting_{cfg.chain["prefix"]}-{cfg.chain["sample"]}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5'
 
                         assert check_output_exists(chain_filename, overwrite=cfg.overwrite)
 
