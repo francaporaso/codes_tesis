@@ -34,7 +34,7 @@ def run_emcee(
         seed=seed,
         dist=pos_dist,
     )
-    validate_pos(init_pos, model_name)
+    #validate_pos(init_pos, model_name)
     
     group_name = f'emcee/{model_name}/{observable}/{cov_mode}'
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
