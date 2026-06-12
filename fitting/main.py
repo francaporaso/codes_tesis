@@ -15,15 +15,15 @@ from fitting.plotting import plot_chains, plot_corner
 
 def run_emcee(
         NCORES, NIT, NWALKERS, 
-        data_filename, save_filename, model_name, observable, cov_mode,
+        data_filename, save_filename, model_name, observable, cov_mode, limits,
         init_guess, pos_dist, seed):
     
     data = read_dataprofile_fits(name=data_filename)
 
     L = Likelihood(
         data=data,
-        model=models_dict.get(model_name)(data.redshift),
-        param_limits=default_limits.get(model_name),
+        model=models_dict[model_name](data.redshift),
+        param_limits=limits,
         observable=observable,
         cov_mode=cov_mode
     )
@@ -57,7 +57,7 @@ class Config:
         }
         self.chain : dict = {
             'folder' : cfg['chain']['folder'],
-            'prefix' : self.get_prefix()
+            'prefix' : '_'.join(self.data['prefix'].split('_')[1:])
         }
 
         self.rv_ranges : list[str] = cfg['data']['rv_ranges']
@@ -78,9 +78,18 @@ class Config:
         self.seed : int = cfg['fit']['seed']
         self.discardp : float = cfg['fit']['discardp']
 
-    def get_prefix(self):
-        return '_'.join(self.data['prefix'].split('_')[1:])
-        
+        raw_limits = cfg['fit'].get('limits', {})
+        self.limits: dict = {
+            model: {k: tuple(v) for k, v in params.items()}
+            for model, params in raw_limits.items()
+        }
+
+        raw_guess = cfg['fit'].get('guess', {})
+        self.guess: dict = {
+            model: params
+            for model, params in raw_guess.items()
+        }
+
 
 def main():
 
@@ -98,11 +107,15 @@ def main():
     for model in cfg.models:
         for obs in cfg.observables:
 
-            if obs=='delta_sigma':
-                init_guess = default_guess.get(model)[:-1]
-            elif obs=='sigma':
-                init_guess = default_guess.get(model)
-
+            # resolve limits and guess with fallback to defaults
+            full_limits = cfg.limits.get(model, default_limits[model])
+            guess  = cfg.guess.get(model,  default_guess[model])
+            
+            active_params = models_dict[model].params[obs]
+            # then use them:
+            init_guess = tuple(guess[p] for p in active_params)
+            limits = {p: full_limits[p] for p in active_params}
+            
             for redshift in cfg.z_ranges:
                 for rv in cfg.rv_ranges:
                     for vt in cfg.voidtypes:
@@ -133,12 +146,13 @@ def main():
                             model_name=model,
                             observable=obs,
                             cov_mode=cfg.cov_mode,
+                            limits=limits
                             init_guess=init_guess,
                             pos_dist=cfg.pos_dist,
                             seed=cfg.seed,
                         )
 
-                        param_names = list(default_limits.get(model).keys())
+                        param_names = list(limits)
                         # not possible to fix params for now
                         discard = int(cfg.nit * cfg.discardp)
                         fitpar, errpar = get_fitted_params(
