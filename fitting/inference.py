@@ -7,7 +7,7 @@ class Likelihood:
         
         self.R = data.R
         self.rhomean = rho_mean(data.redshift)
-        self.limits = param_limits
+        self.limits = {k: param_limits[k] for k in model.params[observable]}
         #self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
         self.hartlap_factor = 1
 
@@ -22,11 +22,6 @@ class Likelihood:
             self.cov = data.covDSt
 
             self.func = model.delta_sigma
-
-            try:
-                self.limits.pop('sigma0')
-            except KeyError:
-                print('')
 
         else:
             raise ValueError('observable must be either "sigma" or "delta_sigma"')
