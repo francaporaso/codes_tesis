@@ -4,7 +4,7 @@ from scipy.special import erf
 
 from fitting.constants import SQPI, rho_mean
 
-def logistic(x, x0=1, k=10):
+def logistic(x, x0=1.0, k=10):
     return (1.0+np.exp(-2.0*k*(x-x0)))**(-1)
 
 # ==================== 
@@ -16,12 +16,10 @@ class BaseModelFast:
         self.redshift = redshift
         self.rho_mean = rho_mean(redshift)
 
-    def density_contrast(self):
+    def density_contrast(self, *params):
         ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
         raise NotImplementedError('Must be defined in child class')
     
-    # TODO:  - Sigma_0 is not implemented as before. NOW rhomean is multiplied AFTER adding sigma0. OLD version (paper) has sigma0 'outside', which alters the value. 
-    # As it is now, Sigma_0 dont represent an aditive constant to the profile!, is an additive constant times rhomean
     def sigma(self, R, *params):
 
         *p, sigma0 = params
@@ -55,6 +53,10 @@ class BaseModelFast:
     
 class BaseModelQuad:
 
+    def density_contrast(self, *params):
+        ''' density contrast delta(r) = rho(x)/rho_mean - 1 '''
+        raise NotImplementedError('Must be defined in child class') 
+
     def delta_sigma(self, R, *params):
 
         x_grid = np.linspace(0.0, R.max(), 1000)
@@ -79,7 +81,11 @@ class BaseModelQuad:
 # ==================== 
 
 class HSW(BaseModelFast):
-
+    
+    params = {
+        'sigma':['dc', 'rs', 'a', 'b', 'sigma0'],
+        'delta_sigma':['dc', 'rs', 'a', 'b']
+    }
     def density_contrast(self, r, dc, rs, a, b):
         return dc*(1-(r/rs)**a)/(1+r**b)
 
@@ -88,12 +94,22 @@ class B15(BaseModelFast):
         return dc*(1-(r/rs)**a)/(1+(r/rv)**b)
 
 class ModifiedLW(BaseModelFast):
+    
+    params = {
+        'sigma':['dc', 'dw', 'rw', 'sigma0'],
+        'delta_sigma':['dc', 'dw', 'rw']
+    }
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
         return np.where(r<rv, (dc-dw)*(1.0-(r/rv)**3), 0.0) + np.where(r<rw, dw, 0.0)
 
 
 class TopHat(BaseModelFast):
+
+    params = {
+        'sigma':['dc', 'dw', 'rw', 'sigma0'],
+        'delta_sigma':['dc', 'dw', 'rw']
+    }
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
         return np.where(r<rv, dc-dw, 0.0) + np.where(r<rw, dw, 0.0)
@@ -150,9 +166,9 @@ default_limits = {
     'P13':{'S':(0.0,10.0),'Rs':(0.1,5.0),'P':(0.0,1.0), 'W':(0.1, 5.0),'sigma0':(-0.5,0.5)},
 }
 default_guess = {
-    'HSW':(-0.7,0.9,3.0,6.0,0.0),
-    'B15':(-0.7,0.9,1.0,3.0,6.0,0.0),
-    'TH':(-0.7,0.2,2.5,0.0),
-    'mLW':(-0.7,0.2,2.5,0.0),
-    'P13':(1.0, 4.5, 0.6, 3.0, 0.0)
+    'HSW':{'dc':-0.7,'rs':0.9,'a':3.0,'b':6.0,'sigma0':0.0},
+    'B15':{'dc':-0.7,'rs':0.9,'rv':1.0,'a':3.0,'b':6.0,'sigma0':0.0},
+    'TH':{'dc':-0.7,'dw':0.2,'rw':2.5,'sigma0':0.0},
+    'mLW':{'dc':-0.7,'dw':0.2,'rw':2.5,'sigma0':0.0},
+    'P13':{'S':1.0, 'Rs':4.5, 'P':0.6, 'W':3.0, 'sigma0':0.0}
 }
