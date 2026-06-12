@@ -113,9 +113,9 @@ def main():
             guess  = cfg.guess.get(model,  default_guess[model])
             
             active_params = models_dict[model].params[obs]
-            # then use them:
             init_guess = tuple(guess[p] for p in active_params)
-            
+            active_limits = {k:limits[k] for k in active_params}
+
             for redshift in cfg.z_ranges:
                 for rv in cfg.rv_ranges:
                     for vt in cfg.voidtypes:
@@ -146,18 +146,17 @@ def main():
                             model_name=model,
                             observable=obs,
                             cov_mode=cfg.cov_mode,
-                            limits=limits,
+                            limits=active_limits,
                             init_guess=init_guess,
                             pos_dist=cfg.pos_dist,
                             seed=cfg.seed,
                         )
 
-                        param_names = list(limits)
                         # not possible to fix params for now
                         discard = int(cfg.nit * cfg.discardp)
                         fitpar, errpar = get_fitted_params(
                             sampler.get_chain(discard=discard), 
-                            param_names
+                            active_params
                         )
                         
                         # print result values from fit
@@ -177,7 +176,7 @@ def main():
 
                             grp = f.create_group(group_path)
 
-                            for pname in param_names:
+                            for pname in active_params:
                                 pgrp = grp.create_group(pname)
                                 pgrp.create_dataset('median', data=fitpar[pname])
                                 pgrp.create_dataset('errs', data=np.array(errpar[pname]))

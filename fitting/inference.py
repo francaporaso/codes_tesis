@@ -7,7 +7,7 @@ class Likelihood:
         
         self.R = data.R
         self.rhomean = rho_mean(data.redshift)
-        self.limits = {k: param_limits[k] for k in model.params[observable]}
+        self.limits = param_limits
         #self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
         self.hartlap_factor = 1
 
