@@ -109,13 +109,12 @@ def main():
         for obs in cfg.observables:
 
             # resolve limits and guess with fallback to defaults
-            full_limits = cfg.limits.get(model, default_limits[model])
+            limits = cfg.limits.get(model, default_limits[model])
             guess  = cfg.guess.get(model,  default_guess[model])
             
             active_params = models_dict[model].params[obs]
             # then use them:
             init_guess = tuple(guess[p] for p in active_params)
-            limits = {p: full_limits[p] for p in active_params}
             
             for redshift in cfg.z_ranges:
                 for rv in cfg.rv_ranges:
