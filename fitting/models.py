@@ -216,27 +216,49 @@ class TopHat(BaseModelFast):
         rv = 1.0
         return np.where(r < rv, dc - dw, 0.0) + np.where(r < rw, dw, 0.0)
 
-    # easier to compute since is integrable
-    def sigma(self, R, dc, dw, rw, sigma0=0.0):
+    def _P(self, r, R):
+        """Base integral for Mean Enclosed Projection"""
+        # np.maximum forces negative values to 0, naturally handling the Heaviside boundaries
+        return (1.0 / 3.0) * np.maximum(r**2 - R**2, 0.0) ** 1.5
+
+    def _I0(self, r, R):
+        """Base integral for Standard Projection"""
+        return np.sqrt(np.maximum(r**2 - R**2, 0.0))
+
+    # ==========================================
+    # Profile Calculations
+    # ==========================================
+    def sigma_mean(self, R, dc, dw, rw):
+        """Computes the mean enclosed projection S_bar(R)."""
         rv = 1.0
-        return (
-            np.where(R < rv, (dc - dw) * np.sqrt(rv**2 - R**2), 0.0)
-            + np.where(R < rw, dw * np.sqrt(rw**2 - R**2), 0.0)
-            + sigma0
-        )
+
+        R = np.atleast_1d(R)
+
+        # Calculate J(R) using the two-term block logic
+        J = dw * self._P(rw, R) + (dc - dw) * self._P(rv, R)
+
+        # Protect against division by zero at R=0
+        R_safe = np.maximum(R, 1e-12)
+        C_M = (dc * rv**3 + dw * (rw**3 - rv**3)) / 3.0
+        sbar = (4.0 / R_safe**2) * (C_M - J)
+
+        return self.rho_mean * sbar
+
+    def sigma(self, R, dc, dw, rw, sigma0):
+        """Computes the standard projected profile S(R)."""
+        rv = 1.0
+        R = np.atleast_1d(R)
+
+        # Calculate S(R) using the two-term block logic
+        S = 2.0 * (dw * self._I0(rw, R) + (dc - dw) * self._I0(rv, R))
+
+        return self.rho_mean * S + sigma0
 
     def delta_sigma(self, R, dc, dw, rw):
-        rv = 1.0
-        I1 = np.where(
-            R < rv,
-            1 / 3 * (dc - dw) * (rv**3 - (rv**2 - R**2) ** (3 / 2)),
-            1 / 3 * (dc - dw) * rv**3,
-        )
-        I2 = np.where(
-            R < rw, 1 / 3 * dw * (rw**3 - (rw**2 - R**2) ** (3 / 2)), 1 / 3 * dw * rw**3
-        )
-
-        return (2.0 / R**2) * (I1 + I2) - self.sigma(R, dc, dw, rw)
+        """
+        Computes the excess surface density D(R) = S_bar(R) - S(R).
+        """
+        return self.sigma_mean(R, dc, dw, rw) - self.sigma(R, dc, dw, rw, sigma0=0.0)
 
 
 class Paz13(BaseModelFast):
