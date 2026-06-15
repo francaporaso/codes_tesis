@@ -113,9 +113,100 @@ class ModifiedLW(BaseModelFast):
 
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
-        return np.where(r < rv, (dc - dw) * (1.0 - (r / rv) ** 3), 0.0) + np.where(
-            r < rw, dw, 0.0
+        return (
+            np.where(r > 0.0, dc + (dw - dc) * (r / rv) ** 3, 0.0)
+            + np.where(r > rv, (dc - dw) * (1.0 - (r / rv) ** 3), 0.0)
+            - np.where(r > rw, dw, 0.0)
         )
+
+    def _P(self, r, R):
+        diff = np.maximum(r**2 - R**2, 0.0)
+        return (1.0 / 3.0) * diff**1.5
+
+    def _Q(self, r, R):
+        diff = np.maximum(r**2 - R**2, 0.0)
+        sqrt_diff = np.sqrt(diff)
+        term1 = (r / 48.0) * (8 * r**4 - 2 * R**2 * r**2 - 3 * R**4) * sqrt_diff
+        term2 = (R**6 / 16.0) * np.log(np.maximum(r + sqrt_diff, 1e-12))
+        return term1 - term2
+
+    def sigma_mean(self, R, dc, dw, rw):
+        """Computes the mean enclosed projection S_bar(R)."""
+
+        def _W1_sbar(r, R):
+            return dc * self._P(r, R) + (dw - dc) * self._Q(r, R)
+
+        def _W2_sbar(r, R):
+            return (dw - dc) * (self._P(r, R) - self._Q(r, R))
+
+        R = np.atleast_1d(R)
+        J = np.zeros_like(R, dtype=float)
+        mask = R < rw
+        Rm = R[mask]
+
+        if np.any(mask):
+            W1_rw = _W1_sbar(rw, Rm)
+            W1_R = _W1_sbar(Rm, Rm)
+            W2_rw = _W2_sbar(rw, Rm)
+            W2_max = _W2_sbar(np.maximum(Rm, 1.0), Rm)
+            J[mask] = (W1_rw - W1_R) + (W2_rw - W2_max)
+
+        c_m = (dc - dw + 2 * dw * rw**3) / 6.0
+
+        R_safe = np.maximum(R, 1e-12)
+        sbar = (4.0 / R_safe**2) * (c_m - J)
+        return self.rho_mean * sbar
+
+    # ==========================================
+    # Methods for S(R) (Standard Projection)
+    # ==========================================
+    def _I0(self, r, R):
+        """Base integral I_0(r, R) for standard projection"""
+        return np.sqrt(np.maximum(r**2 - R**2, 0.0))
+
+    def _I3(self, r, R):
+        """Base integral I_3(r, R) for standard projection"""
+        diff = np.maximum(r**2 - R**2, 0.0)
+        sqrt_diff = np.sqrt(diff)
+        term1 = (r / 8.0) * (2 * r**2 + 3 * R**2) * sqrt_diff
+        term2 = (3.0 * R**4 / 8.0) * np.log(np.maximum(r + sqrt_diff, 1e-12))
+        return term1 + term2
+
+    def sigma(self, R, dc, dw, rw, sigma0):
+        """Computes the standard projected profile S(R)."""
+
+        def _W1_s(r, R):
+            """Block 1 weight for standard projection"""
+            return dc * self._I0(r, R) + (dw - dc) * self._I3(r, R)
+
+        def _W2_s(r, R):
+            """Block 2 weight for standard projection"""
+            return (dw - dc) * (self._I0(r, R) - self._I3(r, R))
+
+        R = np.atleast_1d(R)
+        S = np.zeros_like(R, dtype=float)
+        mask = R < rw
+        Rm = R[mask]
+
+        if np.any(mask):
+            W1_rw = _W1_s(rw, Rm)
+            W1_R = _W1_s(Rm, Rm)
+            W2_rw = _W2_s(rw, Rm)
+            W2_max = _W2_s(np.maximum(Rm, 1.0), Rm)
+
+            # Multiply by 2 because the integral was from R to infinity (half-line)
+            S[mask] = 2.0 * ((W1_rw - W1_R) + (W2_rw - W2_max))
+
+        return self.rho_mean * S + sigma0
+
+    # ==========================================
+    # The Final Target: D = S_bar - S
+    # ==========================================
+    def delta_sigma(self, R, dc, dw, rw):
+        """
+        Computes the excess surface density D(R) = S_bar(R) - S(R).
+        """
+        return self.sigma_mean(R, dc, dw, rw) - self.sigma(R, dc, dw, rw, sigma0=0.0)
 
 
 class TopHat(BaseModelFast):
