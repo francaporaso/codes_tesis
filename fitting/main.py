@@ -24,6 +24,7 @@ def run_emcee(
     NCORES,
     NIT,
     NWALKERS,
+    burn_in,
     moves,
     data_filename,
     save_filename,
@@ -65,7 +66,11 @@ def run_emcee(
         sampler = emcee.EnsembleSampler(
             NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backend, moves=move
         )
-        sampler.run_mcmc(init_pos, NIT, progress=True, store=True)
+        print(' >> running burn in')
+        state = sampler.run_mcmc(init_pos, burn_in, progress=True, store=False)
+        sampler.reset()
+        print(' >> running emcee')
+        sampler.run_mcmc(state, NIT, progress=True, store=True)
 
     return sampler
 
@@ -91,6 +96,7 @@ class Config:
 
         self.ncores: int = cfg["run"]["ncores"]
         self.nit: int = cfg["run"]["nit"]
+        self.burn_in : int = cfg["run"]["burn_in"]
         self.nwalkers: int = cfg["run"]["nwalkers"]
         self.moves: str = cfg["run"]["moves"]
         self.do_plot: bool = cfg["run"]["do_plot"]
@@ -172,6 +178,7 @@ def main():
                             NCORES = cfg.ncores,
                             NIT = cfg.nit,
                             NWALKERS = cfg.nwalkers,
+                            burn_in = cfg.burn_in,
                             moves = cfg.moves,
                             data_filename = data_filename,
                             save_filename = chain_filename,
