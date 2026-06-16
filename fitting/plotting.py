@@ -1,7 +1,25 @@
 import matplotlib.pyplot as plt
 from corner import corner
+import numpy as np
 
-from fitting.models import default_limits
+from fitting.models import default_limits, models_dict
+from fitting.io import read_dataprofile_fits
+
+def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
+    data = read_dataprofile_fits(data_filename)
+
+    fig, ax = plt.subplots(1,1)
+    if obs=='sigma':
+        func = models_dict[model](data.redshift)
+        ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
+        ax.plot(data.R, func(data.R, **fitpar), c='r')
+    elif obs=='delta_sigma':
+        func = models_dict[model](data.redshift)
+        ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
+        ax.plot(data.R, func(data.R, **fitpar), c='r')
+    else:
+        raise ValueError
+    return fig
 
 def plot_chains(chain,labels):
 

@@ -17,7 +17,7 @@ from fitting.utilfuncs import (
     make_pos,
     chi2_red,
 )
-from fitting.plotting import plot_chains, plot_corner
+from fitting.plotting import plot_chains, plot_corner, plot_profile
 
 
 def run_emcee(
@@ -25,7 +25,7 @@ def run_emcee(
     NIT,
     NWALKERS,
     burn_in,
-    moves,
+    move_name,
     data_filename,
     save_filename,
     model_name,
@@ -54,11 +54,7 @@ def run_emcee(
         dist=pos_dist,
     )
     # validate_pos(init_pos, model_name)
-
-    if moves=='DEMove':
-        move = [emcee.moves.DEMove()]
-    else:
-        move = [emcee.moves.StretchMove()]
+    move = [emcee.moves.__dict__.get(move_name)]
 
     group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
@@ -179,7 +175,7 @@ def main():
                             NIT = cfg.nit,
                             NWALKERS = cfg.nwalkers,
                             burn_in = cfg.burn_in,
-                            moves = cfg.moves,
+                            move_name = cfg.moves,
                             data_filename = data_filename,
                             save_filename = chain_filename,
                             model_name = model,
@@ -228,6 +224,9 @@ def main():
                             plt.show()
 
                             plot_corner(sampler, discard=discard)
+                            plt.show()
+
+                            plot_profile(data_filename, obs, fitpar, model)
                             plt.show()
 
 
