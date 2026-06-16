@@ -24,6 +24,7 @@ def run_emcee(
     NCORES,
     NIT,
     NWALKERS,
+    moves,
     data_filename,
     save_filename,
     model_name,
@@ -53,11 +54,16 @@ def run_emcee(
     )
     # validate_pos(init_pos, model_name)
 
+    if moves=='DEMove':
+        move = [emcee.moves.DEMove()]
+    else:
+        move = [emcee.moves.StretchMove()]
+
     group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
-            NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backend
+            NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backendi, moves=move
         )
         sampler.run_mcmc(init_pos, NIT, progress=True, store=True)
 
@@ -86,6 +92,7 @@ class Config:
         self.ncores: int = cfg["run"]["ncores"]
         self.nit: int = cfg["run"]["nit"]
         self.nwalkers: int = cfg["run"]["nwalkers"]
+        self.moves: str = cfg["run"]["moves"]
         self.do_plot: bool = cfg["run"]["do_plot"]
         self.overwrite: bool = cfg["run"]["overwrite"]
 
@@ -162,18 +169,19 @@ def main():
                         print("-" * 15)
 
                         sampler = run_emcee(
-                            NCORES=cfg.ncores,
-                            NIT=cfg.nit,
-                            NWALKERS=cfg.nwalkers,
-                            data_filename=data_filename,
-                            save_filename=chain_filename,
-                            model_name=model,
-                            observable=obs,
-                            cov_mode=cfg.cov_mode,
-                            limits=active_limits,
-                            init_guess=init_guess,
-                            pos_dist=cfg.pos_dist,
-                            seed=cfg.seed,
+                            NCORES = cfg.ncores,
+                            NIT = cfg.nit,
+                            NWALKERS = cfg.nwalkers,
+                            moves = cfg.moves,
+                            data_filename = data_filename,
+                            save_filename = chain_filename,
+                            model_name = model,
+                            observable = obs,
+                            cov_mode = cfg.cov_mode,
+                            limits = active_limits,
+                            init_guess = init_guess,
+                            pos_dist = cfg.pos_dist,
+                            seed = cfg.seed,
                         )
 
                         # not possible to fix params for now
