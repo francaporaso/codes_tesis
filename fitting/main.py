@@ -63,7 +63,7 @@ def run_emcee(
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
-            NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backendi, moves=move
+            NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backend, moves=move
         )
         sampler.run_mcmc(init_pos, NIT, progress=True, store=True)
 
