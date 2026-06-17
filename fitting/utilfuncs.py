@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import h5py
 
 from fitting.models import default_limits
 
@@ -72,8 +73,36 @@ def check_output_exists(output_file, overwrite=False):
                 f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
                 f'{"="*60}'
             )
-            return False
+            
         else:
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
             #os.remove(output_file)
     return True
+
+def check_group_exists(filename, path, overwrite):
+    '''
+    checks for existence of file and the group in it. 
+    used for allowing to overwrite old fit in a h5 file
+    '''
+    if not os.path.exists(filename):
+        return True
+
+    with h5py.File(filename, 'a') as f:
+        # check for path existence
+        if path not in f:
+           return True
+        # check if we can overwrite
+        if not overwrite:
+            raise OSError(
+                f'\n{"="*60}\n'
+                f'Output file already exists: {filename}\n'
+                f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
+                f'{"="*60}'
+            )
+        # overwrite
+        print(f' WARNING: overwriting existing group: {filename}/{path}', flush=True)
+        del f[path]
+
+    return True
+
+
