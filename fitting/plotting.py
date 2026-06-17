@@ -10,11 +10,11 @@ def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
 
     fig, ax = plt.subplots(1,1)
     if obs=='sigma':
-        func = models_dict[model](data.redshift)
+        func = models_dict[model](data.redshift).sigma
         ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
         ax.plot(data.R, func(data.R, **fitpar), c='r')
     elif obs=='delta_sigma':
-        func = models_dict[model](data.redshift)
+        func = models_dict[model](data.redshift).delta_sigma
         ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
         ax.plot(data.R, func(data.R, **fitpar), c='r')
     else:
