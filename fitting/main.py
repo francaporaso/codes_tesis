@@ -221,12 +221,11 @@ def main():
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
-                            plt.show()
 
                             plot_corner(sampler, discard=discard)
-                            plt.show()
 
                             plot_profile(data_filename, obs, fitpar, model)
+
                             plt.show()
 
 
