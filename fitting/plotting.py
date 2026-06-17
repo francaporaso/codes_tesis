@@ -15,7 +15,7 @@ def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
         ax.plot(data.R, func(data.R, **fitpar), c='r')
     elif obs=='delta_sigma':
         func = models_dict[model](data.redshift).delta_sigma
-        ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
+        ax.errorbar(data.R, data.DSigma_t, np.sqrt(np.diag(data.covDSt)), fmt='sk')
         ax.plot(data.R, func(data.R, **fitpar), c='r')
     else:
         raise ValueError
