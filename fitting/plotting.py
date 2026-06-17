@@ -21,7 +21,7 @@ def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
     try:
         ax.plot(data.R, func(data.R, **fitpar), c='r')
     except TypeError:
-        ax.plot(data.R, func(data.R, *list(fitpar.values()), c='b')
+        ax.plot(data.R, func(data.R, *list(fitpar.values())), c='b')
 
     return fig
 
