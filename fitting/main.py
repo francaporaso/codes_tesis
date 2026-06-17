@@ -54,7 +54,7 @@ def run_emcee(
         dist=pos_dist,
     )
     # validate_pos(init_pos, model_name)
-    move = [emcee.moves.__dict__.get(move_name)]
+    move = [emcee.moves.__dict__.get(move_name)()]
 
     group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
@@ -133,7 +133,7 @@ def main():
     print(
         f" >> Fitting {len(cfg.models)} model(s) x {len(cfg.observables)} profile(s) x {len(cfg.z_ranges)} redshift bin(s) x {len(cfg.rv_ranges)} radius bin(s) x {len(cfg.voidtypes)} void type(s)"
     )
-    print(f" >> {Total=} \n")
+    print(f" >> {Total=}")
 
     i = 0
     for model in cfg.models:
