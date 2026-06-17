@@ -12,13 +12,17 @@ def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
     if obs=='sigma':
         func = models_dict[model](data.redshift).sigma
         ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
-        ax.plot(data.R, func(data.R, **fitpar), c='r')
     elif obs=='delta_sigma':
         func = models_dict[model](data.redshift).delta_sigma
         ax.errorbar(data.R, data.DSigma_t, np.sqrt(np.diag(data.covDSt)), fmt='sk')
-        ax.plot(data.R, func(data.R, **fitpar), c='r')
     else:
         raise ValueError
+    
+    try:
+        ax.plot(data.R, func(data.R, **fitpar), c='r')
+    except TypeError:
+        ax.plot(data.R, func(data.R, *list(fitpar.values()), c='b')
+
     return fig
 
 def plot_chains(chain,labels):
