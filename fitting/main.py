@@ -37,7 +37,7 @@ def run_emcee(
     seed,
 ):
 
-    data = read_dataprofile_fits(name=data_filename)
+    data = read_dataprofile_fits(filename=data_filename)
 
     L = Likelihood(
         data=data,
