@@ -20,6 +20,8 @@ from fitting.utilfuncs import (
 )
 from fitting.plotting import plot_chains, plot_corner, plot_profile
 
+import os
+os.environ['OMP_NUM_THREADS'] = '1'
 
 def run_emcee(
     NCORES : int,
