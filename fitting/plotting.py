@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from corner import corner
 import numpy as np
+from getdist import plots as gdplots, MCSamples
 
 from fitting.models import default_limits, models_dict
 from fitting.io import read_dataprofile_fits
@@ -59,8 +60,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename, kwargs=None):
-    from getdist import plots as gdplots, MCSamples
+def plot_getdist(labels, names, discard, model, samplers, samplename, **kwargs):
     log_prob = {}
     chain = {}
     log_prob_list = {}
@@ -77,12 +77,12 @@ def plot_getdist(labels, names, discard, model, samplers, samplename, kwargs=Non
         samples[i] = MCSamples(
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
-            ranges=default_limits.get(model),
+            ranges=default_limits.get(model), # TODO: change it to use the values pased by user!
             labels=labels[i],
             names=names[i],
             label=samplename[i],
         )
 
     g = gdplots.get_subplot_plotter()
-    g.triangle_plot(list(samples.values()), filled=True, **kwargs);
+    g.triangle_plot(list(samples.values()), filled=True, **kwargs)
     return g
