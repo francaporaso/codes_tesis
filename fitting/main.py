@@ -11,9 +11,10 @@ from fitting.inference import Likelihood
 from fitting.io import read_dataprofile_fits
 from fitting.models import models_dict, default_limits, default_guess
 from fitting.utilfuncs import (
-    check_output_exists,
+    # check_output_exists,
+    check_group_exists,
     get_fitted_params,
-    validate_pos,
+    # validate_pos,
     make_pos,
     chi2_red,
 )
@@ -21,21 +22,25 @@ from fitting.plotting import plot_chains, plot_corner, plot_profile
 
 
 def run_emcee(
-    NCORES,
-    NIT,
-    NWALKERS,
-    burn_in,
-    move_name,
-    data_filename,
-    save_filename,
-    model_name,
-    observable,
-    cov_mode,
-    limits,
-    init_guess,
-    pos_dist,
-    seed,
+    NCORES : int,
+    NIT : int,
+    NWALKERS : int,
+    burn_in : int,
+    move_name : str,
+    data_filename : str,
+    save_filename : str,
+    overwrite : bool,
+    model_name : str,
+    observable : str,
+    cov_mode : str,
+    limits : dict,
+    init_guess : list[float],
+    pos_dist : str,
+    seed : int,
 ):
+
+    group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
+    assert check_group_exists(save_filename, group_name, overwrite)
 
     data = read_dataprofile_fits(filename=data_filename)
 
@@ -56,7 +61,6 @@ def run_emcee(
     # validate_pos(init_pos, model_name)
     move = [emcee.moves.__dict__.get(move_name)()]
 
-    group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
@@ -68,7 +72,7 @@ def run_emcee(
         print(' >> running emcee')
         sampler.run_mcmc(state, NIT, progress=True, store=True)
 
-    return sampler
+    return sampler, L
 
 
 class Config:
@@ -155,22 +159,15 @@ def main():
                         data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits"
                         chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['prefix']}{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
 
-                        assert check_output_exists(
-                            chain_filename, overwrite=cfg.overwrite
-                        )
-
-                        # print(f' >> Fitting {data_filename}')
-                        # print(f' >> Saving to {chain_filename}')
-
-                        print("-" * 15)
+                        print(' '+"-" * 25)
                         print(f" Model: {model}")
                         print(f" Profile: {obs}")
                         print(f" z: {redshift}")
                         print(f" Rv: {rv}")
                         print(f" Type: {vt}")
-                        print("-" * 15)
+                        print(' '+"-" * 25)
 
-                        sampler = run_emcee(
+                        sampler, L = run_emcee(
                             NCORES = cfg.ncores,
                             NIT = cfg.nit,
                             NWALKERS = cfg.nwalkers,
@@ -178,6 +175,7 @@ def main():
                             move_name = cfg.moves,
                             data_filename = data_filename,
                             save_filename = chain_filename,
+                            overwrite = cfg.overwrite,
                             model_name = model,
                             observable = obs,
                             cov_mode = cfg.cov_mode,
@@ -193,31 +191,30 @@ def main():
                             sampler.get_chain(discard=discard), active_params
                         )
 
-                        # print result values from fit
-                        # print(f'>> model: {model} | prof: {obs} | rv: {rv} | z:{redshift} | type: {vt}')
-                        # TODO: incorporate the chi2 to the file...
-                        # print(f'chi^2 = {chi2_red()}')
+                        chi2 = chi2_red(L.ydata, L.func(L.R, *fitpar.values()), L.yerr, len(L.R)-L.nparams)
                         print(" Fitted params:")
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
                             print(
                                 f"    > {key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})"
                             )
+                        print(f'    > chi2_red = {chi2}')
+
 
                         with h5py.File(chain_filename, "a") as f:
                             group_path = f"fitedparams/{model}/{obs}/{cfg.cov_mode}"
 
                             # Overwrite if exists
-                            if group_path in f:
+                            if (group_path in f) and (cfg.overwrite):
                                 del f[group_path]
 
                             grp = f.create_group(group_path)
 
+                            grp.attrs['chi2_red'] = chi2
+
                             for pname in active_params:
-                                pgrp = grp.create_group(pname)
-                                pgrp.create_dataset("median", data=fitpar[pname])
-                                pgrp.create_dataset(
-                                    "errs", data=np.array(errpar[pname])
-                                )
+                                grp.attrs[f'{pname}_median'] = fitpar[pname]
+                                grp.attrs[f'{pname}_err'] = np.array(errpar[pname])
+
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
