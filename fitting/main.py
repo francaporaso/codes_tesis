@@ -216,7 +216,9 @@ def main():
                             for pname in active_params:
                                 grp.attrs[f'{pname}_median'] = fitpar[pname]
                                 grp.attrs[f'{pname}_err'] = np.array(errpar[pname])
-
+                                
+                                # used limits to plot the correct posteriors
+                                grp.attrs[f'{pname}_lim'] = np.array(active_limits[pname])
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
