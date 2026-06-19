@@ -137,7 +137,11 @@ def main():
         * len(cfg.voidtypes)
     )
     print(
-        f" >> Fitting {len(cfg.models)} model(s) x {len(cfg.observables)} profile(s) x {len(cfg.z_ranges)} redshift bin(s) x {len(cfg.rv_ranges)} radius bin(s) x {len(cfg.voidtypes)} void type(s)"
+        (f" >> Fitting {len(cfg.models)} model(s) "
+         f"x {len(cfg.observables)} profile(s) "
+         f"x {len(cfg.z_ranges)} redshift bin(s) "
+         f"x {len(cfg.rv_ranges)} radius bin(s) "
+         f"x {len(cfg.voidtypes)} void type(s)")
     )
     print(f" >> {Total=}")
 
@@ -222,9 +226,7 @@ def main():
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
-
                             plot_corner(sampler, discard=discard)
-
                             plot_profile(data_filename, obs, fitpar, model)
 
                             plt.show()
