@@ -28,7 +28,7 @@ def run_emcee(
     NIT : int,
     NWALKERS : int,
     burn_in : int,
-    move_name : str,
+    moves : list[dict],
     data_filename : str,
     save_filename : str,
     overwrite : bool,
@@ -61,7 +61,10 @@ def run_emcee(
         dist=pos_dist,
     )
     # validate_pos(init_pos, model_name)
-    move = [emcee.moves.__dict__.get(move_name)()]
+    move = [
+        (emcee.moves.__dict__[m["name"]](), m["weight"])
+        for m in moves
+    ]
 
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
@@ -100,7 +103,6 @@ class Config:
         self.nit: int = cfg["run"]["nit"]
         self.burn_in : int = cfg["run"]["burn_in"]
         self.nwalkers: int = cfg["run"]["nwalkers"]
-        self.moves: str = cfg["run"]["moves"]
         self.do_plot: bool = cfg["run"]["do_plot"]
         self.overwrite: bool = cfg["run"]["overwrite"]
 
@@ -110,7 +112,8 @@ class Config:
         self.pos_dist: str = cfg["fit"]["pos_dist"]
         self.seed: int = cfg["fit"]["seed"]
         self.discardp: float = cfg["fit"]["discardp"]
-
+        self.moves: list[dict] = cfg["fit"]["moves"]
+        
         raw_limits = cfg["fit"].get("limits", {})
         self.limits: dict = {
             model: {k: tuple(v) for k, v in params.items()}
@@ -178,7 +181,7 @@ def main():
                             NIT = cfg.nit,
                             NWALKERS = cfg.nwalkers,
                             burn_in = cfg.burn_in,
-                            move_name = cfg.moves,
+                            moves = cfg.moves,
                             data_filename = data_filename,
                             save_filename = chain_filename,
                             overwrite = cfg.overwrite,
