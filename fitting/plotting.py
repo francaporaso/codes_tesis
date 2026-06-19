@@ -60,7 +60,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename, **kwargs):
+def plot_getdist(labels, names, discard, model, samplers, samplename, active_limits, **kwargs):
     log_prob = {}
     chain = {}
     log_prob_list = {}
@@ -77,7 +77,7 @@ def plot_getdist(labels, names, discard, model, samplers, samplename, **kwargs):
         samples[i] = MCSamples(
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
-            ranges=default_limits.get(model), # TODO: change it to use the values pased by user!
+            ranges=active_limits, 
             labels=labels[i],
             names=names[i],
             label=samplename[i],
