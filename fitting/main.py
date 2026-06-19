@@ -206,7 +206,7 @@ def main():
                             print(
                                 f"    > {key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})"
                             )
-                        print(f'    > chi2_red = {chi2}')
+                        print(f'    > chi2_red = {chi2:4g}')
 
 
                         with h5py.File(chain_filename, "a") as f:
