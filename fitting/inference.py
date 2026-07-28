@@ -1,12 +1,9 @@
 import numpy as np
 
-from fitting.constants import rho_mean
-
 class Likelihood:
     def __init__(self, data, model, param_limits, observable='delta_sigma', cov_mode='full'):
         
         self.R = data.R
-        self.rhomean = rho_mean(data.redshift)
         self.limits = param_limits
         #self.hartlap_factor = (data.Njk-len(self.R)-2)/(data.Njk-1)
         self.hartlap_factor = 1

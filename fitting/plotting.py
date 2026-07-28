@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 from corner import corner
 import numpy as np
-from getdist import plots as gdplots, MCSamples
+from getdist import plots as gdplots
+from getdist import MCSamples
 
 from fitting.models import default_limits, models_dict
 from fitting.io import read_dataprofile_fits
@@ -60,7 +61,7 @@ def plot_pos(pos):
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename, active_limits, **kwargs):
+def plot_getdist(labels, names, discard, model, samplers, samplename, active_limits, kwargs):
     log_prob = {}
     chain = {}
     log_prob_list = {}
@@ -68,7 +69,7 @@ def plot_getdist(labels, names, discard, model, samplers, samplename, active_lim
 
     samples = {}
 
-    for i,spl in enumerate(samplers):
+    for i, (spl,actl) in enumerate(zip(samplers, active_limits)):
         log_prob[i] = spl.get_log_prob(discard=discard)
         chain[i] = spl.get_chain(discard=discard)
         log_prob_list[i] = [log_prob[i][:,j] for j in range(log_prob[i].shape[1])]
@@ -77,7 +78,7 @@ def plot_getdist(labels, names, discard, model, samplers, samplename, active_lim
         samples[i] = MCSamples(
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
-            ranges=active_limits, 
+            ranges=actl, 
             labels=labels[i],
             names=names[i],
             label=samplename[i],

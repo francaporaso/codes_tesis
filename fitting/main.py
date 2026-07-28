@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import toml
 
-# from fitting.constants import rho_mean
+from fitting.constants import get_cosmo
 from fitting.inference import Likelihood
 from fitting.io import read_dataprofile_fits
 from fitting.models import models_dict, default_limits, default_guess
@@ -24,6 +24,7 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 
 def run_emcee(
+    cosmo,
     NCORES : int,
     NIT : int,
     NWALKERS : int,
@@ -48,7 +49,7 @@ def run_emcee(
 
     L = Likelihood(
         data=data,
-        model=models_dict[model_name](data.redshift),
+        model=models_dict[model_name](cosmo, data.redshift),
         param_limits=limits,
         observable=observable,
         cov_mode=cov_mode,
@@ -93,7 +94,14 @@ class Config:
             "prefix": "_".join(self.data["prefix"].split("_")[1:]),
             "sample": cfg["chain"]["sample"],
         }
+        
+        self.hcosmo = cfg['cosmology']['h']
+        self.Om0 = cfg['cosmology']['Om0']
+        self.Ode0= cfg['cosmology']['Ode0']
+        self.is_flat = cfg['cosmology']['is_flat']
 
+        self.cosmo = get_cosmo(h=self.hcosmo, Om0=self.Om0, Ode0=self.Ode0, is_flat=self.is_flat)
+        
         self.rv_ranges: list[str] = cfg["data"]["rv_ranges"]
         self.z_ranges: list[str] = cfg["data"]["z_ranges"]
         self.voidtypes: list[str] = cfg["data"]["voidtypes"]
