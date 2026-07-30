@@ -25,6 +25,7 @@ class Likelihood:
             )
 
         self.ydata = getattr(data, data_attr)
+
         self.cov = getattr(data, cov_attr)
         self.func = getattr(model, func_name)
 

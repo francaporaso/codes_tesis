@@ -4,42 +4,33 @@ import numpy as np
 from getdist import plots as gdplots
 from getdist import MCSamples
 
-from fitting.models import default_limits, models_dict
-from fitting.io import read_dataprofile_fits
 
-def plot_profile(data_filename:str, obs:str, fitpar:dict, model:str):
-    data = read_dataprofile_fits(data_filename)
+def plot_profile(data, observable, fitedparams, model):
+    ydata, yerr = data.get(observable)
 
-    fig, ax = plt.subplots(1,1)
-    if obs=='sigma':
-        func = models_dict[model](data.redshift).sigma
-        ax.errorbar(data.R, data.Sigma, np.sqrt(np.diag(data.covS)), fmt='sk')
-    elif obs=='delta_sigma':
-        func = models_dict[model](data.redshift).delta_sigma
-        ax.errorbar(data.R, data.DSigma_t, np.sqrt(np.diag(data.covDSt)), fmt='sk')
-    else:
-        raise ValueError
-    
-    try:
-        ax.plot(data.R, func(data.R, **fitpar), c='r')
-    except TypeError:
-        ax.plot(data.R, func(data.R, *list(fitpar.values())), c='b')
+    fig, ax = plt.subplots(1, 1)
+    ax.errorbar(data.R, ydata, yerr, fmt=".k", capsize=2)
+
+    func = getattr(model, observable)
+    ax.plot(data.R, func(data.R, **fitedparams), "r")
 
     return fig
 
-def plot_chains(chain,labels):
+
+def plot_chains(chain, labels):
 
     nit, _, nparams = chain.shape
-    
-    fig, axes = plt.subplots(nparams,1, sharex=True)
+
+    fig, axes = plt.subplots(nparams, 1, sharex=True)
     for i in range(nparams):
-        axes[i].plot(chain[:,:,i], 'k', alpha=0.3)
+        axes[i].plot(chain[:, :, i], "k", alpha=0.3)
         axes[i].set_xlim(0.0, nit)
         axes[i].set_ylabel(labels[i])
         axes[i].yaxis.set_label_coords(-0.1, 0.5)
-    
-    axes[-1].set_xlabel('Step Number')
+
+    axes[-1].set_xlabel("Step Number")
     return fig
+
 
 def plot_corner(sampler, discard=100, fig=None, color=None):
 
@@ -50,18 +41,22 @@ def plot_corner(sampler, discard=100, fig=None, color=None):
     else:
         corner(flat_samples, fig=fig, color=color)
 
+
 def plot_pos(pos):
 
     nwalkers, nparams = pos.shape
 
-    fig, axes = plt.subplots(1, nparams, figsize=(2*nparams, 2))
+    fig, axes = plt.subplots(1, nparams, figsize=(2 * nparams, 2))
     for i in range(nparams):
-        axes[i].hist(pos.T[i], bins=nwalkers//10)
-        axes[i].set_xlabel(f'$a_{i}$')
+        axes[i].hist(pos.T[i], bins=nwalkers // 10)
+        axes[i].set_xlabel(f"$a_{i}$")
 
     return fig
 
-def plot_getdist(labels, names, discard, model, samplers, samplename, active_limits, kwargs):
+
+def plot_getdist(
+    labels, names, discard, model, samplers, samplename, active_limits, kwargs
+):
     log_prob = {}
     chain = {}
     log_prob_list = {}
@@ -69,16 +64,16 @@ def plot_getdist(labels, names, discard, model, samplers, samplename, active_lim
 
     samples = {}
 
-    for i, (spl,actl) in enumerate(zip(samplers, active_limits)):
+    for i, (spl, actl) in enumerate(zip(samplers, active_limits)):
         log_prob[i] = spl.get_log_prob(discard=discard)
         chain[i] = spl.get_chain(discard=discard)
-        log_prob_list[i] = [log_prob[i][:,j] for j in range(log_prob[i].shape[1])]
-        chain_list[i] = [chain[i][:,j] for j in range(chain[i].shape[1])]
+        log_prob_list[i] = [log_prob[i][:, j] for j in range(log_prob[i].shape[1])]
+        chain_list[i] = [chain[i][:, j] for j in range(chain[i].shape[1])]
 
         samples[i] = MCSamples(
             samples=chain_list[i],
             loglikes=[-lp for lp in log_prob_list[i]],
-            ranges=actl, 
+            ranges=actl,
             labels=labels[i],
             names=names[i],
             label=samplename[i],
