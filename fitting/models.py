@@ -3,7 +3,7 @@ import numpy as np
 from scipy.integrate import simpson, quad, cumulative_trapezoid
 from scipy.special import erf
 
-from fitting.constants import SQPI, get_cosmo, rho_mean
+from fitting.constants import SQPI, Z_CMB, rho_mean, sigma_crit
 
 
 def logistic(x, x0=1.0, k=10):
@@ -19,6 +19,7 @@ class BaseModelFast:
     def __init__(self, cosmo, redshift):
         self.redshift = redshift
         self.rho_mean = rho_mean(cosmo, redshift)
+        self.sigma_crit = sigma_crit(cosmo, z_l=redshift, z_s=Z_CMB)
 
     ##  TODO: algun dia implementar clase abstracta usando abc
 
@@ -36,6 +37,9 @@ class BaseModelFast:
         result = 2.0 * simpson(integrand_grid, u_grid, axis=1)
 
         return result * self.rho_mean + sigma0
+
+    def kappa(self, R, *params):
+        return self.sigma(R, *params) / self.sigma_crit
 
     def delta_sigma(self, R, *params):
 
