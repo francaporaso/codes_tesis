@@ -12,7 +12,7 @@ def plot_profile(data, observable, fitedparams, model):
     ax.errorbar(data.R, ydata, yerr, fmt=".k", capsize=2)
 
     func = getattr(model, observable)
-    ax.plot(data.R, func(data.R, **fitedparams), "r")
+    ax.plot(data.R, func(data.R, *fitedparams.values()), "r")
 
     return fig
 
@@ -32,11 +32,11 @@ def plot_chains(chain, labels):
     return fig
 
 
-def plot_corner(sampler, discard=100, fig=None, color=None):
+def plot_corner(sampler, labels, discard=100, fig=None, color=None):
 
     flat_samples = sampler.get_chain(discard=discard, flat=True)
     if fig is None:
-        fig = corner(flat_samples, color=color)
+        fig = corner(flat_samples, color=color, labels=labels)
         return fig
     else:
         corner(flat_samples, fig=fig, color=color)
