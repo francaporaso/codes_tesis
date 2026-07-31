@@ -237,7 +237,7 @@ def main():
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
-                            plot_corner(sampler, discard=discard)
+                            plot_corner(sampler, active_params, discard=discard)
                             plot_profile(data_filename, obs, fitpar, model)
 
                             plt.show()
