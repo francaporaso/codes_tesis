@@ -100,6 +100,7 @@ class BaseModelQuad:
 class HSW(BaseModelFast):
     params = {
         "sigma": ["dc", "rs", "a", "b", "sigma0"],
+        "kappa": ["dc", "rs", "a", "b", "sigma0"],
         "delta_sigma": ["dc", "rs", "a", "b"],
     }
 
@@ -108,12 +109,21 @@ class HSW(BaseModelFast):
 
 
 class B15(BaseModelFast):
+    params = {
+        'sigma':['dc', 'rs', 'rv', 'a', 'b', 'sigma0'],
+        'kappa':['dc', 'rs', 'rv', 'a', 'b', 'sigma0'],
+        'delta_sigma':['dc', 'rs', 'rv', 'a', 'b']
+    }
     def density_contrast(self, r, dc, rs, rv, a, b):
         return dc * (1 - (r / rs) ** a) / (1 + (r / rv) ** b)
 
 
 class ModifiedLW(BaseModelFast):
-    params = {"sigma": ["dc", "dw", "rw", "sigma0"], "delta_sigma": ["dc", "dw", "rw"]}
+    params = {
+        "sigma": ["dc", "dw", "rw", "sigma0"], 
+        "kappa": ["dc", "dw", "rw", "sigma0"], 
+        "delta_sigma": ["dc", "dw", "rw"]
+    }
 
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
@@ -214,7 +224,11 @@ class ModifiedLW(BaseModelFast):
 
 
 class TopHat(BaseModelFast):
-    params = {"sigma": ["dc", "dw", "rw", "sigma0"], "delta_sigma": ["dc", "dw", "rw"]}
+    params = {
+        "sigma": ["dc", "dw", "rw", "sigma0"], 
+        "kappa": ["dc", "dw", "rw", "sigma0"], 
+        "delta_sigma": ["dc", "dw", "rw"]
+    }
 
     def density_contrast(self, r, dc, dw, rw):
         rv = 1.0
@@ -266,6 +280,12 @@ class TopHat(BaseModelFast):
 
 
 class Paz13(BaseModelFast):
+    params = {
+        'sigma':['S', 'Rs', 'P', 'W', 'sigma0'],
+        'kappa':['S', 'Rs', 'P', 'W', 'sigma0'],
+        'delta_sigma':['S', 'Rs', 'P', 'W']
+    }
+
     def density_contrast(self, r, S, Rs, P, W):
         x = np.log10(r / Rs)
         asym_gauss = np.where(r < Rs, np.exp(-S * x**2), np.exp(-W * x**2))
@@ -277,24 +297,6 @@ class Paz13(BaseModelFast):
         Delta_prime = t1 + t2
 
         return Delta + 1 / 3 * r * Delta_prime
-
-
-class THLogistic(BaseModelFast):
-    def density_contrast(self, r, dc, dw, rw):
-        k = 15
-        return (dc - dw) * (1.0 - logistic(r, x0=1, k=k)) + dw * (
-            1.0 - logistic(r, x0=rw, k=k)
-        )
-
-
-class ModLWLogistic(BaseModelFast):
-    # not tested! weird values at r=rv
-    def density_contrast(self, r, dc, dw, rw):
-        rv = 1.0
-        k = 15
-        return (dc - dw) * (1.0 - (r / rv) ** 3) * (
-            1.0 - logistic(r, x0=rv, k=k)
-        ) + dw * (1.0 - logistic(r, x0=rw, k=k))
 
 
 models_dict = {
