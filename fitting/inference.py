@@ -49,10 +49,13 @@ class Likelihood:
         for p, v in fixed_params.items():
             self._template[all_params.index(p)] = v
 
-    def log_likelihood(self, theta):
+    def full(self, theta):
         full = self._template.copy()
         full[self._freeidx] = theta
-        model = self.func(self.R, *full)  # *self.rhomean
+        return full
+
+    def log_likelihood(self, theta):
+        model = self.func(self.R, *self.full(theta))  # *self.rhomean
         dist = self.ydata - model
         return -0.5 * np.dot(dist, np.dot(self.yerr, dist))
 
