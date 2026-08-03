@@ -14,7 +14,7 @@ from fitting.utilfuncs import (
     # check_output_exists,
     check_group_exists,
     get_fitted_params,
-    # validate_pos,
+    validate_pos,
     make_pos,
     chi2_red,
 )
@@ -61,7 +61,7 @@ def run_emcee(
         seed=seed,
         dist=pos_dist,
     )
-    # validate_pos(init_pos, model_name)
+    init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
     move = [
         (emcee.moves.__dict__[m["name"]](), m["weight"])
         for m in moves
