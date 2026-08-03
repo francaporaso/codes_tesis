@@ -279,24 +279,18 @@ class TopHat(BaseModelFast):
         return self.sigma_mean(R, dc, dw, rw) - self.sigma(R, dc, dw, rw, sigma0=0.0)
 
 
-class Paz13(BaseModelFast):
+class P13(BaseModelFast):
     params = {
-        'sigma':['S', 'Rs', 'P', 'W', 'sigma0'],
-        'kappa':['S', 'Rs', 'P', 'W', 'sigma0'],
-        'delta_sigma':['S', 'Rs', 'P', 'W']
+        'sigma':['dc', 'S', 'rs', 'sigma0'],
+        'kappa':['dc', 'S', 'rs', 'sigma0'],
+        'delta_sigma':['dc', 'S', 'rs'],
     }
 
-    def density_contrast(self, r, S, Rs, P, W):
-        x = np.log10(r / Rs)
-        asym_gauss = np.where(r < Rs, np.exp(-S * x**2), np.exp(-W * x**2))
-
-        Delta = 0.5 * (erf(S * x) - 1) + P * asym_gauss
-
-        t1 = S * np.exp(-((S * x) ** 2)) / (SQPI * r)
-        t2 = (-2.0 * P * x / r) * asym_gauss
-        Delta_prime = t1 + t2
-
-        return Delta + 1 / 3 * r * Delta_prime
+    def density_contrast(self, r, dc, S, rs):
+        x = np.log10(r / rs)
+        t1 = 0.5 * (1.0 - erf(S * x))
+        t2 = S*rs/(3*SQPI) * np.exp(-(S*x)**2)
+        return dc*(t1-t2)
 
 
 models_dict = {
@@ -304,7 +298,7 @@ models_dict = {
     "TH": TopHat,
     "mLW": ModifiedLW,
     "B15": B15,
-    "P13": Paz13,
+    "P13": P13,
 }
 default_limits = {
     "HSW": {
@@ -336,9 +330,7 @@ default_limits = {
     },
     "P13": {
         "S": (0.0, 10.0),
-        "Rs": (0.1, 5.0),
-        "P": (0.0, 1.0),
-        "W": (0.1, 5.0),
+        "rs": (0.1, 5.0),
         "sigma0": (-0.5, 0.5),
     },
 }
@@ -347,5 +339,5 @@ default_guess = {
     "B15": {"dc": -0.7, "rs": 0.9, "rv": 1.0, "a": 3.0, "b": 6.0, "sigma0": 0.0},
     "TH": {"dc": -0.7, "dw": 0.2, "rw": 2.5, "sigma0": 0.0},
     "mLW": {"dc": -0.7, "dw": 0.2, "rw": 2.5, "sigma0": 0.0},
-    "P13": {"S": 1.0, "Rs": 4.5, "P": 0.6, "W": 3.0, "sigma0": 0.0},
+    "P13": {"S": 3.0, "rs": 1.0, "sigma0": 0.0},
 }
