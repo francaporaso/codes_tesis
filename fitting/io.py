@@ -21,9 +21,9 @@ class DataProfile:
 
     def get(self, observable):
         if observable == "sigma":
-            pass
+            return self.Sigma, np.sqrt(np.diag(self.covS))
         if observable == "delta_sigma":
-            pass
+            return self.DSigma_t, np.sqrt(np.diag(self.covDSt))
         if observable == "kappa":
             return self.Kappa, np.sqrt(np.diag(self.covK))
         else:
