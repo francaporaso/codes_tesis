@@ -39,14 +39,20 @@ def make_pos(init_guess, NWALKERS, seed, dist):
     elif dist == 'uniform':
         return make_pos_uniform(init_guess, NWALKERS, seed)
 
-def validate_pos(pos, model_name):
-    rng = np.random.default_rng(seed=0)
-    limits = default_limits.get(model_name)
-    for i, (lmin, lmax) in enumerate(limits.values()):
-        for j, p in enumerate(pos[:,i]):
-            if p<lmin or p>lmax:
-                print('Invalid pos, redrawing...')
-                pos[j,i] = rng.uniform(lmin, lmax)
+def validate_pos(pos, param_names, limits, seed=0):
+    """
+    pos          : (NWALKERS, nparams) initial walker positions
+    param_names  : ordered list of free param names, e.g. L.param_name
+    limits       : dict {param_name: (lmin, lmax)}, e.g. L.limits
+    """
+    rng = np.random.default_rng(seed=seed)
+    for i, p in enumerate(param_names):
+        lmin, lmax = limits[p]
+        bad = (pos[:, i] < lmin) | (pos[:, i] > lmax)
+        n_bad = np.count_nonzero(bad)
+        if n_bad:
+            print(f'Invalid pos for {p!r}: redrawing {n_bad} walker(s)...')
+            pos[bad, i] = rng.uniform(lmin, lmax, size=n_bad)
     return pos
 
 def get_fitted_params(chain, params):
