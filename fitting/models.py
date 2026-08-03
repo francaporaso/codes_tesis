@@ -287,9 +287,9 @@ class P13(BaseModelFast):
     }
 
     def density_contrast(self, r, dc, S, rs):
-        x = np.log10(r / rs)
+        x = np.log(r / rs)
         t1 = 0.5 * (1.0 - erf(S * x))
-        t2 = S*rs/(3*SQPI) * np.exp(-(S*x)**2)
+        t2 = S/(3*SQPI) * np.exp(-(S*x)**2)
         return dc*(t1-t2)
 
 
