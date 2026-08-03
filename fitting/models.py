@@ -281,9 +281,9 @@ class TopHat(BaseModelFast):
 
 class P13(BaseModelFast):
     params = {
-        'sigma':['dc', 'S', 'rs', 'sigma0'],
-        'kappa':['dc', 'S', 'rs', 'sigma0'],
-        'delta_sigma':['dc', 'S', 'rs'],
+        'kappa':['dc', 'rs', 'P', 'S', 'W', 'sigma0'],
+        'sigma':['dc', 'rs', 'P', 'S', 'W', 'sigma0'],
+        'delta_sigma':['dc', 'rs', 'P', 'S', 'W'],
     }
 
     def density_contrast(self, r, dc, rs, P, S, W):
