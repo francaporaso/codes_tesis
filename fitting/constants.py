@@ -25,8 +25,6 @@ def get_cosmo(model='lcdm', h=1.0, Om0=0.25, Ode0=0.75, is_flat=True,
     model = model.lower() #to avoid problems if capitalized
     H0 = 100.0*h
 
-    if model
-
     if model == 'lcdm':
         if is_flat:
             return FlatLambdaCDM(H0=H0, Om0=Om0, Tcmb0=Tcmb0, Ob0=Ob0, m_nu=m_nu)
