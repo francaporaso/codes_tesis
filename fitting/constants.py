@@ -8,8 +8,8 @@ SC_CONSTANT: float = (
     (c.value**2.0 / (4.0 * np.pi * G.value)) * (pc.value / M_sun.value) * 1e-6
 )
 
-def get_cosmo(model='lcdm', h=1.0, Om0=0.25, Ode0=None, is_flat=True, 
-              w0=-1.0, wa=1.0, Ob0=None, Tcmb0=None, m_nu=None):
+def get_cosmo(model='lcdm', h=1.0, Om0=0.25, Ode0=0.75, is_flat=True, 
+              w0=-1.0, wa=1.0, Ob0=0.0, Tcmb0=0.0, m_nu=0.0):
     '''
     h (float) :: reduced hubble constant at z=0
     Om0 (float) :: matter density parameter at z=0
