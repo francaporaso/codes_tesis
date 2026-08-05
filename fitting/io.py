@@ -72,7 +72,7 @@ def read_dataprofile_pickle(filename, folder="merged_data"):
             Kappa=data[folder][0]["profile"],
             covK=data[folder][0]["cov_matrix"],
             redshift=data[folder][0]["z_mean"],
-            Njk=data[folder]["n_subsamples"],
+            Njk=data["parameters"]["n_subsamples"],
         )
 
     return dataobject
