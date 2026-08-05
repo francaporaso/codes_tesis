@@ -62,17 +62,17 @@ def save_chains_h5():
     pass
 
 
-def read_dataprofile_pickle(filename):
+def read_dataprofile_pickle(filename, folder="merged_data"):
 
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
         dataobject = DataProfile(
-            R=data["merged_data"][0]["r_frac"],
-            Kappa=data["merged_data"][0]["profile"],
-            covK=data["merged_data"][0]["cov_matrix"],
-            redshift=data["merged_data"][0]["z_mean"],
-            Njk=data["parameters"]["n_subsamples"],
+            R=data[folder][0]["r_frac"],
+            Kappa=data[folder][0]["profile"],
+            covK=data[folder][0]["cov_matrix"],
+            redshift=data[folder][0]["z_mean"],
+            Njk=data[folder]["n_subsamples"],
         )
 
     return dataobject
