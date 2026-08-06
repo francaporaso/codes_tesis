@@ -58,7 +58,7 @@ def set_mcsamples(
     samplers, discard, thin, limits, param_labels, latex_names, samplelabels
 ):
 
-    samples = []
+    mcsamples = []
     for spl, spllabel in zip(samplers, samplelabels):
         mcsample = MCSamples(
             samples=spl.get_chain(discard=discard, flat=False, thin=thin),
@@ -69,9 +69,9 @@ def set_mcsamples(
             label=spllabel,
         )
 
-        samples.append(mcsample)
+        mcsamples.append(mcsample)
 
-    return samplers
+    return mcsamples
 
 
 def plot_getdist(mcsamples, fig=None, **kwargs):
