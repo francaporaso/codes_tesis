@@ -54,16 +54,19 @@ def plot_pos(pos):
     return fig
 
 
-def set_mcsamples(samplers, discard, thin, limits, param_labels, latex_names):
+def set_mcsamples(
+    samplers, discard, thin, limits, param_labels, latex_names, samplelabels
+):
 
     samples = []
-    for spl in samplers:
+    for spl, spllabel in zip(samplers, samplelabels):
         mcsample = MCSamples(
             samples=spl.get_chain(discard=discard, flat=False, thin=thin),
             loglikes=-spl.get_log_prob(discard=discard, flat=False, thin=thin),
             ranges=limits,
             labels=param_labels,
             names=latex_names,
+            label=spllabel,
         )
 
         samples.append(mcsample)
