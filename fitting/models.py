@@ -110,19 +110,20 @@ class HSW(BaseModelFast):
 
 class B15(BaseModelFast):
     params = {
-        'sigma':['dc', 'rs', 'rv', 'a', 'b', 'sigma0'],
-        'kappa':['dc', 'rs', 'rv', 'a', 'b', 'sigma0'],
-        'delta_sigma':['dc', 'rs', 'rv', 'a', 'b']
+        "sigma": ["dc", "rs", "rv", "a", "b", "sigma0"],
+        "kappa": ["dc", "rs", "rv", "a", "b", "sigma0"],
+        "delta_sigma": ["dc", "rs", "rv", "a", "b"],
     }
+
     def density_contrast(self, r, dc, rs, rv, a, b):
         return dc * (1 - (r / rs) ** a) / (1 + (r / rv) ** b)
 
 
 class ModifiedLW(BaseModelFast):
     params = {
-        "sigma": ["dc", "dw", "rw", "sigma0"], 
-        "kappa": ["dc", "dw", "rw", "sigma0"], 
-        "delta_sigma": ["dc", "dw", "rw"]
+        "sigma": ["dc", "dw", "rw", "sigma0"],
+        "kappa": ["dc", "dw", "rw", "sigma0"],
+        "delta_sigma": ["dc", "dw", "rw"],
     }
 
     def density_contrast(self, r, dc, dw, rw):
@@ -225,9 +226,9 @@ class ModifiedLW(BaseModelFast):
 
 class TopHat(BaseModelFast):
     params = {
-        "sigma": ["dc", "dw", "rw", "sigma0"], 
-        "kappa": ["dc", "dw", "rw", "sigma0"], 
-        "delta_sigma": ["dc", "dw", "rw"]
+        "sigma": ["dc", "dw", "rw", "sigma0"],
+        "kappa": ["dc", "dw", "rw", "sigma0"],
+        "delta_sigma": ["dc", "dw", "rw"],
     }
 
     def density_contrast(self, r, dc, dw, rw):
@@ -281,21 +282,29 @@ class TopHat(BaseModelFast):
 
 class P13(BaseModelFast):
     params = {
-        'kappa':['dc', 'rs', 'P', 'S', 'W', 'sigma0'],
-        'sigma':['dc', 'rs', 'P', 'S', 'W', 'sigma0'],
-        'delta_sigma':['dc', 'rs', 'P', 'S', 'W'],
+        "kappa": ["dc", "rs", "S", "P", "W", "sigma0"],
+        "sigma": ["dc", "rs", "S", "P", "W", "sigma0"],
+        "delta_sigma": ["dc", "rs", "S", "P", "W"],
     }
 
-    def density_contrast(self, r, dc, rs, P, S, W):
+    def density_contrast(self, r, dc, rs, S, P, W):
         x = np.log(r / rs)
-        A = np.where(r<rs, S, W)
+        A = np.where(r < rs, S, W)
 
         t1 = 0.5 * (1.0 - erf(S * x))
-        t2 = S/(3*SQPI) * np.exp(-(S*x)**2)
-        rising = dc*(t1-t2)
-        
-        shell = P * np.exp(-A*x**2) * (1.0-2/3*A*x)
-        return rising+shell
+        t2 = S / (3 * SQPI) * np.exp(-((S * x) ** 2))
+        rising = dc * (t1 - t2)
+
+        shell = P * np.exp(-A * x**2) * (1.0 - 2 / 3 * A * x)
+        return rising + shell
+
+    def integrated_density(self, r, dc, rs, S, P, W):
+        x = np.log(r / rs)
+        A = np.where(r < rs, S, W)
+        rising = 0.5 * dc * (1.0 - erf(S * x))
+        shell = P * np.exp(-A * x**2)
+        return rising + shell
+
 
 models_dict = {
     "HSW": HSW,
@@ -333,11 +342,11 @@ default_limits = {
         "sigma0": (-0.5, 0.5),
     },
     "P13": {
-        'dc':(-1.0, 0.0),
+        "dc": (-1.0, 0.0),
         "S": (0.0, 10.0),
         "rs": (0.1, 5.0),
-        'P':(-0.1, 1.0),
-        'W':(0.0, 10.0),
+        "P": (-0.1, 1.0),
+        "W": (0.0, 10.0),
         "sigma0": (-0.5, 0.5),
     },
 }
@@ -346,5 +355,5 @@ default_guess = {
     "B15": {"dc": -0.7, "rs": 0.9, "rv": 1.0, "a": 3.0, "b": 6.0, "sigma0": 0.0},
     "TH": {"dc": -0.7, "dw": 0.2, "rw": 2.5, "sigma0": 0.0},
     "mLW": {"dc": -0.7, "dw": 0.2, "rw": 2.5, "sigma0": 0.0},
-    "P13": {'dc':-0.7, "S": 3.0, "rs": 1.0, 'P':0.1, 'W':2.0, "sigma0": 0.0},
+    "P13": {"dc": -0.7, "S": 3.0, "rs": 1.0, "P": 0.1, "W": 2.0, "sigma0": 0.0},
 }
