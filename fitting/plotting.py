@@ -32,14 +32,14 @@ def plot_chains(chain, labels):
     return fig
 
 
-def plot_corner(sampler, labels, discard=100, fig=None, color=None):
+def plot_corner(sampler, labels, discard=100, fig=None, color=None, **kwargs):
 
     flat_samples = sampler.get_chain(discard=discard, flat=True)
     if fig is None:
-        fig = corner(flat_samples, color=color, labels=labels)
+        fig = corner(flat_samples, color=color, labels=labels, **kwargs)
         return fig
     else:
-        corner(flat_samples, fig=fig, color=color)
+        corner(flat_samples, fig=fig, color=color, **kwargs)
 
 
 def plot_pos(pos):
@@ -55,30 +55,49 @@ def plot_pos(pos):
 
 
 def plot_getdist(
-    labels, names, discard, model, samplers, samplename, active_limits, kwargs
+    sampler, discard, thin, limits, param_labels, latex_names, fig=None, **kwargs
 ):
-    log_prob = {}
-    chain = {}
-    log_prob_list = {}
-    chain_list = {}
 
-    samples = {}
+    mcsample = MCSamples(
+        samples=sampler.get_chain(discard=discard, flat=False, thin=thin),
+        loglikes=-sampler.get_log_prob(discard=discard, flat=False, thin=thin),
+        ranges=limits,
+        labels=param_labels,
+        names=latex_names,
+    )
 
-    for i, (spl, actl) in enumerate(zip(samplers, active_limits)):
-        log_prob[i] = spl.get_log_prob(discard=discard)
-        chain[i] = spl.get_chain(discard=discard)
-        log_prob_list[i] = [log_prob[i][:, j] for j in range(log_prob[i].shape[1])]
-        chain_list[i] = [chain[i][:, j] for j in range(chain[i].shape[1])]
+    if fig is None:
+        fig = gdplots.get_subplot_plotter(width_inch=6.0)
+    fig.triangle_plot(mcsample, filled=True, **kwargs)
 
-        samples[i] = MCSamples(
-            samples=chain_list[i],
-            loglikes=[-lp for lp in log_prob_list[i]],
-            ranges=actl,
-            labels=labels[i],
-            names=names[i],
-            label=samplename[i],
-        )
+    return fig
 
-    g = gdplots.get_subplot_plotter()
-    g.triangle_plot(list(samples.values()), filled=True, **kwargs)
-    return g
+
+# def plot_getdist(
+#     labels, names, discard, model, samplers, samplename, active_limits, kwargs
+# ):
+#     log_prob = {}
+#     chain = {}
+#     log_prob_list = {}
+#     chain_list = {}
+#
+#     samples = {}
+#
+#     for i, (spl, actl) in enumerate(zip(samplers, active_limits)):
+#         log_prob[i] = spl.get_log_prob(discard=discard)
+#         chain[i] = spl.get_chain(discard=discard)
+#         log_prob_list[i] = [log_prob[i][:, j] for j in range(log_prob[i].shape[1])]
+#         chain_list[i] = [chain[i][:, j] for j in range(chain[i].shape[1])]
+#
+#         samples[i] = MCSamples(
+#             samples=chain_list[i],
+#             loglikes=[-lp for lp in log_prob_list[i]],
+#             ranges=actl,
+#             labels=labels[i],
+#             names=names[i],
+#             label=samplename[i],
+#         )
+#
+#     g = gdplots.get_subplot_plotter()
+#     g.triangle_plot(list(samples.values()), filled=True, **kwargs)
+#     return g
