@@ -54,21 +54,28 @@ def plot_pos(pos):
     return fig
 
 
-def plot_getdist(
-    sampler, discard, thin, limits, param_labels, latex_names, fig=None, **kwargs
-):
+def set_mcsamples(samplers, discard, thin, limits, param_labels, latex_names):
 
-    mcsample = MCSamples(
-        samples=sampler.get_chain(discard=discard, flat=False, thin=thin),
-        loglikes=-sampler.get_log_prob(discard=discard, flat=False, thin=thin),
-        ranges=limits,
-        labels=param_labels,
-        names=latex_names,
-    )
+    samples = []
+    for spl in samplers:
+        mcsample = MCSamples(
+            samples=spl.get_chain(discard=discard, flat=False, thin=thin),
+            loglikes=-spl.get_log_prob(discard=discard, flat=False, thin=thin),
+            ranges=limits,
+            labels=param_labels,
+            names=latex_names,
+        )
+
+        samples.append(mcsample)
+
+    return samplers
+
+
+def plot_getdist(mcsamples, fig=None, **kwargs):
 
     if fig is None:
         fig = gdplots.get_subplot_plotter(width_inch=6.0)
-    fig.triangle_plot(mcsample, filled=True, **kwargs)
+    fig.triangle_plot(mcsamples, filled=True, **kwargs)
 
     return fig
 
