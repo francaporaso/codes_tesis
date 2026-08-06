@@ -4,8 +4,8 @@ import emcee
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
-import toml
 
+from fitting.settings import Settings
 from fitting.constants import get_cosmo
 from fitting.inference import Likelihood
 from fitting.io import read_dataprofile_fits
@@ -21,25 +21,27 @@ from fitting.utilfuncs import (
 from fitting.plotting import plot_chains, plot_corner, plot_profile
 
 import os
-os.environ['OMP_NUM_THREADS'] = '1'
+
+os.environ["OMP_NUM_THREADS"] = "1"
+
 
 def run_emcee(
     cosmo,
-    NCORES : int,
-    NIT : int,
-    NWALKERS : int,
-    burn_in : int,
-    moves : list[dict],
-    data_filename : str,
-    save_filename : str,
-    overwrite : bool,
-    model_name : str,
-    observable : str,
-    cov_mode : str,
-    limits : dict,
-    init_guess : list[float],
-    pos_dist : str,
-    seed : int,
+    NCORES: int,
+    NIT: int,
+    NWALKERS: int,
+    burn_in: int,
+    moves: list[dict],
+    data_filename: str,
+    save_filename: str,
+    overwrite: bool,
+    model_name: str,
+    observable: str,
+    cov_mode: str,
+    limits: dict,
+    init_guess: list[float],
+    pos_dist: str,
+    seed: int,
 ):
 
     group_name = f"emcee/{model_name}/{observable}/{cov_mode}"
@@ -62,74 +64,25 @@ def run_emcee(
         dist=pos_dist,
     )
     init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
-    move = [
-        (emcee.moves.__dict__[m["name"]](), m["weight"])
-        for m in moves
-    ]
+    move = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
 
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
-            NWALKERS, L.nparams, L.log_probability, pool=pool, backend=backend, moves=move
+            NWALKERS,
+            L.nparams,
+            L.log_probability,
+            pool=pool,
+            backend=backend,
+            moves=move,
         )
-        print(' >> running burn in')
+        print(" >> running burn in")
         state = sampler.run_mcmc(init_pos, burn_in, progress=True, store=False)
         sampler.reset()
-        print(' >> running emcee')
+        print(" >> running emcee")
         sampler.run_mcmc(state, NIT, progress=True, store=True)
 
     return sampler, L
-
-
-class Config:
-    def __init__(self, configfile):
-        cfg = toml.load(configfile)
-
-        self.data: dict = {
-            "folder": cfg["data"]["folder"],
-            "prefix": cfg["data"]["prefix"],
-        }
-        self.chain: dict = {
-            "folder": cfg["chain"]["folder"],
-            "prefix": "_".join(self.data["prefix"].split("_")[1:]),
-            "sample": cfg["chain"]["sample"],
-        }
-        
-        self.hcosmo = cfg['cosmology']['h']
-        self.Om0 = cfg['cosmology']['Om0']
-        self.Ode0= cfg['cosmology']['Ode0']
-        self.is_flat = cfg['cosmology']['is_flat']
-
-        self.cosmo = get_cosmo(h=self.hcosmo, Om0=self.Om0, Ode0=self.Ode0, is_flat=self.is_flat)
-        
-        self.rv_ranges: list[str] = cfg["data"]["rv_ranges"]
-        self.z_ranges: list[str] = cfg["data"]["z_ranges"]
-        self.voidtypes: list[str] = cfg["data"]["voidtypes"]
-        self.binning: str = cfg["data"]["binning"]
-
-        self.ncores: int = cfg["run"]["ncores"]
-        self.nit: int = cfg["run"]["nit"]
-        self.burn_in : int = cfg["run"]["burn_in"]
-        self.nwalkers: int = cfg["run"]["nwalkers"]
-        self.do_plot: bool = cfg["run"]["do_plot"]
-        self.overwrite: bool = cfg["run"]["overwrite"]
-
-        self.cov_mode: str = cfg["fit"]["cov_mode"]
-        self.observables: list = cfg["fit"]["observables"]
-        self.models: list = cfg["fit"]["models"]
-        self.pos_dist: str = cfg["fit"]["pos_dist"]
-        self.seed: int = cfg["fit"]["seed"]
-        self.discardp: float = cfg["fit"]["discardp"]
-        self.moves: list[dict] = cfg["fit"]["moves"]
-        
-        raw_limits = cfg["fit"].get("limits", {})
-        self.limits: dict = {
-            model: {k: tuple(v) for k, v in params.items()}
-            for model, params in raw_limits.items()
-        }
-
-        raw_guess = cfg["fit"].get("guess", {})
-        self.guess: dict = {model: params for model, params in raw_guess.items()}
 
 
 def main():
@@ -138,7 +91,7 @@ def main():
     parser.add_argument("--config", type=str, default="config.toml", action="store")
     args = parser.parse_args()
 
-    cfg = Config(args.config)
+    cfg = Settings(args.config)
 
     Total = (
         len(cfg.models)
@@ -148,11 +101,13 @@ def main():
         * len(cfg.voidtypes)
     )
     print(
-        (f" >> Fitting {len(cfg.models)} model(s) "
-         f"x {len(cfg.observables)} profile(s) "
-         f"x {len(cfg.z_ranges)} redshift bin(s) "
-         f"x {len(cfg.rv_ranges)} radius bin(s) "
-         f"x {len(cfg.voidtypes)} void type(s)")
+        (
+            f" >> Fitting {len(cfg.models)} model(s) "
+            f"x {len(cfg.observables)} profile(s) "
+            f"x {len(cfg.z_ranges)} redshift bin(s) "
+            f"x {len(cfg.rv_ranges)} radius bin(s) "
+            f"x {len(cfg.voidtypes)} void type(s)"
+        )
     )
     print(f" >> {Total=}")
 
@@ -176,30 +131,30 @@ def main():
                         data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits"
                         chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['prefix']}{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
 
-                        print(' '+"-" * 25)
+                        print(" " + "-" * 25)
                         print(f" Model: {model}")
                         print(f" Profile: {obs}")
                         print(f" z: {redshift}")
                         print(f" Rv: {rv}")
                         print(f" Type: {vt}")
-                        print(' '+"-" * 25)
+                        print(" " + "-" * 25)
 
                         sampler, L = run_emcee(
-                            NCORES = cfg.ncores,
-                            NIT = cfg.nit,
-                            NWALKERS = cfg.nwalkers,
-                            burn_in = cfg.burn_in,
-                            moves = cfg.moves,
-                            data_filename = data_filename,
-                            save_filename = chain_filename,
-                            overwrite = cfg.overwrite,
-                            model_name = model,
-                            observable = obs,
-                            cov_mode = cfg.cov_mode,
-                            limits = active_limits,
-                            init_guess = init_guess,
-                            pos_dist = cfg.pos_dist,
-                            seed = cfg.seed,
+                            NCORES=cfg.ncores,
+                            NIT=cfg.nit,
+                            NWALKERS=cfg.nwalkers,
+                            burn_in=cfg.burn_in,
+                            moves=cfg.moves,
+                            data_filename=data_filename,
+                            save_filename=chain_filename,
+                            overwrite=cfg.overwrite,
+                            model_name=model,
+                            observable=obs,
+                            cov_mode=cfg.cov_mode,
+                            limits=active_limits,
+                            init_guess=init_guess,
+                            pos_dist=cfg.pos_dist,
+                            seed=cfg.seed,
                         )
 
                         # not possible to fix params for now
@@ -208,14 +163,18 @@ def main():
                             sampler.get_chain(discard=discard), active_params
                         )
 
-                        chi2 = chi2_red(L.ydata, L.func(L.R, *fitpar.values()), L.yerr, len(L.R)-L.nparams)
+                        chi2 = chi2_red(
+                            L.ydata,
+                            L.func(L.R, *fitpar.values()),
+                            L.yerr,
+                            len(L.R) - L.nparams,
+                        )
                         print(" Fitted params:")
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
                             print(
                                 f"    > {key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})"
                             )
-                        print(f'    > chi2_red = {chi2:4g}')
-
+                        print(f"    > chi2_red = {chi2:4g}")
 
                         with h5py.File(chain_filename, "a") as f:
                             group_path = f"fitedparams/{model}/{obs}/{cfg.cov_mode}"
@@ -226,14 +185,16 @@ def main():
 
                             grp = f.create_group(group_path)
 
-                            grp.attrs['chi2_red'] = chi2
+                            grp.attrs["chi2_red"] = chi2
 
                             for pname in active_params:
-                                grp.attrs[f'{pname}_median'] = fitpar[pname]
-                                grp.attrs[f'{pname}_err'] = np.array(errpar[pname])
-                                
+                                grp.attrs[f"{pname}_median"] = fitpar[pname]
+                                grp.attrs[f"{pname}_err"] = np.array(errpar[pname])
+
                                 # used limits to plot the correct posteriors
-                                grp.attrs[f'{pname}_lim'] = np.array(active_limits[pname])
+                                grp.attrs[f"{pname}_lim"] = np.array(
+                                    active_limits[pname]
+                                )
 
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
