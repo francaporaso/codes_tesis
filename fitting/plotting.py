@@ -77,7 +77,7 @@ def set_mcsamples(
 def plot_getdist(mcsamples, fig=None, **kwargs):
 
     if fig is None:
-        fig = gdplots.get_subplot_plotter(width_inch=6.0, scaling=True, rc_sizes=True)
+        fig = gdplots.get_subplot_plotter(width_inch=6.0)
     fig.settings.figure_legend_loc = 'upper right'
     fig.triangle_plot(mcsamples, filled=True, **kwargs)
     fig.fig.align_labels()
