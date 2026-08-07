@@ -61,12 +61,12 @@ def set_mcsamples(
     mcsamples = []
     for spl, spllabel in zip(samplers, samplelabels):
         mcsample = MCSamples(
-            samples=spl.get_chain(discard=discard, flat=False, thin=thin),
-            loglikes=-spl.get_log_prob(discard=discard, flat=False, thin=thin),
-            ranges=limits,
-            labels=param_labels,
-            names=latex_names,
-            label=spllabel,
+            samples = spl.get_chain(discard=discard, flat=True, thin=thin),
+            loglikes = spl.get_log_prob(discard=discard, flat=True, thin=thin),
+            ranges = limits,
+            labels = param_labels,
+            names = latex_names,
+            label = spllabel,
         )
 
         mcsamples.append(mcsample)
@@ -77,8 +77,10 @@ def set_mcsamples(
 def plot_getdist(mcsamples, fig=None, **kwargs):
 
     if fig is None:
-        fig = gdplots.get_subplot_plotter(width_inch=6.0)
+        fig = gdplots.get_subplot_plotter(width_inch=6.0, scaling=True, rc_sizes=True)
+    fig.settings.figure_legend_loc = 'upper right'
     fig.triangle_plot(mcsamples, filled=True, **kwargs)
+    fig.fig.align_labels()
 
     return fig
 
