@@ -1,8 +1,9 @@
 import numpy as np
 import os
 import h5py
+import subprocess
 
-from fitting.models import default_limits
+#from fitting.models import default_limits
 
 def chi2_red(data, model, invC, ndof):
     d = (data-model)
@@ -69,6 +70,22 @@ def get_fitted_params(chain, params):
 
     return fitted_params, error_params
 
+def repack_h5(filename, compression='GZIP=4'):
+
+    tmpfile = filename.removesuffix('.hdf5') + '-tmp.hdf5'
+    try:
+        subprocess.run(
+            ['h5repack', 'f', compression, filename, tmpfile],
+            check=True, capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f' !!! WARNING: h5repack failed for {e}', flush=True)
+
+    os.replace(tmpfile, filename)
+    print(f'>> Repacked {filename}')
+    if os.path.exists(tmpfile):
+        os.remove(tmpfile)
+
 def check_output_exists(output_file, overwrite=False):
 
     if os.path.exists(output_file):
@@ -79,13 +96,12 @@ def check_output_exists(output_file, overwrite=False):
                 f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
                 f'{"="*60}'
             )
-            
         else:
             print(f' WARNING: Will overwrite existing file: {output_file}', flush=True)
             #os.remove(output_file)
     return True
 
-def check_group_exists(filename, path, overwrite):
+def check_group_exists(filename, path, overwrite, repack=False, compression='GZIP=4'):
     '''
     checks for existence of file and the group in it. 
     used for allowing to overwrite old fit in a h5 file
@@ -101,13 +117,16 @@ def check_group_exists(filename, path, overwrite):
         if not overwrite:
             raise OSError(
                 f'\n{"="*60}\n'
-                f'Output file already exists: {filename}\n'
-                f'Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
+                f' Output file already exists: {filename}\n'
+                f' Use --overwrite flag to allow overwriting, or choose a different sample name.\n'
                 f'{"="*60}'
             )
         # overwrite
-        print(f' WARNING: overwriting existing group: {filename}/{path}', flush=True)
+        print(f' !!! WARNING: overwriting existing group: {filename}/{path}', flush=True)
         del f[path]
+
+    if repack:
+        repack_h5(filename, compression=compression)
 
     return True
 

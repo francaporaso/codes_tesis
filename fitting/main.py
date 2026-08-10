@@ -39,6 +39,7 @@ def run_emcee(
     observable: str,
     cov_mode: str,
     limits: dict,
+    fixed: dict,
     init_guess: list[float],
     pos_dist: str,
     seed: int,
@@ -53,6 +54,7 @@ def run_emcee(
         data=data,
         model=models_dict[model_name](cosmo, data.redshift),
         param_limits=limits,
+        fixed_params=fixed,
         observable=observable,
         cov_mode=cov_mode,
     )
@@ -64,7 +66,7 @@ def run_emcee(
         dist=pos_dist,
     )
     init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
-    move = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
+    moves_list = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
 
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
     with Pool(processes=NCORES) as pool:
@@ -74,7 +76,7 @@ def run_emcee(
             L.log_probability,
             pool=pool,
             backend=backend,
-            moves=move,
+            moves=moves_list,
         )
         print(" >> running burn in")
         state = sampler.run_mcmc(init_pos, burn_in, progress=True, store=False)
@@ -89,6 +91,7 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument("--config", type=str, default="config.toml", action="store")
+    parser.add_argument("--debug", action='store_true')
     args = parser.parse_args()
 
     cfg = Settings(args.config)
@@ -140,6 +143,7 @@ def main():
                         print(" " + "-" * 25)
 
                         sampler, L = run_emcee(
+                            cosmo=cfg.cosmo,
                             NCORES=cfg.ncores,
                             NIT=cfg.nit,
                             NWALKERS=cfg.nwalkers,
@@ -152,12 +156,12 @@ def main():
                             observable=obs,
                             cov_mode=cfg.cov_mode,
                             limits=active_limits,
+                            fixed=fixed,
                             init_guess=init_guess,
                             pos_dist=cfg.pos_dist,
                             seed=cfg.seed,
                         )
 
-                        # not possible to fix params for now
                         discard = int(cfg.nit * cfg.discardp)
                         fitpar, errpar = get_fitted_params(
                             sampler.get_chain(discard=discard), active_params
