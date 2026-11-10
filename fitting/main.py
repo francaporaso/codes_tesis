@@ -91,10 +91,13 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument("--config", type=str, default="config.toml", action="store")
-    parser.add_argument("--debug", action='store_true')
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     cfg = Settings(args.config)
+
+    # TODO: add the fixed in the config file
+    fixed = {"sigma0": 0.0}
 
     Total = (
         len(cfg.models)
