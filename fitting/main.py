@@ -134,7 +134,9 @@ def main():
                         i += 1
                         print(f"\n [{i}/{Total}]")
 
-                        data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.fits"
+                        # TODO: change this naive file finding method for pathlib.Path.rglob('*LABEL*')
+                        # simialr as in the jupyter of modified_gravity results using the !find ...
+                        data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}_map.fits"
                         chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['prefix']}{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
 
                         print(" " + "-" * 25)
