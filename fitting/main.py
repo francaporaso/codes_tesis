@@ -65,7 +65,7 @@ def run_emcee(
         seed=seed,
         dist=pos_dist,
     )
-    init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
+    # init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
     moves_list = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
 
     backend = emcee.backends.HDFBackend(save_filename, name=group_name)
