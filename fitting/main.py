@@ -75,7 +75,7 @@ def run_emcee(
     # init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
     moves_list = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
 
-    backend = emcee.backends.HDFBackend(save_filename, name=group_name)
+    backend = emcee.backends.HDFBackend(str(save_filename), name=group_name)
     with Pool(processes=NCORES) as pool:
         sampler = emcee.EnsembleSampler(
             NWALKERS,
@@ -140,7 +140,7 @@ def main():
             limits = cfg.limits.get(model, default_limits[model])
             guess = cfg.guess.get(model, default_guess[model])
 
-            active_params = models_dict[model].params[obs]
+            active_params = set(models_dict[model].params[obs]) - set(fixed.keys())
             init_guess = tuple(guess[p] for p in active_params)
             active_limits = {k: limits[k] for k in active_params}
 
@@ -170,7 +170,7 @@ def main():
                             NWALKERS=cfg.nwalkers,
                             burn_in=cfg.burn_in,
                             moves=cfg.moves,
-                            data_filename=p[rv][redshift][vt],
+                            data_filename=str(p[rv][redshift][vt]),
                             save_filename=chain_filename,
                             overwrite=cfg.overwrite,
                             model_name=model,
@@ -225,7 +225,7 @@ def main():
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
                             plot_corner(sampler, active_params, discard=discard)
                             plot_profile(
-                                p[rv][redshift][vt], obs, fitpar, model, color="k"
+                                str(p[rv][redshift][vt]), obs, fitpar, model, color="k"
                             )
 
                             plt.show()
