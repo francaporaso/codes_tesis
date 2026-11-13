@@ -1,3 +1,7 @@
+import os
+
+os.environ["OMP_NUM_THREADS"] = "1"
+
 from multiprocessing import Pool
 from argparse import ArgumentParser
 import emcee
@@ -21,10 +25,6 @@ from fitting.utilfuncs import (
     chi2_red,
 )
 from fitting.plotting import plot_chains, plot_corner, plot_profile
-
-import os
-
-os.environ["OMP_NUM_THREADS"] = "1"
 
 
 def nested_dict():
