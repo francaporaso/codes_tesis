@@ -71,7 +71,7 @@ def run_emcee(
         seed=seed,
         dist=pos_dist,
     )
-    assert init_pos.shape[1] == L.nparams, print(f'{init_pos.shape}!={L.nparams})
+    assert init_pos.shape[1] == L.nparams, print(f"{init_pos.shape}!={L.nparams}")
     # init_pos = validate_pos(init_pos, L.param_name, L.limits, seed=seed)
     moves_list = [(emcee.moves.__dict__[m["name"]](), m["weight"]) for m in moves]
 
