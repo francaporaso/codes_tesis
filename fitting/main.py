@@ -116,7 +116,9 @@ def main():
     # names saved in dict to easier retrival
     p = nested_dict()
     for f in files_list:
-        p[f.rv_range][f.z_range][f.voidtype] = cfg.data["folder"] + f.filename
+        p[f.rv_range][f.z_range][f.voidtype] = Path(
+            cfg.data["folder"] + f.filename
+        ).expanduser()
 
     Total = len(cfg.models) * len(cfg.observables) * len(ZS) * len(RVS) * len(TYPES)
     print(
@@ -148,7 +150,9 @@ def main():
                         print(f"\n [{i}/{Total}]")
 
                         # data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}_map.fits"
-                        chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}.hdf5"
+                        chain_filename = Path(
+                            f"{cfg.chain['folder']}fitting_{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}.hdf5"
+                        ).expanduser()
 
                         print(" " + "-" * 25)
                         print(f" Model: {model}")
