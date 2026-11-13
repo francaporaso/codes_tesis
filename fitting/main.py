@@ -140,7 +140,9 @@ def main():
             limits = cfg.limits.get(model, default_limits[model])
             guess = cfg.guess.get(model, default_guess[model])
 
-            active_params = set(models_dict[model].params[obs]) - set(fixed.keys())
+            active_params = [
+                par for par in models_dict[model].params[obs] if par not in fixed
+            ]
             init_guess = tuple(guess[p] for p in active_params)
             active_limits = {k: limits[k] for k in active_params}
 
