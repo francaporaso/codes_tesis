@@ -5,14 +5,10 @@ from getdist import plots as gdplots
 from getdist import MCSamples
 
 
-def plot_profile(data, observable, fitedparams, model, color):
-    ydata, yerr = data.get(observable)
-
+def plot_profile(L, theta, color="k"):
     fig, ax = plt.subplots(1, 1)
-    ax.errorbar(data.R, ydata, yerr, fmt=".k", capsize=2)
-
-    func = getattr(model, observable)
-    ax.plot(data.R, func(data.R, *fitedparams.values()), color)
+    ax.errorbar(L.R, L.ydata, np.sqrt(np.diag(L.cov)), fmt=".k", capsize=2)
+    ax.plot(L.R, L.predict(theta), color)
 
     return fig
 

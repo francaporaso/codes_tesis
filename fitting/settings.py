@@ -112,3 +112,5 @@ class Settings:
 
         raw_guess = cfg["fit"].get("guess", {})
         self.guess: dict = {model: params for model, params in raw_guess.items()}
+
+        self.fixed: dict = cfg["fit"].get("fixed", {})

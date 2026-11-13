@@ -36,27 +36,30 @@ class Likelihood:
         else:
             raise ValueError('cov_mode must be either "full" or "diag"')
 
-        all_params = model.params[observable]
+        self.all_params = list(model.params[observable])
         fixed_params = fixed_params or {}
-        self.param_name = [p for p in all_params if p not in fixed_params]
+        # keep only fixed params used by this observable (e.g. no sigma0 for delta_sigma)
+        self.fixed = {k: v for k, v in fixed_params.items() if k in self.all_params}
+        self.param_name = [p for p in self.all_params if p not in self.fixed]
         self.limits = {k: param_limits[k] for k in self.param_name}
         self.nparams = len(self.param_name)
+        self.ndof = len(self.R) - self.nparams
 
-        # needed if there are fixed params...
-        # creates a template for where to fill free params draw
-        self._template = np.empty(len(all_params))
-        self._freeidx = np.array([all_params.index(p) for p in self.param_name])
-        for p, v in fixed_params.items():
-            self._template[all_params.index(p)] = v
+    def params(self, theta):
+        """free-parameter vector -> full {name: value} dict (fixed included),
+        ordered as in the model signature"""
+        values = {**dict(zip(self.param_name, theta)), **self.fixed}
+        return {k: values[k] for k in self.all_params}
 
-    def full(self, theta):
-        full = self._template.copy()
-        full[self._freeidx] = theta
-        return full
+    def predict(self, theta):
+        # positional: the base-class methods only accept *params
+        return self.func(self.R, *self.params(theta).values())
+
+    def chi2_red(self, theta):
+        return -2.0 * self.log_likelihood(theta) / self.ndof
 
     def log_likelihood(self, theta):
-        model = self.func(self.R, *self.full(theta))  # *self.rhomean
-        dist = self.ydata - model
+        dist = self.ydata - self.predict(theta)
         return -0.5 * np.dot(dist, np.dot(self.yerr, dist))
 
     def log_prior(self, theta):

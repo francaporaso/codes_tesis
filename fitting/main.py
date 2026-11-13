@@ -22,7 +22,6 @@ from fitting.utilfuncs import (
     get_fitted_params,
     validate_pos,
     make_pos,
-    chi2_red,
 )
 from fitting.plotting import plot_chains, plot_corner, plot_profile
 
@@ -46,7 +45,7 @@ def run_emcee(
     cov_mode: str,
     limits: dict,
     fixed: dict,
-    init_guess: list[float],
+    guess: dict,
     pos_dist: str,
     seed: int,
 ):
@@ -65,6 +64,7 @@ def run_emcee(
         cov_mode=cov_mode,
     )
 
+    init_guess = [guess[p] for p in L.param_name]
     init_pos = make_pos(
         init_guess=init_guess,
         NWALKERS=NWALKERS,
@@ -103,9 +103,6 @@ def main():
 
     cfg = Settings(args.config)
 
-    # TODO add the fixed in the config file
-    fixed = {"sigma0": 0.0}
-
     # get files with label inside folder
     files_list = []
     for f in Path(cfg.data["folder"]).expanduser().rglob(f"*{cfg.data['label']}*"):
@@ -139,12 +136,11 @@ def main():
             # resolve limits and guess with fallback to defaults
             limits = cfg.limits.get(model, default_limits[model])
             guess = cfg.guess.get(model, default_guess[model])
+            fixed = cfg.fixed.get(model, {})
 
-            active_params = [
-                par for par in models_dict[model].params[obs] if par not in fixed
-            ]
-            init_guess = tuple(guess[p] for p in active_params)
-            active_limits = {k: limits[k] for k in active_params}
+            unknown = set(fixed) - set(models_dict[model].params["sigma"])
+            if unknown:
+                raise ValueError(f"unknown fixed params for {model!r}: {unknown}")
 
             for redshift in ZS:
                 for rv in RVS:
@@ -178,29 +174,27 @@ def main():
                             model_name=model,
                             observable=obs,
                             cov_mode=cfg.cov_mode,
-                            limits=active_limits,
+                            limits=limits,
                             fixed=fixed,
-                            init_guess=init_guess,
+                            guess=guess,
                             pos_dist=cfg.pos_dist,
                             seed=cfg.seed,
                         )
 
                         discard = int(cfg.nit * cfg.discardp)
                         fitpar, errpar = get_fitted_params(
-                            sampler.get_chain(discard=discard), active_params
+                            sampler.get_chain(discard=discard), L.param_name
                         )
+                        theta_fit = [fitpar[k] for k in L.param_name]
+                        chi2 = L.chi2_red(theta_fit)
 
-                        chi2 = chi2_red(
-                            L.ydata,
-                            L.func(L.R, *fitpar.values()),
-                            L.yerr,
-                            len(L.R) - L.nparams,
-                        )
                         print(" Fitted params:")
                         for (key, value), e in zip(fitpar.items(), errpar.values()):
                             print(
                                 f"    > {key} = {value:.4g} ± ({e[0]:.4g},{e[1]:.4g})"
                             )
+                        for key, value in L.fixed.items():
+                            print(f"    > {key} = {value:.4g} (fixed)")
                         print(f"    > chi2_red = {chi2:4g}")
 
                         with h5py.File(chain_filename, "a") as f:
@@ -214,21 +208,20 @@ def main():
 
                             grp.attrs["chi2_red"] = chi2
 
-                            for pname in active_params:
+                            for pname in L.param_name:
                                 grp.attrs[f"{pname}_median"] = fitpar[pname]
                                 grp.attrs[f"{pname}_err"] = np.array(errpar[pname])
 
                                 # used limits to plot the correct posteriors
-                                grp.attrs[f"{pname}_lim"] = np.array(
-                                    active_limits[pname]
-                                )
+                                grp.attrs[f"{pname}_lim"] = np.array(L.limits[pname])
+
+                            for pname, value in L.fixed.items():
+                                grp.attrs[f"{pname}_fixed"] = value
 
                         if cfg.do_plot:
-                            plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
-                            plot_corner(sampler, active_params, discard=discard)
-                            plot_profile(
-                                str(p[rv][redshift][vt]), obs, fitpar, model, color="k"
-                            )
+                            plot_chains(sampler.get_chain(), labels=L.param_name)
+                            plot_corner(sampler, L.param_name, discard=discard)
+                            plot_profile(L, theta_fit, color="k")
 
                             plt.show()
 
