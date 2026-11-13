@@ -84,10 +84,10 @@ class Settings:
 
         self.cosmo = get_cosmo(**parse_cosmoargs(cfg["cosmology"]))
 
-        self.rv_ranges: list[str] = cfg["data"]["rv_ranges"]
-        self.z_ranges: list[str] = cfg["data"]["z_ranges"]
-        self.voidtypes: list[str] = cfg["data"]["voidtypes"]
-        self.binning: str = cfg["data"]["binning"]
+        # self.rv_ranges: list[str] = cfg["data"]["rv_ranges"]
+        # self.z_ranges: list[str] = cfg["data"]["z_ranges"]
+        # self.voidtypes: list[str] = cfg["data"]["voidtypes"]
+        # self.binning: str = cfg["data"]["binning"]
 
         self.ncores: int = cfg["run"]["ncores"]
         self.nit: int = cfg["run"]["nit"]
