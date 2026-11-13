@@ -27,7 +27,7 @@ Om0 = 0.31
 Ode0 = 0.69
 #NOTE: setting the following to zero could bias
 #distance calculations by <0.1%
-Tcmb = 0.0 # [K]
+Tcmb0 = 0.0 # [K]
 Ob0 = 0.0
 m_nu = 0.0
 
@@ -39,7 +39,7 @@ Om0 = 0.2927
 # Ode0 = 0.69 ## DESI assumes flat cosmology
 #setting the following to zero could bias
 #distance calculations by <0.1%
-Tcmb = 0.0 # [K]
+Tcmb0 = 0.0 # [K]
 Ob0 = 0.0
 m_nu = 0.0
 
@@ -52,7 +52,7 @@ Om0 = 0.353
 # Ode0 = 0.69 ## DESI assumes flat cosmology
 #setting the following to zero could bias
 #distance calculations by <0.1%
-Tcmb = 0.0 # [K]
+Tcmb0 = 0.0 # [K]
 Ob0 = 0.0
 m_nu = 0.0
 # ===================================================================
