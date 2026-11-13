@@ -78,7 +78,7 @@ class Settings:
         }
         self.chain: dict = {
             "folder": cfg["chain"]["folder"],
-            "prefix": "_".join(self.data["prefix"].split("_")[1:]),
+            # "prefix": "_".join(self.data["prefix"].split("_")[1:]),
             "sample": cfg["chain"]["sample"],
         }
 

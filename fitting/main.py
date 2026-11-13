@@ -148,7 +148,7 @@ def main():
                         print(f"\n [{i}/{Total}]")
 
                         # data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}_map.fits"
-                        chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['prefix']}{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
+                        chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
 
                         print(" " + "-" * 25)
                         print(f" Model: {model}")
