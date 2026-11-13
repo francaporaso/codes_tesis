@@ -4,8 +4,10 @@ import emcee
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
+from collections import defaultdict
 
-from fitting.settings import Settings
+from fitting.settings import Settings, FileClassifier
 from fitting.constants import get_cosmo
 from fitting.inference import Likelihood
 from fitting.io import read_dataprofile_fits
@@ -23,6 +25,10 @@ from fitting.plotting import plot_chains, plot_corner, plot_profile
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
+
+
+def nested_dict():
+    return defaultdict(nested_dict)
 
 
 def run_emcee(
@@ -96,23 +102,30 @@ def main():
 
     cfg = Settings(args.config)
 
-    # TODO: add the fixed in the config file
+    # TODO add the fixed in the config file
     fixed = {"sigma0": 0.0}
 
-    Total = (
-        len(cfg.models)
-        * len(cfg.observables)
-        * len(cfg.z_ranges)
-        * len(cfg.rv_ranges)
-        * len(cfg.voidtypes)
-    )
+    # get files with label inside folder
+    files_list = []
+    for f in Path(cfg.data["folder"]).expanduser().rglob(f"*{cfg.data['label']}*"):
+        files_list.append(FileClassifier(*f.name.split("_")))
+    RVS = sorted(list(set(fi.rv_range for fi in files_list)), key=lambda s: s[2:])
+    ZS = sorted(list(set(fi.z_range for fi in files_list)), key=lambda s: s[1:])
+    TYPES = sorted(list(set(fi.voidtype for fi in files_list)), reverse=True)
+
+    # names saved in dict to easier retrival
+    p = nested_dict()
+    for f in files_list:
+        p[f.rv_range][f.z_range][f.voidtype] = cfg.data["folder"] + f.filename
+
+    Total = len(cfg.models) * len(cfg.observables) * len(ZS) * len(RVS) * len(TYPES)
     print(
         (
             f" >> Fitting {len(cfg.models)} model(s) "
             f"x {len(cfg.observables)} profile(s) "
-            f"x {len(cfg.z_ranges)} redshift bin(s) "
-            f"x {len(cfg.rv_ranges)} radius bin(s) "
-            f"x {len(cfg.voidtypes)} void type(s)"
+            f"x {len(ZS)} redshift bin(s) "
+            f"x {len(RVS)} radius bin(s) "
+            f"x {len(TYPES)} void type(s)"
         )
     )
     print(f" >> {Total=}")
@@ -128,15 +141,13 @@ def main():
             init_guess = tuple(guess[p] for p in active_params)
             active_limits = {k: limits[k] for k in active_params}
 
-            for redshift in cfg.z_ranges:
-                for rv in cfg.rv_ranges:
-                    for vt in cfg.voidtypes:
+            for redshift in ZS:
+                for rv in RVS:
+                    for vt in TYPES:
                         i += 1
                         print(f"\n [{i}/{Total}]")
 
-                        # TODO: change this naive file finding method for pathlib.Path.rglob('*LABEL*')
-                        # simialr as in the jupyter of modified_gravity results using the !find ...
-                        data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}_map.fits"
+                        # data_filename = f"{cfg.data['folder']}{cfg.data['prefix']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}_map.fits"
                         chain_filename = f"{cfg.chain['folder']}fitting_{cfg.chain['prefix']}{cfg.chain['sample']}_Rv{rv}_z{redshift}_type{vt}_bin{cfg.binning}.hdf5"
 
                         print(" " + "-" * 25)
@@ -154,7 +165,7 @@ def main():
                             NWALKERS=cfg.nwalkers,
                             burn_in=cfg.burn_in,
                             moves=cfg.moves,
-                            data_filename=data_filename,
+                            data_filename=p[rv][redshift][vt],
                             save_filename=chain_filename,
                             overwrite=cfg.overwrite,
                             model_name=model,
@@ -208,7 +219,9 @@ def main():
                         if cfg.do_plot:
                             plot_chains(sampler.get_chain(), labels=list(fitpar.keys()))
                             plot_corner(sampler, active_params, discard=discard)
-                            plot_profile(data_filename, obs, fitpar, model)
+                            plot_profile(
+                                p[rv][redshift][vt], obs, fitpar, model, color="k"
+                            )
 
                             plt.show()
 

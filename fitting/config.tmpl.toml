@@ -1,0 +1,175 @@
+# ===================================================================
+[run]
+# cores used
+ncores = 32
+# iteration steps
+nit = 5000
+# chain walkers: for maximum cpu usage, set to double than ncores
+nwalkers = 64
+# burn in steps
+burn_in = 1000
+# plot after running mcmc?
+do_plot = true
+# overwrite if chain file exist?
+overwrite = true
+# ===================================================================
+
+# ===================================================================
+[cosmology]
+model = 'lcdm' # 'wcdm' | 'w0wacdm'
+is_flat = true
+
+#NOTE: with h=1 astropy distances are in Mpc/h
+[cosmology.lcdm]
+#NOTE: Planck18 (table 2 TT+TE+EE+lowE+lensing+BAO)
+h = 1.0 # 0.68
+Om0 = 0.31
+Ode0 = 0.69
+#NOTE: setting the following to zero could bias
+#distance calculations by <0.1%
+Tcmb = 0.0 # [K]
+Ob0 = 0.0
+m_nu = 0.0
+
+[cosmology.wcdm]
+#NOTE: DESI DR2 BAO+CMB (table 5 arxiv:2503.14738)
+w0 = -1.055
+h = 0.6951
+Om0 = 0.2927
+# Ode0 = 0.69 ## DESI assumes flat cosmology
+#setting the following to zero could bias
+#distance calculations by <0.1%
+Tcmb = 0.0 # [K]
+Ob0 = 0.0
+m_nu = 0.0
+
+[cosmology.w0wacdm]
+#NOTE: values from DESI DR2 BAO+CMB (table 5 arxiv:2503.14738)
+w0 = -0.42
+wa = -1.75
+h = 0.636
+Om0 = 0.353
+# Ode0 = 0.69 ## DESI assumes flat cosmology
+#setting the following to zero could bias
+#distance calculations by <0.1%
+Tcmb = 0.0 # [K]
+Ob0 = 0.0
+m_nu = 0.0
+# ===================================================================
+
+# ===================================================================
+[data]
+folder = 'lensing/results/'
+label = 'GR_thr09_quantile031126' ## identifier of the run set
+
+#rv_ranges = ['10-50']
+#z_ranges = ['020-040']
+#voidtypes = ['S'] # ['mixed', 'S', 'R']
+#binning = 'lin' # | 'log'
+# ===================================================================
+
+# ===================================================================
+[chain]
+folder = 'fitting/results/'
+sample = ''
+# ===================================================================
+
+# ===================================================================
+[fit]
+cov_mode = 'full' # full or diag 
+observables = ['sigma'] # sigma | delta_sigma | kappa
+# see models.py for options
+models = ['mLW'] # HSW | mLW | TH | P13
+# discard first % of iterations for parameter estimation
+discardp = 0.4
+# distribution to draw init pos and seed for rands
+pos_dist = 'gaussian' # | gaussian or uniform
+seed = 0
+do_fixparams = True # use the fixed param table
+
+# ----------------
+# move of the chains -- see emcee.readthedocs.io/en/stable/tutorials/moves/#moves
+# opts: 'StretchMove', 'DEMove', 'DESnookerMove'
+# weights do not need to add up to 1, emcee normalizes them
+[[fit.moves]] 
+name = 'DESnookerMove'
+weight = 0.90
+[[fit.moves]]
+name = 'StretchMove'
+weight = 0.01
+[[fit.moves]]
+name = 'DEMove'
+weight = 0.09
+#[[fit.moves]]
+#name = 'GaussianMove'
+#weight = 1
+
+# ---------------
+[fit.limits]
+# params limits for the model
+[fit.limits.HSW]
+dc = [-1.0, 0.0]
+rs = [0.7, 5.0]
+a = [1.0, 5.0]
+b = [1.0, 5.0]
+sigma0 = [-0.5,0.5]
+
+[fit.limits.mLW]
+dc = [-1.0, -0.01]
+dw = [-0.1, 0.5]
+rw = [1.20, 2.10]
+sigma0 = [-0.15, 0.15]
+
+[fit.limits.TH]
+dc = [-1.0, -0.01]
+dw = [-0.3, 0.1]
+rw = [1.50, 3.50]
+sigma0 = [-0.15, 0.15]
+
+[fit.limits.P13]
+dc = [-1.0, 0.0]
+rs = [0.5,2.5]
+S = [0.5,5.0]
+P = [-0.5,1.0]
+W = [0.5, 5.0]
+sigma0 = [-0.2, 0.2]
+
+# ---------------
+[fit.guess]
+# initial guess value from which chains are initialized
+[fit.guess.HSW]
+dc = -0.6
+rs = 4.0
+a = 1.20
+b = 3.0
+sigma0 = -0.01
+
+[fit.guess.mLW]
+dc = -0.6
+dw = 0.1
+rw = 1.8
+sigma0 = 0.03
+
+[fit.guess.TH]
+dc = -0.5
+dw = -0.1
+rw = 2.5
+sigma0 = -0.01
+
+# ---------------
+[fit.fixed.HSW]
+sigma0=0.0
+
+[fit.fixed.mLW]
+sigma0=0.0
+
+[fit.fixed.TH]
+sigma0=0.0
+
+[fit.fixed.P13]
+sigma0=0.0
+P=0.0
+W=1.0
+
+# ===================================================================
+

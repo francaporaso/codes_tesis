@@ -1,5 +1,6 @@
 import numpy as np
 import toml
+from pathlib import Path
 
 from fitting.constants import get_cosmo
 
@@ -15,6 +16,57 @@ def parse_cosmoargs(cosmo_cfg):
     return params
 
 
+# for reading and autoclassify files
+class FileClassifier:
+    def __init__(
+        self,
+        prefix,
+        gravity,
+        threshold,
+        label,
+        nbins,
+        rv_range,
+        z_range,
+        voidtype,
+        binning,
+        sourcemode,
+    ):
+        self.prefix = prefix
+        self.gravity = gravity
+        self.threshold = threshold
+        self.label = label
+        self.nbins = nbins
+        self.rv_range = rv_range
+        self.z_range = z_range
+        self.voidtype = voidtype
+        self.binning = binning
+        self.sourcemode = sourcemode
+
+        self.filename = "_".join(
+            [
+                prefix,
+                gravity,
+                threshold,
+                label,
+                nbins,
+                rv_range,
+                z_range,
+                voidtype,
+                binning,
+                sourcemode,
+            ]
+        )
+
+        self.clear_type()
+        self.clear_sourcemode()
+
+    def clear_type(self):
+        self.voidtype = self.voidtype.removeprefix("type")
+
+    def clear_sourcemode(self):
+        self.sourcemode = self.sourcemode.removesuffix(".fits")
+
+
 class Settings:
     def __init__(self, configfile):
 
@@ -22,7 +74,7 @@ class Settings:
 
         self.data: dict = {
             "folder": cfg["data"]["folder"],
-            "prefix": cfg["data"]["prefix"],
+            "label": cfg["data"]["label"],
         }
         self.chain: dict = {
             "folder": cfg["chain"]["folder"],
